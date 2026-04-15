@@ -1,0 +1,32 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\Admin\UserRoleController;
+use App\Http\Controllers\Api\Admin\PermissionController;
+use App\Http\Controllers\Api\Admin\RoleController;
+
+Route::middleware(['auth:sanctum', 'role:administrador'])->prefix('admin')->group(function () {
+    
+    Route::get('/users', [UserRoleController::class, 'index']);
+    Route::post('/user', [UserRoleController::class, 'store']);
+    Route::get('/user/show/{user}', [UserRoleController::class, 'show']);
+    Route::put('/user/{user}', [UserRoleController::class, 'update']);
+    Route::post('/user/activate/{user}', [UserRoleController::class, 'activate']);
+
+    Route::get('permissions', [PermissionController::class, 'index']);
+    Route::post('permission', [PermissionController::class, 'store']);
+    Route::get('permission/show/{permission}', [PermissionController::class, 'show']);
+    Route::put('permission/{permission}', [PermissionController::class, 'update']);
+    Route::post('permission/activate/{permission}', [PermissionController::class, 'activate']);
+    Route::delete('permission/{permission}', [PermissionController::class, 'destroy']);
+
+    Route::get('/roles', [RoleController::class, 'index']);
+    Route::post('/role', [RoleController::class, 'store']);
+    Route::get('/role/show/{role}', [RoleController::class, 'show']);
+    Route::get('/role/permissions', [RoleController::class, 'permissions']);
+    Route::put('/role/{role}', [RoleController::class, 'update']);
+    Route::post('/role/activate/{role}', [RoleController::class, 'activate']);
+    Route::delete('/role/{role}', [RoleController::class, 'destroy']);
+    
+
+});
