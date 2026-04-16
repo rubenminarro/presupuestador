@@ -16,7 +16,10 @@ class RolesAndPermissionsSeeder  extends Seeder
         
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        $admin = Role::firstOrCreate(['name' => 'administrador']);
+        $admin = Role::firstOrCreate([
+            'name' => 'administrador',
+            'guard_name' => 'api'
+        ]);
         
         $permissions = [
             'user.index',
@@ -37,9 +40,9 @@ class RolesAndPermissionsSeeder  extends Seeder
             'role.activate',
             'role.destroy'
         ];
-
+        
         foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'api']);
         }
 
         $admin->givePermissionTo(Permission::all());
