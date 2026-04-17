@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Admin\UserRoleController;
 use App\Http\Controllers\Api\Admin\PermissionController;
 use App\Http\Controllers\Api\Admin\RoleController;
+use App\Http\Controllers\Api\ClientController;
 
 Route::middleware(['auth:sanctum', 'role:administrador'])->prefix('admin')->group(function () {
     
@@ -23,10 +24,16 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->prefix('admin')->grou
     Route::get('/roles', [RoleController::class, 'index']);
     Route::post('/role', [RoleController::class, 'store']);
     Route::get('/role/show/{role}', [RoleController::class, 'show']);
-    Route::get('/role/permissions', [RoleController::class, 'permissions']);
     Route::put('/role/{role}', [RoleController::class, 'update']);
     Route::post('/role/activate/{role}', [RoleController::class, 'activate']);
     Route::delete('/role/{role}', [RoleController::class, 'destroy']);
+    Route::get('/role/permissions', [RoleController::class, 'permissions']);
     
+    Route::post('/clients', [ClientController::class, 'index']);
+    Route::post('/client', [ClientController::class, 'store']);
+    Route::get('/client/show/{client}', [ClientController::class, 'show']);
+    Route::put('/client/{client}', [ClientController::class, 'update']);
+    Route::post('/client/activate/{client}', [ClientController::class, 'activate']);
+    Route::delete('/client/{client}', [ClientController::class, 'destroy']);
 
 });

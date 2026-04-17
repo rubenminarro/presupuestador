@@ -13,13 +13,21 @@ return new class extends Migration
     {
         Schema::create('vehicles', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('client_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('brand_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('vehicle_model_id')->constrained()->cascadeOnDelete();
-            $table->string('plate')->nullable()->index();
+
+            $table->foreignId('client_id')->constrained()->restrictOnDelete();
+            $table->foreignId('brand_id')->constrained()->restrictOnDelete();
+            $table->foreignId('vehicle_model_id')->constrained()->restrictOnDelete();
+
+            $table->string('plate')->nullable();
             $table->string('color')->nullable();
             $table->text('notes')->nullable();
+
+            $table->boolean('active')->default(true);
+
+            $table->softDeletes();
             $table->timestamps();
+
+            $table->unique(['plate', 'client_id']);
         });
     }
 

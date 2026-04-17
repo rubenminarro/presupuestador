@@ -8,7 +8,6 @@ use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRoleRequest;
 use App\Http\Resources\RolesResource;
 use App\Http\Resources\ShowRoleResource;
-use App\Http\Resources\ShowRolePermissionsResource;
 use App\Models\Role;
 use App\Models\Permission;
 use App\Traits\ApiResponse;
