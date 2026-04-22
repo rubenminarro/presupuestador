@@ -21,17 +21,20 @@ class ClientController extends Controller
     {
         $data = $request->validated();
 
-        $client = Client::create($data);
+        return DB::transaction(function () use ($data) {
+            
+            $client = Client::create($data);
 
-        $client->vehicles()->createMany($data['vehicles']);
+            if (!empty($data['vehicles'])) {
+                $client->vehicles()->createMany($data['vehicles']);
+            }
 
-        $client->load('vehicles');
-
-        return $this->successResponse(
-            'Cliente creado correctamente.',
-            new ShowClientResource($client),
-            201
-        );
+            return $this->successResponse(
+                'Cliente creado correctamente.',
+                new ShowClientResource($client->load('vehicles')),
+                201
+            );
+        });
     }
 
     public function show(Client $client)

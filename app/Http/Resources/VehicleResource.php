@@ -20,7 +20,7 @@ class VehicleResource extends JsonResource
             'model' => $this->model,
             'plate' => $this->plate,
             'color' => $this->color,
-            'notes' => $this->notes,
+            'notes' => $this->notes
         ];
     }
 }
