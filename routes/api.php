@@ -34,6 +34,5 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->prefix('admin')->grou
     Route::get('/client/show/{client}', [ClientController::class, 'show']);
     Route::put('/client/{client}', [ClientController::class, 'update']);
     Route::post('/client/activate/{client}', [ClientController::class, 'activate']);
-    Route::delete('/client/{client}', [ClientController::class, 'destroy']);
 
 });

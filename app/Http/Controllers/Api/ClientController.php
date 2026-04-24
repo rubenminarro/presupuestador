@@ -25,10 +25,8 @@ class ClientController extends Controller
             
             $client = Client::create($data);
 
-            if (!empty($data['vehicles'])) {
-                $client->vehicles()->createMany($data['vehicles']);
-            }
-
+            $client->vehicles()->createMany($data['vehicles']);
+            
             return $this->successResponse(
                 'Cliente creado correctamente.',
                 new ShowClientResource($client->load('vehicles')),
@@ -44,52 +42,39 @@ class ClientController extends Controller
 
     public function update(UpdateClientRequest $request, Client $client)
     {
-        
         $data = $request->validated();
 
         DB::transaction(function () use ($client, $data) {
+            
+            $client->update(Arr::except($data, ['vehicles']));
 
-            $client->update($data);
-        
-            if (array_key_exists('vehicles', $data)) {
+            if (isset($data['vehicles'])) {
                 
                 $incoming = collect($data['vehicles']);
-
+                
+                // Obtenemos IDs de los vehículos que SI existen para no inactivarlos
                 $incomingIds = $incoming->pluck('id')->filter()->toArray();
 
+                // 2. Inactivar (active = false) los vehículos del cliente que NO están en el request
                 $client->vehicles()
-                ->whereNotIn('id', $incomingIds)
-                ->update(['active' => false]);
+                    ->whereNotIn('id', $incomingIds)
+                    ->update(['active' => false]);
 
+                // 3. Procesar cada vehículo del request
                 foreach ($incoming as $vehicleData) {
-
-                    $payload = Arr::only($vehicleData, [
-                        'brand_id',
-                        'vehicle_model_id',
-                        'plate',
-                        'color',
-                        'notes',
-                        'no_plate'
-                    ]);
-
-                    $payload['active'] = true;
-
-                    if (isset($vehicleData['id'])) {
-                        $vehicle = $client->vehicles()->find($vehicleData['id']);
-                        if ($vehicle) {
-                            $vehicle->update($payload);
-                        }
-                    } else {
-                        $client->vehicles()->create($payload);
-                    }
+                    // updateOrCreate busca por ID. Si el ID es null o no existe, CREA uno nuevo.
+                    // Si el ID existe, ACTUALIZA los datos.
+                    $client->vehicles()->updateOrCreate(
+                        ['id' => $vehicleData['id'] ?? null], 
+                        array_merge($vehicleData, ['active' => true])
+                    );
                 }
             }
-
         });
 
         return $this->successResponse(
             'Cliente actualizado correctamente.',
-            new ShowClientResource($client->load('vehicles'))
+            new ShowClientResource($client->load(['vehicles' => fn($q) => $q->where('active', true)]))
         );
     }
 
@@ -105,19 +90,5 @@ class ClientController extends Controller
         $message = $client->active ? 'Cliente activado correctamente.' : 'Cliente desactivado correctamente.';
 
         return $this->successResponse($message, $data);
-    }
-
-    public function destroy(Client $client)
-    {
-        
-        if (!$client->canBeDeleted()) {
-
-            return $this->errorResponse('Hubo un error al eliminar el cliente.', ['name' => ['Este cliente está en uso. Desactívalo en lugar de borrarlo.']], 422);
-
-        }
-        
-        $client->delete();
-        
-        return $this->successResponse('Cliente eliminado correctamente.');
     }
 }

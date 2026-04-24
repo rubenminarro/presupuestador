@@ -31,7 +31,10 @@ class StoreClientRequest extends FormRequest
                 'regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚ]+$/u'
             ],
             'last_name' => [
-                'required', 'string', 'min:2', 'max:100',
+                'required', 
+                'string', 
+                'min:2', 
+                'max:100',
                 'regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚ]+$/u'
             ],
             'email' => [
@@ -87,8 +90,6 @@ class StoreClientRequest extends FormRequest
                 'string', 
                 'max:30'
             ],
-            
-            
             'vehicles.*.notes' => [
                 'nullable', 'string', 'max:500', 
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
@@ -181,17 +182,16 @@ class StoreClientRequest extends FormRequest
 
     protected function prepareForValidation()
     {
-        if ($this->vehicles) {
-            if ($this->vehicles && is_array($this->vehicles)) {
-                $this->merge([
-                    'vehicles' => collect($this->vehicles)->map(function ($v) {
-                        return array_merge($v, [
-                            'plate'   => !empty($v['plate']) ? strtoupper(trim($v['plate'])) : null,
-                            'chassis' => !empty($v['chassis']) ? strtoupper(trim($v['chassis'])) : null,
-                        ]);
-                    })->toArray()
-                ]);
-            }
+        if ($this->vehicles && is_array($this->vehicles)) {
+            $this->merge([
+                'vehicles' => collect($this->vehicles)->map(function ($v) {
+                    $noPlate = $v['no_plate'] ?? false;
+                    return array_merge($v, [
+                        'plate'   => (!$noPlate && !empty($v['plate'])) ? strtoupper(trim($v['plate'])) : null,
+                        'chassis' => (!empty($v['chassis'])) ? strtoupper(trim($v['chassis'])) : null,
+                    ]);
+                })->toArray()
+            ]);
         }
     }
 
