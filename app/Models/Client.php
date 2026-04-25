@@ -20,13 +20,4 @@ class Client extends Model
     {
         return $this->hasMany(Vehicle::class);
     }
-
-    public function canBeDeleted(): bool
-    {   
-        if ($this->vehicles()->count() > 0) {
-            return false;
-        }
-        return true;
-
-    }
 }

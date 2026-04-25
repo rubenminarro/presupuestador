@@ -23,7 +23,7 @@ class ShowClientResource extends JsonResource
             'notes' => $this->notes,
             'vehicles' => VehicleResource::collection(
                 $this->whenLoaded('vehicles')
-            )
+            ),
         ];
     }
 }

@@ -7,20 +7,24 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class VehicleResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
     public function toArray(Request $request): array
     {
         return [
             'id' => $this->id,
-            'brand' => $this->brand,
-            'model' => $this->model,
+            'brand' => [
+                'id' => $this->brand?->id,
+                'name' => $this->brand?->name,
+            ],
+            'model' => [
+                'id' => $this->brandModel?->id,
+                'name' => $this->brandModel?->name,
+            ],
             'plate' => $this->plate,
+            'no_plate' => (bool) $this->no_plate,
+            'chassis' => $this->chassis,
             'color' => $this->color,
-            'notes' => $this->notes
+            'notes' => $this->notes,
+            'active' => (bool) $this->active,
         ];
     }
 }

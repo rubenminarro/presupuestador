@@ -4,7 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Admin\UserRoleController;
 use App\Http\Controllers\Api\Admin\PermissionController;
 use App\Http\Controllers\Api\Admin\RoleController;
-use App\Http\Controllers\Api\ClientController;
+use App\Http\Controllers\Api\Admin\ClientController;
+use App\Http\Controllers\Api\Admin\BrandController;
 
 Route::middleware(['auth:sanctum', 'role:administrador'])->prefix('admin')->group(function () {
     
@@ -35,4 +36,9 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->prefix('admin')->grou
     Route::put('/client/{client}', [ClientController::class, 'update']);
     Route::post('/client/activate/{client}', [ClientController::class, 'activate']);
 
+    Route::get('/brands', [BrandController::class, 'index']);
+    Route::post('/brand', [BrandController::class, 'store']);
+    Route::get('/brand/show/{brand}', [BrandController::class, 'show']);
+    Route::put('/brand/{brand}', [BrandController::class, 'update']);
+    Route::post('/brand/activate/{brand}', [BrandController::class, 'activate']);
 });

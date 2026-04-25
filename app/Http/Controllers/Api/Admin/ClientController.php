@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -60,12 +60,18 @@ class ClientController extends Controller
     public function show(Client $client)
     {
         return $this->successResponse(
-            'Cliente encontrado.', 
-            new ShowClientResource(
-                $client->load([
-                    'vehicles' => fn ($q) => $q->where('active', true)
-                ])
-            ));
+        'Cliente encontrado.',
+        new ShowClientResource(
+            $client->load([
+                'vehicles' => fn ($q) => $q
+                    ->where('active', true)
+                    ->with([
+                        'brand',
+                        'brandModel'
+                    ])
+            ])
+        )
+    );
     }
 
     public function update(UpdateClientRequest $request, Client $client)
