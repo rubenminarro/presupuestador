@@ -54,46 +54,6 @@ class StoreClientRequest extends FormRequest
                 'max:1000',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u',
             ],
-            'vehicles' => [
-                'required', 
-                'min:1', 
-                'array'
-            ],
-            'vehicles.*.brand_id' => [
-                'required', 
-                'exists:brands,id'
-            ],
-            'vehicles.*.vehicle_model_id' => [
-                'required', 
-                'exists:vehicle_models,id'
-            ],
-            'vehicles.*.no_plate' => [
-                'required', 
-                'boolean'
-            ],
-            'vehicles.*.plate' => [
-                'nullable',
-                'required_if:vehicles.*.no_plate,false,0',
-                'string', 
-                'max:20', 
-                'regex:/^[A-Z0-9-]+$/i',
-                'unique:vehicles,plate',
-            ],'vehicles.*.chassis' => [
-                'nullable',
-                'required_if:vehicles.*.no_plate,true,1',
-                'string', 
-                'max:50',
-                'unique:vehicles,chassis',
-            ],
-            'vehicles.*.color' => [
-                'nullable', 
-                'string', 
-                'max:30'
-            ],
-            'vehicles.*.notes' => [
-                'nullable', 'string', 'max:500', 
-                'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
-            ],
         ];
     }
 
@@ -138,79 +98,6 @@ class StoreClientRequest extends FormRequest
                 'max'    => 'Las notas no deben tener más de 1000 caracteres.',
                 'regex'  => 'Las notas solo pueden contener letras, números, espacios y los siguientes caracteres: . , ; : ( ) - # @ ! ?',
             ],
-            'vehicles' => [
-                'required' => 'Debe registrar al menos un vehículo para crear el cliente.',
-                'min'      => 'Debe registrar al menos un vehículo para crear el cliente.',
-                'array'    => 'Los vehículos deben ser un arreglo.',
-            ],
-            'vehicles.*.brand_id' => [
-                'required' => 'La marca es obligatoria.',
-                'exists' => 'La marca seleccionada no existe.'
-            ],
-            'vehicles.*.vehicle_model_id' => [
-                'required' => 'El modelo es obligatorio.',
-                'exists' => 'El modelo seleccionado no existe.'
-            ], 
-            'vehicles.*.no_plate' => [
-                'required' => 'Debe indicar si el vehículo tiene chapa.',
-                'boolean' => 'El campo sin chapa debe ser verdadero o falso.'
-            ],
-            'vehicles.*.plate' => [
-                'required_if' => 'La matrícula es obligatoria si el vehículo tiene chapa.',
-                'string' => 'La matrícula debe ser una cadena de texto.',
-                'max' => 'La matrícula no debe tener más de 20 caracteres.',
-                'regex' => 'La matrícula solo puede contener letras, números y guiones.',
-                'unique' => 'Esta matrícula ya está registrada.',
-            ],
-            'vehicles.*.chassis' => [
-                'required_if' => 'El chasis es obligatorio si el vehículo no tiene chapa.',
-                'string' => 'El número de chasis debe ser una cadena de texto.',
-                'max' => 'El número de chasis no debe tener más de 50 caracteres.',
-                'unique' => 'Este número de chasis ya está registrado.',
-            ],
-            'vehicles.*.color' => [
-                'string' => 'El color debe ser una cadena de texto.',
-                'max' => 'El color no debe tener más de 30 caracteres.',
-            ],
-            'vehicles.*.notes' => [
-                'string' => 'Las notas del vehículo deben ser una cadena de texto.',
-                'max' => 'Las notas del vehículo no deben tener más de 500 caracteres.',
-                'regex' => 'Las notas del vehículo solo pueden contener letras, números, espacios y los siguientes caracteres: . , ; : ( ) - # @ ! ?',
-            ],
         ];
-    }
-
-    protected function prepareForValidation()
-    {
-        if ($this->vehicles && is_array($this->vehicles)) {
-            $this->merge([
-                'vehicles' => collect($this->vehicles)->map(function ($v) {
-                    $noPlate = $v['no_plate'] ?? false;
-                    return array_merge($v, [
-                        'plate'   => (!$noPlate && !empty($v['plate'])) ? strtoupper(trim($v['plate'])) : null,
-                        'chassis' => (!empty($v['chassis'])) ? strtoupper(trim($v['chassis'])) : null,
-                    ]);
-                })->toArray()
-            ]);
-        }
-    }
-
-    public function withValidator($validator)
-    {
-        $validator->after(function ($validator) {
-            if (!$this->vehicles) return;
-
-            $vehicles = collect($this->vehicles);
-
-            $plates = $vehicles->pluck('plate')->filter();
-            if ($plates->duplicates()->isNotEmpty()) {
-                $validator->errors()->add('vehicles', 'No se permiten matrículas duplicadas en la lista.');
-            }
-
-            $chassis = $vehicles->pluck('chassis')->filter();
-            if ($chassis->duplicates()->isNotEmpty()) {
-                $validator->errors()->add('vehicles', 'No se permiten números de chasis duplicados en la lista.');
-            }
-        });
     }
 }

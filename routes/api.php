@@ -29,7 +29,7 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->prefix('admin')->grou
     Route::delete('/role/{role}', [RoleController::class, 'destroy']);
     Route::get('/role/permissions', [RoleController::class, 'permissions']);
     
-    Route::post('/clients', [ClientController::class, 'index']);
+    Route::get('/clients', [ClientController::class, 'index']);
     Route::post('/client', [ClientController::class, 'store']);
     Route::get('/client/show/{client}', [ClientController::class, 'show']);
     Route::put('/client/{client}', [ClientController::class, 'update']);

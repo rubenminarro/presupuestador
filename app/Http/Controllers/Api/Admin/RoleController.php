@@ -26,11 +26,9 @@ class RoleController extends Controller
             $query->where('name', 'like', "%{$search}%");
         })->orderBy('name')->paginate(10);
 
-        $data = RolesResource::collection($roles->items());
-    
         return $this->successResponse(
             'Roles obtenidos correctamente.',
-            $data,
+            RolesResource::collection($roles->items()),
             200,
             [
                 'pagination' => [
