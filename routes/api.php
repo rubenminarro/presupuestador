@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Admin\PermissionController;
 use App\Http\Controllers\Api\Admin\RoleController;
 use App\Http\Controllers\Api\Admin\ClientController;
 use App\Http\Controllers\Api\Admin\BrandController;
+use App\Http\Controllers\Api\Admin\BrandModelController;
 
 Route::middleware(['auth:sanctum', 'role:administrador'])->prefix('admin')->group(function () {
     
@@ -37,8 +38,14 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->prefix('admin')->grou
     Route::post('/client/activate/{client}', [ClientController::class, 'activate']);
 
     Route::get('/brands', [BrandController::class, 'index']);
-    Route::post('/brand', [BrandController::class, 'store']);
-    Route::get('/brand/show/{brand}', [BrandController::class, 'show']);
+    Route::post('/brands', [BrandController::class, 'store']);
+    Route::get('/brand/{brand}', [BrandController::class, 'show']);
     Route::put('/brand/{brand}', [BrandController::class, 'update']);
     Route::post('/brand/activate/{brand}', [BrandController::class, 'activate']);
+
+    Route::get('/brand-models', [BrandModelController::class, 'index']);
+    Route::post('/brand-models', [BrandModelController::class, 'store']);
+    Route::get('/brand-model/{brandModel}', [BrandModelController::class, 'show']);
+    Route::put('/brand-model/{brandModel}', [BrandModelController::class, 'update']);
+    Route::post('/brand-model/activate/{brandModel}', [BrandModelController::class, 'activate']);
 });
