@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Client extends Model
 {
@@ -16,8 +17,17 @@ class Client extends Model
         'active',
     ];
 
-    public function vehicles()
+    protected $casts = [
+        'active' => 'boolean',
+    ];
+
+    public function vehicles(): HasMany
     {
         return $this->hasMany(Vehicle::class);
+    }
+
+    public function receptions(): HasMany
+    {
+        return $this->hasMany(Reception::class);
     }
 }

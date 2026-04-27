@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Vehicle extends Model
 {
@@ -30,18 +32,23 @@ class Vehicle extends Model
         'mileage' => 'integer',
     ];
 
-    public function client()
+    public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
     }
 
-    public function brand()
+    public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
     }
 
-     public function vehicleModel()
+    public function vehicleModel(): BelongsTo
     {
         return $this->belongsTo(VehicleModel::class);
+    }
+
+    public function receptions(): HasMany
+    {
+        return $this->hasMany(Reception::class);
     }
 }

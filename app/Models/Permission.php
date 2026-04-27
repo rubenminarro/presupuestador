@@ -14,6 +14,10 @@ class Permission extends SpatiePermission
         'active',
     ];
 
+    protected $casts = [
+        'active' => 'boolean',
+    ];
+
     /**
      * Scope para filtrar solo permisos activos
      */

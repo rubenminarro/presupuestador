@@ -14,6 +14,10 @@ class Role extends SpatiePermission
         'active',
     ];
 
+    protected $casts = [
+        'active' => 'boolean',
+    ];
+
     public function canBeDeleted(): bool
     {   
         if ($this->users()->count() > 0) {
