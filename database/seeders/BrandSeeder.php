@@ -23,7 +23,6 @@ class BrandSeeder extends Seeder
 
         $data = array_map(fn($brand) => [
             'name' => $brand,
-            'category' => 'Automotriz',
             'created_at' => now(),
             'updated_at' => now(),
         ], $brands);

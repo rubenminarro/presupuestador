@@ -13,9 +13,21 @@ class Vehicle extends Model
         'chassis',
         'plate',
         'no_plate',
+        'year',
         'color',
+        'engine_number',
+        'mileage',
+        'fuel_type',
+        'transmission',
         'notes',
         'active',
+    ];
+
+    protected $casts = [
+        'no_plate' => 'boolean',
+        'active' => 'boolean',
+        'year' => 'integer',
+        'mileage' => 'integer',
     ];
 
     public function client()

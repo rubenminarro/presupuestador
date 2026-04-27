@@ -19,7 +19,12 @@ return new class extends Migration
             $table->string('chassis', 50)->nullable()->unique();
             $table->string('plate', 20)->nullable()->unique();
             $table->boolean('no_plate')->default(false);
+            $table->year('year')->nullable();
             $table->string('color', 30)->nullable();
+            $table->string('engine_number')->nullable();
+            $table->integer('mileage')->nullable();
+            $table->string('fuel_type')->nullable();
+            $table->string('transmission')->nullable();
             $table->text('notes')->nullable();
             $table->boolean('active')->default(true);
             $table->timestamps();

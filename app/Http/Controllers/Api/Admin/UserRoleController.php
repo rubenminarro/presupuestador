@@ -36,11 +36,9 @@ class UserRoleController extends Controller
             ->paginate(10)
         ;
 
-        $data = UsersResource::collection($users->items());
-
         return $this->successResponse(
             'Usuarios obtenidos correctamente.',
-            $data,
+            UsersResource::collection($users->items()),
             200,
             [
                 'pagination' => [

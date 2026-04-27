@@ -10,21 +10,50 @@ class VehicleResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
+            
             'id' => $this->id,
-            'brand' => [
-                'id' => $this->brand?->id,
-                'name' => $this->brand?->name,
-            ],
-            'model' => [
-                'id' => $this->brandModel?->id,
-                'name' => $this->brandModel?->name,
-            ],
+            'chassis' => $this->chassis,
             'plate' => $this->plate,
             'no_plate' => (bool) $this->no_plate,
-            'chassis' => $this->chassis,
+            'year' => $this->year,
             'color' => $this->color,
+            'engine_number' => $this->engine_number,
+            'mileage' => $this->mileage,
+            'fuel_type' => $this->fuel_type,
+            'transmission' => $this->transmission,
             'notes' => $this->notes,
             'active' => (bool) $this->active,
+
+            'client' => $this->whenLoaded('client', function () {
+                return [
+                    'id' => $this->client->id,
+                    'first_name' => $this->client->first_name,
+                    'last_name' => $this->client->last_name,
+                    'document_number' => $this->client->document_number,
+                    'phone' => $this->client->phone,
+                    'email' => $this->client->email,
+                    'full_name' => trim(
+                        $this->client->first_name . ' ' . $this->client->last_name
+                    ),
+                ];
+            }),
+
+            'brand' => $this->whenLoaded('brand', function () {
+                return [
+                    'id' => $this->brand->id,
+                    'name' => $this->brand->name,
+                ];
+            }),
+
+            'brand_model' => $this->whenLoaded('brandModel', function () {
+                return [
+                    'id' => $this->brandModel->id,
+                    'name' => $this->brandModel->name,
+                ];
+            }),
+
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }
