@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class BrandModel extends Model
+class VehicleModel extends Model
 {
     protected $fillable = [
         'brand_id', 
@@ -19,6 +19,6 @@ class BrandModel extends Model
 
     public function vehicles()
     {
-        return $this->hasMany(Vehicle::class, 'brand_model_id');
+        return $this->hasMany(Vehicle::class);
     }
 }

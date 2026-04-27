@@ -21,7 +21,7 @@ class VehicleController extends Controller
         $vehicles = Vehicle::with([
             'client',
             'brand',
-            'brandModel',
+            'vehicleModel',
         ])->when($search, function ($query) use ($search) {
                 $query->where('plate', 'like', "%{$search}%")
                     ->orWhere('chassis', 'like', "%{$search}%")
@@ -34,7 +34,7 @@ class VehicleController extends Controller
                     ->orWhereHas('brand', function ($q) use ($search) {
                         $q->where('name', 'like', "%{$search}%");
                     })
-                    ->orWhereHas('brandModel', function ($q) use ($search) {
+                    ->orWhereHas('vehicleModel', function ($q) use ($search) {
                         $q->where('name', 'like', "%{$search}%");
                     });
         })->latest()->paginate(10);
@@ -61,7 +61,7 @@ class VehicleController extends Controller
         $vehicle->load([
             'client',
             'brand',
-            'brandModel',
+            'vehicleModel',
         ]);
 
         return $this->successResponse(
@@ -76,7 +76,7 @@ class VehicleController extends Controller
         $vehicle->load([
             'client',
             'brand',
-            'brandModel',
+            'vehicleModel',
         ]);
 
         return $this->successResponse(
@@ -93,7 +93,7 @@ class VehicleController extends Controller
         $vehicle->load([
             'client',
             'brand',
-            'brandModel',
+            'vehicleModel',
         ]);
 
         return $this->successResponse(
@@ -125,7 +125,7 @@ class VehicleController extends Controller
         $vehicle = Vehicle::with([
                 'client',
                 'brand',
-                'brandModel',
+                'vehicleModel',
             ])
             ->where('plate', $plate)
             ->where('active', true)

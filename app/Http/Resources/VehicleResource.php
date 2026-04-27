@@ -45,10 +45,10 @@ class VehicleResource extends JsonResource
                 ];
             }),
 
-            'brand_model' => $this->whenLoaded('brandModel', function () {
+            'vehicle_model' => $this->whenLoaded('vehicleModel', function () {
                 return [
-                    'id' => $this->brandModel->id,
-                    'name' => $this->brandModel->name,
+                    'id' => $this->vehicleModel->id,
+                    'name' => $this->vehicleModel->name,
                 ];
             }),
 

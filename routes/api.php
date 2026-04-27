@@ -12,29 +12,29 @@ use App\Http\Controllers\Api\Admin\VehicleController;
 Route::middleware(['auth:sanctum', 'role:administrador'])->prefix('admin')->group(function () {
     
     Route::get('/users', [UserRoleController::class, 'index']);
-    Route::post('/user', [UserRoleController::class, 'store']);
-    Route::get('/user/show/{user}', [UserRoleController::class, 'show']);
+    Route::post('/users', [UserRoleController::class, 'store']);
+    Route::get('/user/{user}', [UserRoleController::class, 'show']);
     Route::put('/user/{user}', [UserRoleController::class, 'update']);
     Route::post('/user/activate/{user}', [UserRoleController::class, 'activate']);
 
-    Route::get('permissions', [PermissionController::class, 'index']);
-    Route::post('permission', [PermissionController::class, 'store']);
-    Route::get('permission/show/{permission}', [PermissionController::class, 'show']);
-    Route::put('permission/{permission}', [PermissionController::class, 'update']);
-    Route::post('permission/activate/{permission}', [PermissionController::class, 'activate']);
-    Route::delete('permission/{permission}', [PermissionController::class, 'destroy']);
+    Route::get('/permissions', [PermissionController::class, 'index']);
+    Route::post('/permissions', [PermissionController::class, 'store']);
+    Route::get('/permission/{permission}', [PermissionController::class, 'show']);
+    Route::put('/permission/{permission}', [PermissionController::class, 'update']);
+    Route::post('/permission/activate/{permission}', [PermissionController::class, 'activate']);
+    Route::delete('/permission/{permission}', [PermissionController::class, 'destroy']);
 
     Route::get('/roles', [RoleController::class, 'index']);
-    Route::post('/role', [RoleController::class, 'store']);
-    Route::get('/role/show/{role}', [RoleController::class, 'show']);
+    Route::post('/roles', [RoleController::class, 'store']);
+    Route::get('/role/permissions', [RoleController::class, 'permissions']);
+    Route::get('/role/{role}', [RoleController::class, 'show']);
     Route::put('/role/{role}', [RoleController::class, 'update']);
     Route::post('/role/activate/{role}', [RoleController::class, 'activate']);
     Route::delete('/role/{role}', [RoleController::class, 'destroy']);
-    Route::get('/role/permissions', [RoleController::class, 'permissions']);
     
     Route::get('/clients', [ClientController::class, 'index']);
-    Route::post('/client', [ClientController::class, 'store']);
-    Route::get('/client/show/{client}', [ClientController::class, 'show']);
+    Route::post('/clients', [ClientController::class, 'store']);
+    Route::get('/client/{client}', [ClientController::class, 'show']);
     Route::put('/client/{client}', [ClientController::class, 'update']);
     Route::post('/client/activate/{client}', [ClientController::class, 'activate']);
 

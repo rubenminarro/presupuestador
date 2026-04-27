@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\VehicleModel;
 
 class StoreVehicleRequest extends FormRequest
 {
@@ -31,9 +32,9 @@ class StoreVehicleRequest extends FormRequest
                 'required',
                 'exists:brands,id',
             ],
-            'brand_model_id' => [
+            'vehicle_model_id' => [
                 'required',
-                'exists:brand_models,id',
+                'exists:vehicle_models,id',
             ],
             'chassis' => [
                 'nullable',
@@ -106,7 +107,7 @@ class StoreVehicleRequest extends FormRequest
                 'required' => 'La marca es obligatoria.',
                 'exists' => 'La marca seleccionada no existe.'
             ],
-            'brand_model_id' => [
+            'vehicle_model_id' => [
                 'required' => 'El modelo es obligatorio.',
                 'exists' => 'El modelo seleccionado no existe.'
             ],
@@ -159,5 +160,25 @@ class StoreVehicleRequest extends FormRequest
                 'regex' => 'Las notas del vehículo solo pueden contener letras, números, espacios y los siguientes caracteres: . , ; : ( ) - # @ ! ?',
             ],
         ];
+    }
+
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            
+            $brandId = $this->brand_id;
+            $vehicleModelId = $this->vehicle_model_id;
+
+            $exists = VehicleModel::where('id', $vehicleModelId)
+                ->where('brand_id', $brandId)
+                ->exists();
+
+            if (!$exists) {
+                $validator->errors()->add(
+                    'vehicle_model_id',
+                    'El modelo seleccionado no pertenece a la marca indicada.'
+                );
+            }
+        });
     }
 }

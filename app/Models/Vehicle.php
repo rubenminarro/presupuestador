@@ -9,7 +9,7 @@ class Vehicle extends Model
     protected $fillable = [
         'client_id',
         'brand_id',
-        'brand_model_id',
+        'vehicle_model_id',
         'chassis',
         'plate',
         'no_plate',
@@ -40,11 +40,8 @@ class Vehicle extends Model
         return $this->belongsTo(Brand::class);
     }
 
-     public function brandModel()
+     public function vehicleModel()
     {
-        return $this->belongsTo(
-            BrandModel::class,
-            'brand_model_id'
-        );
+        return $this->belongsTo(VehicleModel::class);
     }
 }

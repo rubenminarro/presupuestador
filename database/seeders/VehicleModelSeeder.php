@@ -4,9 +4,9 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\BrandModel;
+use App\Models\VehicleModel;
 
-class BrandModelSeeder extends Seeder
+class VehicleModelSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -43,7 +43,7 @@ class BrandModelSeeder extends Seeder
 
         foreach ($modelsByBrand as $brandId => $models) {
             foreach ($models as $modelName) {
-                BrandModel::create([
+                VehicleModel::create([
                     'brand_id' => $brandId,
                     'name'     => $modelName,
                 ]);
