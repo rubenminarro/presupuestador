@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Models\Vehicle;
 use App\Enums\FuelLevel;
 use App\Enums\Status;
 
@@ -121,5 +122,29 @@ class UpdateReceptionRequest extends FormRequest
                 'in' => 'El estado seleccionado no es válido.',
             ],
         ];
+    }
+
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            
+        $clientId = $this->client_id;
+            $vehicleId = $this->vehicle_id;
+
+            if (!$clientId || !$vehicleId) {
+                return;
+            }
+
+            $vehicleBelongsToClient = Vehicle::where('id', $vehicleId)
+                ->where('client_id', $clientId)
+                ->exists();
+
+            if (!$vehicleBelongsToClient) {
+                $validator->errors()->add(
+                    'vehicle_id',
+                    'El vehículo seleccionado no pertenece al cliente indicado.'
+                );
+            }
+        });
     }
 }

@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Admin\ClientController;
 use App\Http\Controllers\Api\Admin\BrandController;
 use App\Http\Controllers\Api\Admin\BrandModelController;
 use App\Http\Controllers\Api\Admin\VehicleController;
+use App\Http\Controllers\Api\ReceptionController;
 
 Route::middleware(['auth:sanctum', 'role:administrador'])->prefix('admin')->group(function () {
     
@@ -56,5 +57,11 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->prefix('admin')->grou
     Route::put('/vehicle/{vehicle}', [VehicleController::class, 'update']);
     Route::post('/vehicle/activate/{vehicle}', [VehicleController::class, 'activate']);
     Route::get('/vehicle/by-plate/{plate}', [VehicleController::class, 'findByPlate']);
+
+    Route::get('/receptions', [ReceptionController::class, 'index']);
+    Route::post('/receptions', [ReceptionController::class, 'store']);
+    Route::get('/reception/{reception}', [ReceptionController::class, 'show']);
+    Route::patch('/reception/{reception}', [ReceptionController::class, 'update']);
+    Route::post('/reception/activate/{reception}', [ReceptionController::class, 'activate']);
 
 });
