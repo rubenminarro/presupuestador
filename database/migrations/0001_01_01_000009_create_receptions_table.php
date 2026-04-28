@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use App\Enums\Status;
+use App\Enums\FuelLevel;
 
 return new class extends Migration
 {
@@ -19,7 +20,7 @@ return new class extends Migration
             $table->date('reception_date');
             $table->date('estimated_delivery_date')->nullable();
             $table->unsignedInteger('mileage')->nullable();
-            $table->string('fuel_level', 50)->nullable();
+            $table->string('fuel_level', 50)->default(FuelLevel::EMPTY->value);
             $table->text('problem_description')->nullable();
             $table->text('observations')->nullable();
             $table->string('status')->default(Status::PENDING->value);

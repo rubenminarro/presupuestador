@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use App\Models\VehicleModel;
 
 class StoreVehicleRequest extends FormRequest
@@ -26,22 +27,25 @@ class StoreVehicleRequest extends FormRequest
         return [
             'client_id' => [
                 'required',
-                'exists:clients,id',
+                'integer',
+                Rule::exists('clients', 'id')->where('active', true),
             ],
             'brand_id' => [
                 'required',
-                'exists:brands,id',
+                'integer',
+                Rule::exists('brands', 'id'),
             ],
             'vehicle_model_id' => [
                 'required',
-                'exists:vehicle_models,id',
+                'integer',
+                Rule::exists('vehicle_models', 'id'),
             ],
             'chassis' => [
                 'nullable',
                 'required_if:no_plate,true,1',
                 'string', 
                 'max:50',
-                'unique:vehicles,chassis',
+                Rule::unique('vehicles', 'chassis'),
             ],
             'plate' => [
                 'nullable',
@@ -49,7 +53,7 @@ class StoreVehicleRequest extends FormRequest
                 'string', 
                 'max:20', 
                 'regex:/^[A-Z0-9-]+$/i',
-                'unique:vehicles,plate',
+                Rule::unique('vehicles', 'plate'),
             ],
             'no_plate' => [
                 'required',
@@ -60,7 +64,7 @@ class StoreVehicleRequest extends FormRequest
                 'integer',
                 'digits:4',
                 'min:1900',
-                'max:' . date('Y'),
+                'max:'.date('Y'),
             ],
             'color' => [
                 'nullable',
@@ -101,14 +105,17 @@ class StoreVehicleRequest extends FormRequest
         return [
             'client_id' => [
                 'required' => 'El cliente es obligatorio.',
+                'integer' => 'El ID del cliente debe ser un número entero.',
                 'exists' => 'El cliente seleccionado no existe.'
             ],
             'brand_id' => [
                 'required' => 'La marca es obligatoria.',
+                'integer' => 'El ID de la marca debe ser un número entero.',
                 'exists' => 'La marca seleccionada no existe.'
             ],
             'vehicle_model_id' => [
                 'required' => 'El modelo es obligatorio.',
+                'integer' => 'El ID del modelo debe ser un número entero.',
                 'exists' => 'El modelo seleccionado no existe.'
             ],
             'chassis' => [
