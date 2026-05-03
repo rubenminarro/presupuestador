@@ -32,7 +32,7 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('users')
                 ->nullOnDelete();
-             $table->boolean('active')->default(true);
+            $table->boolean('active')->default(true);
             $table->timestamps();
         });
     }

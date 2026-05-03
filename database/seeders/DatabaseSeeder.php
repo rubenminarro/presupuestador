@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             VehicleModelSeeder::class,
             ClientsSeeder::class,
             VehiclesSeeder::class,
+            CheckListItemSeeder::class,
         ]);
     }
 }
