@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Reception extends Model
 {
@@ -49,9 +49,9 @@ class Reception extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
-    public function checklists(): HasMany
+    public function checkList(): HasOne
     {
-        return $this->hasMany(ReceptionChecklist::class);
+        return $this->hasOne(ReceptionCheckList::class);
     }
 
 }

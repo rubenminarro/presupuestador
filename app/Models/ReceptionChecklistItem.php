@@ -5,22 +5,22 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ReceptionChecklistItem extends Model
+class ReceptionCheckListItem extends Model
 {
     protected $fillable = [
-        'reception_checklist_id',
-        'checklist_item_id',
+        'reception_check_list_id',
+        'check_list_item_id',
         'value',
         'observation',
     ];
 
-    public function checklistItem(): BelongsTo
+    public function checkList(): BelongsTo
     {
-        return $this->belongsTo(ChecklistItem::class);
+        return $this->belongsTo(ReceptionCheckList::class, 'reception_check_list_id');
     }
 
-    public function receptionChecklist(): BelongsTo
+    public function item(): BelongsTo
     {
-        return $this->belongsTo(ReceptionChecklist::class);
+        return $this->belongsTo(CheckListItem::class, 'check_list_item_id');
     }
 }

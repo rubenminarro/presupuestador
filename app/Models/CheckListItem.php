@@ -18,8 +18,8 @@ class CheckListItem extends Model
         'active' => 'boolean',
     ];
 
-    /*public function receptionItems(): HasMany
+    public function receptionItems(): HasMany
     {
-        return $this->hasMany(ReceptionChecklistItem::class);
-    }*/
+        return $this->hasMany(ReceptionCheckListItem::class);
+    }
 }

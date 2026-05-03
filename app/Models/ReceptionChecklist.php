@@ -6,13 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class ReceptionChecklist extends Model
+class ReceptionCheckList extends Model
 {
     protected $fillable = [
-        'reception_id',
-        'item',
-        'status',
-        'notes',
+        'reception_id'
     ];
 
     public function reception(): BelongsTo
@@ -22,6 +19,6 @@ class ReceptionChecklist extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(ReceptionChecklistItem::class);
+        return $this->hasMany(ReceptionCheckListItem::class);
     }
 }
