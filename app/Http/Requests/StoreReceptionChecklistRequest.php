@@ -6,7 +6,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreReceptionChecklistRequest extends FormRequest
+class StoreReceptionCheckListRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,31 +24,30 @@ class StoreReceptionChecklistRequest extends FormRequest
     public function rules(): array
     {
         return [
-            
             'reception_id' => [
                 'required',
                 'integer',
                 Rule::exists('receptions', 'id')
                     ->where('active', true),
+                Rule::unique('reception_check_lists', 'reception_id'),
             ],
-            'item' => [
+            'items' => [
                 'required',
-                'string',
-                'min:3',
-                'max:150',
+                'array',
+                'min:1',
             ],
-            'status' => [
-                'required',
-                Rule::in([
-                    'good',
-                    'damaged',
-                    'missing',
-                    'observed',
-                ]),
-            ],'notes' => [
-                'nullable',
-                'string',
-                'max:2000',
+            'items.*.check_list_item_id' => [
+                'required', 
+                Rule::exists('check_list_items', 'id')
+            ],
+            'items.*.value' => [
+                'nullable', 
+                'string'
+            ],
+            'items.*.observation' => [
+                'nullable', 
+                'string', 
+                'max:500',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u',
             ],
         ];
@@ -61,21 +60,20 @@ class StoreReceptionChecklistRequest extends FormRequest
                 'required' => 'Debe indicar la recepción.',
                 'integer' => 'El ID de la recepción debe ser un número entero.',
                 'exists' => 'La recepción seleccionada no es válida o no está activa.',
+                'unique' => 'Ya existe un checklist para esta recepción.',
             ],
-            'item' => [
-                'required' => 'Debe indicar el ítem inspeccionado.',
-                'string' => 'El ítem debe ser una cadena de texto.',
-                'min' => 'El ítem debe tener al menos :min caracteres.',
-                'max' => 'El ítem no puede exceder los :max caracteres.',
+            'items' => [
+                'required' => 'Debe indicar los ítems inspeccionados.',
+                'array' => 'Los ítems deben ser un arreglo de objetos.',
+                'min' => 'Debe haber al menos :min ítems inspeccionados.',
             ],
-            'status' => [
-                'required' => 'Debe indicar el estado del ítem.',
-                'in' => 'El estado seleccionado no es válido.',
+            'items.*.value' => [
+                'string' => 'El valor del ítem debe ser una cadena de texto.',
             ],
-            'notes' => [
-                'string' => 'Las notas deben ser una cadena de texto.',
-                'max' => 'Las notas no pueden exceder los :max caracteres.',
-                'regex' => 'Las notas solo pueden contener letras, números y los siguientes caracteres especiales: . , ; : ( ) - # @ ! ?',
+            'items.*.observation' => [
+                'string' => 'La observación del ítem debe ser una cadena de texto.',
+                'max' => 'La observación del ítem no debe exceder los :max caracteres.',
+                'regex' => 'La observación del ítem contiene caracteres no permitidos.',
             ],
         ];
     }

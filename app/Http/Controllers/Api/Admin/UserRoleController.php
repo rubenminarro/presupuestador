@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreUserRequest;
-use App\Http\Requests\UserUpdateRequest;
+use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use App\Traits\ApiResponse;
 use App\Http\Resources\ShowUserResource;
@@ -69,7 +69,7 @@ class UserRoleController extends Controller
         
     }
 
-    public function update(UserUpdateRequest $request, User $user)
+    public function update(UpdateUserRequest $request, User $user)
     {   
         
         $data = $request->validated();

@@ -24,32 +24,24 @@ class UpdateReceptionChecklistRequest extends FormRequest
     public function rules(): array
     {
         return [
-            
-            'reception_id' => [
-                'sometimes',
-                'integer',
-                Rule::exists('receptions', 'id')
-                    ->where('active', true),
+            'items' => [
+                'required',
+                'array',
+                'min:1',
             ],
-            'item' => [
-                'sometimes',
-                'string',
-                'min:3',
-                'max:150',
+            'items.*.check_list_item_id' => [
+                'required', 
+                Rule::exists('check_list_items', 'id')
             ],
-            'status' => [
-                'sometimes',
-                Rule::in([
-                    'good',
-                    'damaged',
-                    'missing',
-                    'observed',
-                ]),
+            'items.*.value' => [
+                'nullable', 
+                'string'
             ],
-            'notes' => [
-                'nullable',
-                'string',
-                'max:2000',
+            'items.*.observation' => [
+                'nullable', 
+                'string', 
+                'max:500',
+                'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u',
             ],
         ];
     }
@@ -57,21 +49,24 @@ class UpdateReceptionChecklistRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'reception_id' => [
-                'integer' => 'El ID de la recepción debe ser un número entero.',
-                'exists' => 'La recepción seleccionada no es válida o no está activa.',
-            ],
             'item' => [
-                'string' => 'El ítem debe ser una cadena de texto.',
+                'required' => 'Debe indicar el ítem inspeccionado.',
+                'array' => 'El ítem debe ser un arreglo de objetos.',
                 'min' => 'El ítem debe tener al menos :min caracteres.',
-                'max' => 'El ítem no puede exceder los :max caracteres.',
             ],
-            'status' => [
-                'in' => 'El estado seleccionado no es válido.',
+            'items.*.check_list_item_id' => [
+                'required' => 'Debe indicar el ID del ítem de checklist.',
+                'exists' => 'El ID del ítem de checklist no es válido.',
             ],
-            'notes' => [
-                'string' => 'Las notas deben ser una cadena de texto.',
-                'max' => 'Las notas no pueden exceder los :max caracteres.',
+             'items.*.value' => [
+                'string' => 'El valor del ítem debe ser una cadena de texto.',
+                'min' => 'El valor del ítem debe tener al menos :min caracteres.',
+                'max' => 'El valor del ítem no debe exceder los :max caracteres.',
+            ],
+            'items.*.observation' => [
+                'string' => 'La observación del ítem debe ser una cadena de texto.',
+                'max' => 'La observación del ítem no debe exceder los :max caracteres.',
+                'regex' => 'La observación del ítem contiene caracteres no permitidos.',
             ],
         ];
     }

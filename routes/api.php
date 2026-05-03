@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Admin\BrandModelController;
 use App\Http\Controllers\Api\Admin\VehicleController;
 use App\Http\Controllers\Api\ReceptionController;
 use App\Http\Controllers\Api\CheckListController;
+use App\Http\Controllers\Api\ReceptionCheckListController;  
 
 Route::middleware(['auth:sanctum', 'role:administrador'])->prefix('admin')->group(function () {
     
@@ -71,4 +72,8 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->prefix('admin')->grou
     Route::patch('/checklist/{checkListItem}', [CheckListController::class, 'update']);
     Route::post('/checklist/activate/{checkListItem}', [CheckListController::class, 'activate']);
 
+    Route::post('/reception-check-lists', [ReceptionCheckListController::class, 'store']);
+    Route::get('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'show']);
+    Route::patch('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'update']);
+    
 });

@@ -19,7 +19,7 @@ class ReceptionCheckListItem extends Model
         return $this->belongsTo(ReceptionCheckList::class, 'reception_check_list_id');
     }
 
-    public function item(): BelongsTo
+    public function checkListItem(): BelongsTo
     {
         return $this->belongsTo(CheckListItem::class, 'check_list_item_id');
     }
