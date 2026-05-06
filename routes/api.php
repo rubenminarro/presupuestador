@@ -72,7 +72,6 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->prefix('admin')->grou
     Route::patch('/checklist/{checkListItem}', [CheckListController::class, 'update']);
     Route::post('/checklist/activate/{checkListItem}', [CheckListController::class, 'activate']);
 
-    Route::post('/reception-check-lists', [ReceptionCheckListController::class, 'store']);
     Route::get('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'show']);
     Route::patch('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'update']);
     

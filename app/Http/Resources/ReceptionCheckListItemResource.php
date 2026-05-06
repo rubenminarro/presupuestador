@@ -17,6 +17,7 @@ class ReceptionCheckListItemResource extends JsonResource
             'check_list_item_id' => $this->check_list_item_id,
             'name' => $this->checkListItem->name,
             'type' => $this->checkListItem->type,
+            'required' => $this->checkListItem->required,
             'value' => $this->value,
             'observation' => $this->observation,
         ];

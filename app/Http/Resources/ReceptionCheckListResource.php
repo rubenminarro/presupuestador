@@ -17,6 +17,7 @@ class ReceptionCheckListResource extends JsonResource
         return [
             'id' => $this->id,
             'reception_id' => $this->reception_id,
+            'status' => $this->status,
             'items' => ReceptionCheckListItemResource::collection(
                 $this->whenLoaded('items')
             ),

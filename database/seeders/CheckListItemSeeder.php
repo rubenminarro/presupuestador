@@ -12,84 +12,67 @@ class CheckListItemSeeder extends Seeder
         $items = [
 
             /*
-            |--------------------------------------------------------------------------
-            | CARROCERÍA Y ESTÉTICA
-            |--------------------------------------------------------------------------
+            |------------------------------------------------------------------
+            | IDENTIFICACIÓN Y LEGAL (CRÍTICOS)
+            |------------------------------------------------------------------
             */
-            ['name' => 'Rayones visibles en chapería', 'type' => 'boolean'],
-            ['name' => 'Abolladuras en paragolpes delantero', 'type' => 'boolean'],
-            ['name' => 'Abolladuras en paragolpes trasero', 'type' => 'boolean'],
-            ['name' => 'Estado de pintura general', 'type' => 'text'],
-            ['name' => 'Estado de llantas (golpes o deformaciones)', 'type' => 'boolean'],
-            ['name' => 'Estado de espejos retrovisores', 'type' => 'boolean'],
+            ['name' => 'Cédula verde / documento del vehículo', 'type' => 'boolean', 'required' => true],
+            ['name' => 'Seguro vigente', 'type' => 'boolean', 'required' => true],
 
             /*
-            |--------------------------------------------------------------------------
-            | MECÁNICA Y FLUIDOS
-            |--------------------------------------------------------------------------
+            |------------------------------------------------------------------
+            | ESTADO GENERAL EXTERIOR
+            |------------------------------------------------------------------
             */
-            ['name' => 'Nivel de combustible', 'type' => 'number'],
-            ['name' => 'Nivel de aceite motor', 'type' => 'boolean'],
-            ['name' => 'Nivel de líquido refrigerante', 'type' => 'boolean'],
-            ['name' => 'Nivel de líquido de frenos', 'type' => 'boolean'],
-            ['name' => 'Funcionamiento del motor en frío', 'type' => 'boolean'],
-            ['name' => 'Temperatura del motor estable', 'type' => 'boolean'],
-            ['name' => 'Estado de batería (arranque)', 'type' => 'boolean'],
-            ['name' => 'Estado de correas visibles', 'type' => 'boolean'],
+            ['name' => 'Rayones o daños visibles en carrocería', 'type' => 'boolean', 'required' => true],
+            ['name' => 'Estado general de pintura', 'type' => 'text', 'required' => false],
 
             /*
-            |--------------------------------------------------------------------------
-            | NEUMÁTICOS Y SUSPENSIÓN
-            |--------------------------------------------------------------------------
+            |------------------------------------------------------------------
+            | MECÁNICA BÁSICA
+            |------------------------------------------------------------------
             */
-            ['name' => 'Presión de neumáticos', 'type' => 'number'],
-            ['name' => 'Desgaste de neumáticos', 'type' => 'text'],
-            ['name' => 'Estado de rueda de auxilio', 'type' => 'boolean'],
-            ['name' => 'Estado de suspensión (ruidos o golpes)', 'type' => 'boolean'],
+            ['name' => 'Nivel de combustible', 'type' => 'number', 'required' => true],
+            ['name' => 'Motor enciende correctamente', 'type' => 'boolean', 'required' => true],
+            ['name' => 'Ruidos extraños en motor', 'type' => 'boolean', 'required' => false],
 
             /*
-            |--------------------------------------------------------------------------
-            | SISTEMA ELÉCTRICO Y LUCES
-            |--------------------------------------------------------------------------
+            |------------------------------------------------------------------
+            | NEUMÁTICOS
+            |------------------------------------------------------------------
             */
-            ['name' => 'Luces bajas', 'type' => 'boolean'],
-            ['name' => 'Luces altas', 'type' => 'boolean'],
-            ['name' => 'Luces de freno', 'type' => 'boolean'],
-            ['name' => 'Señaleros', 'type' => 'boolean'],
-            ['name' => 'Balizas', 'type' => 'boolean'],
-            ['name' => 'Funcionamiento de tablero', 'type' => 'boolean'],
-            ['name' => 'Estado de batería terminales', 'type' => 'boolean'],
+            ['name' => 'Estado de neumáticos', 'type' => 'text', 'required' => true],
+            ['name' => 'Rueda de auxilio disponible', 'type' => 'boolean', 'required' => false],
 
             /*
-            |--------------------------------------------------------------------------
-            | INTERIOR DEL VEHÍCULO
-            |--------------------------------------------------------------------------
+            |------------------------------------------------------------------
+            | SISTEMA ELÉCTRICO
+            |------------------------------------------------------------------
             */
-            ['name' => 'Estado de asientos', 'type' => 'text'],
-            ['name' => 'Limpieza interior', 'type' => 'boolean'],
-            ['name' => 'Funcionamiento de aire acondicionado', 'type' => 'boolean'],
-            ['name' => 'Funcionamiento de calefacción', 'type' => 'boolean'],
-            ['name' => 'Estado de cinturones de seguridad', 'type' => 'boolean'],
+            ['name' => 'Luces principales funcionan', 'type' => 'boolean', 'required' => true],
+            ['name' => 'Estado de batería', 'type' => 'boolean', 'required' => false],
 
             /*
-            |--------------------------------------------------------------------------
-            | DOCUMENTACIÓN Y SEGURIDAD
-            |--------------------------------------------------------------------------
+            |------------------------------------------------------------------
+            | INTERIOR
+            |------------------------------------------------------------------
             */
-            ['name' => 'Cédula verde / título', 'type' => 'boolean'],
-            ['name' => 'Habilitación municipal vigente', 'type' => 'boolean'],
-            ['name' => 'Seguro vigente', 'type' => 'boolean'],
-            ['name' => 'Extintor vigente', 'type' => 'boolean'],
-            ['name' => 'Botiquín de primeros auxilios', 'type' => 'boolean'],
-            ['name' => 'Balizas reglamentarias', 'type' => 'boolean'],
+            ['name' => 'Estado interior general', 'type' => 'text', 'required' => false],
+            ['name' => 'Aire acondicionado funciona', 'type' => 'boolean', 'required' => false],
 
             /*
-            |--------------------------------------------------------------------------
+            |------------------------------------------------------------------
+            | SEGURIDAD
+            |------------------------------------------------------------------
+            */
+            ['name' => 'Frenos responden correctamente', 'type' => 'boolean', 'required' => true],
+
+            /*
+            |------------------------------------------------------------------
             | OBSERVACIONES
-            |--------------------------------------------------------------------------
+            |------------------------------------------------------------------
             */
-            ['name' => 'Observaciones generales del vehículo', 'type' => 'text'],
-            ['name' => 'Daños previos reportados por el cliente', 'type' => 'text'],
+            ['name' => 'Observaciones generales', 'type' => 'text', 'required' => false],
         ];
 
         foreach ($items as $item) {

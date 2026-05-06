@@ -61,6 +61,8 @@ class ShowReceptionResource extends JsonResource
                 ];
             }),
 
+            'checklist' => new ReceptionCheckListResource($this->whenLoaded('checkList')),
+
             'created_at' => optional($this->created_at)->format('Y-m-d H:i:s'),
             'updated_at' => optional($this->updated_at)->format('Y-m-d H:i:s'),
         ];

@@ -9,7 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ReceptionCheckList extends Model
 {
     protected $fillable = [
-        'reception_id'
+        'reception_id',
+        'status'
     ];
 
     public function reception(): BelongsTo

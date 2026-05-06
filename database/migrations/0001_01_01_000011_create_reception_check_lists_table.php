@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('reception_check_lists', function (Blueprint $table) {
             $table->id();
             $table->foreignId('reception_id')->constrained()->cascadeOnDelete();
+            $table->string('status')->default('pending');
             $table->timestamps();
         });
     }
