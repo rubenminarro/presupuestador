@@ -6,7 +6,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateBrandModelRequest extends FormRequest
+class UpdateVehicleModelRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,7 +24,7 @@ class UpdateBrandModelRequest extends FormRequest
     public function rules(): array
     {
 
-        $idbrandModel = $this->route('brandModel') ? $this->route('brandModel')->id : null;
+        $idVehicleModel = $this->route('vehicleModel') ? $this->route('vehicleModel')->id : null;
 
         return [
             'name' => [
@@ -33,7 +33,7 @@ class UpdateBrandModelRequest extends FormRequest
                 'max:100',
                 'string', 
                 'regex:/^[\pL\pN\s-]+$/u',
-                Rule::unique('brand_models', 'name')->ignore($idbrandModel),
+                Rule::unique('vehicle_models', 'name')->ignore($idVehicleModel),
             ],
             'brand_id' => [
                 'required',
@@ -47,12 +47,12 @@ class UpdateBrandModelRequest extends FormRequest
     {
         return [
             'name' => [
-                'required' => 'El nombre de la marca es obligatorio.',
-                'string'   => 'El nombre de la marca debe tener el formato correcto.',
-                'min'      => 'El nombre de la marca debe tener al menos 2 caracteres.',
-                'max'      => 'El nombre de la marca no debe tener más de 100 caracteres.',
-                'regex'    => 'El nombre de la marca solo puede contener letras, números y guiones.',
-                'unique'   => 'Esta marca ya existe en el sistema.',
+                'required' => 'El nombre del modelo de vehículo es obligatorio.',
+                'string'   => 'El nombre del modelo de vehículo debe tener el formato correcto.',
+                'min'      => 'El nombre del modelo de vehículo debe tener al menos 2 caracteres.',
+                'max'      => 'El nombre del modelo de vehículo no debe tener más de 100 caracteres.',
+                'regex'    => 'El nombre del modelo de vehículo solo puede contener letras, números y guiones.',
+                'unique'   => 'Este modelo de vehículo ya existe en el sistema.',
             ],
             'brand_id' => [
                 'required' => 'El ID de la marca es obligatorio.',

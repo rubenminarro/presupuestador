@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Admin;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -67,7 +67,7 @@ class ClientController extends Controller
                     ->where('active', true)
                     ->with([
                         'brand',
-                        'brandModel'
+                        'vehicleModel'
                     ])
             ])
         )

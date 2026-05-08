@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Admin;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -55,7 +55,7 @@ class BrandController extends Controller
     {
         return $this->successResponse(
             'Marca encontrada.', 
-            new ShowBrandResource($brand->with('brandModels')->find($brand->id))
+            new ShowBrandResource($brand->with('vehicleModels')->find($brand->id))
         );
     }
 

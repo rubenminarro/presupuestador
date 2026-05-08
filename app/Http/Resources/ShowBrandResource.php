@@ -13,8 +13,8 @@ class ShowBrandResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'active' => $this->active,
-            'brand_models' => BrandModelResource::collection(
-                $this->whenLoaded('brandModels')
+            'vehicle_models' => VehicleModelResource::collection(
+                $this->whenLoaded('vehicleModels')
             ),
         ];
     }
