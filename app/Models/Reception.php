@@ -54,4 +54,9 @@ class Reception extends Model
         return $this->hasOne(ReceptionCheckList::class);
     }
 
+    public function photos()
+    {
+        return $this->hasMany(ReceptionPhoto::class);
+    }
+
 }

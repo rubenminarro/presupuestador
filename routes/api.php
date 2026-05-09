@@ -10,7 +10,8 @@ use App\Http\Controllers\Api\VehicleModelController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\ReceptionController;
 use App\Http\Controllers\Api\CheckListController;
-use App\Http\Controllers\Api\ReceptionCheckListController;  
+use App\Http\Controllers\Api\ReceptionCheckListController; 
+use App\Http\Controllers\Api\ReceptionPhotoController;
 
 Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     
@@ -74,5 +75,12 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
 
     Route::get('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'show']);
     Route::patch('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'update']);
-    
+
+    Route::get('/receptions/{reception}/photos', [ReceptionPhotoController::class, 'index']);
+    Route::post('/receptions/{reception}/photos', [ReceptionPhotoController::class, 'store']);
+    Route::patch('/receptions/{reception}/photos/{receptionPhoto}', [ReceptionPhotoController::class, 'update']);
+    Route::delete('/receptions/{reception}/photos/{receptionPhoto}', [ReceptionPhotoController::class, 'destroy']);
+
 });
+
+
