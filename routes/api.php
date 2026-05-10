@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\ReceptionController;
 use App\Http\Controllers\Api\CheckListController;
 use App\Http\Controllers\Api\ReceptionCheckListController; 
 use App\Http\Controllers\Api\ReceptionPhotoController;
+use App\Http\Controllers\Api\DiagnosticController;
 
 Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     
@@ -80,6 +81,12 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     Route::post('/receptions/{reception}/photos', [ReceptionPhotoController::class, 'store']);
     Route::patch('/receptions/{reception}/photos/{receptionPhoto}', [ReceptionPhotoController::class, 'update']);
     Route::delete('/receptions/{reception}/photos/{receptionPhoto}', [ReceptionPhotoController::class, 'destroy']);
+
+    Route::get('/diagnostics', [DiagnosticController::class, 'index']);
+    Route::post('/diagnostics', [DiagnosticController::class, 'store']);
+    Route::get('/diagnostic/{diagnostic}', [DiagnosticController::class, 'show']);
+    Route::patch('/diagnostic/{diagnostic}', [DiagnosticController::class, 'update']);
+    Route::delete('/diagnostic/{diagnostic}', [DiagnosticController::class, 'destroy']);
 
 });
 

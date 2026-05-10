@@ -59,4 +59,9 @@ class Reception extends Model
         return $this->hasMany(ReceptionPhoto::class);
     }
 
+    public function diagnostics()
+    {
+        return $this->hasMany(Diagnostic::class);
+    }
+
 }
