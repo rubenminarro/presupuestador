@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Enums\StatusPriority;
+use App\Enums\Priority;
 use App\Enums\Status;
 
 class StoreDiagnosticRequest extends FormRequest
@@ -54,7 +54,7 @@ class StoreDiagnosticRequest extends FormRequest
             ],
             'priority' => [
                 'nullable',
-                Rule::enum(StatusPriority::class),
+                Rule::enum(Priority::class),
             ],
             'status' => [
                 'nullable',

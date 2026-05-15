@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use App\Enums\StatusPriority;
+use App\Enums\Priority;
 use App\Enums\Status;
 
 return new class extends Migration
@@ -20,7 +20,7 @@ return new class extends Migration
             $table->text('customer_complaint')->nullable();
             $table->longText('diagnosis')->nullable();
             $table->longText('recommendation')->nullable();
-            $table->string('priority')->default(StatusPriority::MEDIUM->value);
+            $table->string('priority')->default(Priority::MEDIUM->value);
             $table->string('status')->default(Status::PENDING->value);
             $table->boolean('requires_parts')->default(false);
             $table->boolean('requires_repair')->default(false);

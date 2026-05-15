@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum StatusPriority: string
+enum Severity: string
 {
     case LOW = 'low';
     case MEDIUM = 'medium';
