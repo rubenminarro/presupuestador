@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class UploadReceptionPhotosRequest extends FormRequest
+class UploadDiagnosticItemPhotosRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -49,11 +49,11 @@ class UploadReceptionPhotosRequest extends FormRequest
                 'array' => 'El campo de fotos debe ser un arreglo.',
                 'min:1' => 'Se requiere al menos una foto.'
             ],
-            'photos.*.file' => [
-                'required' => 'Cada foto debe tener un archivo.',
-                'image' => 'Cada archivo debe ser una imagen válida.',
-                'mimes' => 'Cada imagen debe ser un archivo de tipo jpg, jpeg, png o webp.',
-                'max' => 'Cada imagen no debe superar los 5MB.',
+            'photos.*' => [
+                'file.required' => 'Cada foto debe tener un archivo.',
+                'file.image' => 'Cada archivo debe ser una imagen válida.',
+                'file.mimes' => 'Cada imagen debe ser un archivo de tipo jpg, jpeg, png o webp.',
+                'file.max' => 'Cada imagen no debe superar los 5MB.',
                 'description.string' => 'La descripción de cada foto debe ser una cadena de texto.',
             ],
         ];
