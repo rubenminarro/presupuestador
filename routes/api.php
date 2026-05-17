@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\ReceptionPhotoController;
 use App\Http\Controllers\Api\DiagnosticController;
 use App\Http\Controllers\Api\DiagnosticItemController;
 use App\Http\Controllers\Api\DiagnosticItemPhotoController;
+use App\Http\Controllers\Api\BudgetController;
 
 Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     
@@ -100,6 +101,12 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     Route::post('/diagnostic-item/{diagnosticItem}/photos', [DiagnosticItemPhotoController::class, 'store']);
     Route::patch('/diagnostic-item/{diagnosticItem}/photos/{diagnosticItemPhoto}', [DiagnosticItemPhotoController::class, 'update']);
     Route::delete('/diagnostic-item/{diagnosticItem}/photos/{diagnosticItemPhoto}', [DiagnosticItemPhotoController::class, 'destroy']);
+
+    Route::get('/budgets', [BudgetController::class, 'index']);
+    Route::post('/budgets', [BudgetController::class, 'store']);
+    Route::get('/budget/{budget}', [BudgetController::class, 'show']);
+    Route::patch('/budget/{budget}', [BudgetController::class, 'update']);
+    Route::delete('/budget/{budget}', [BudgetController::class, 'destroy']);
 
 });
 

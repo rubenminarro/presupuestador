@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 use App\Enums\Status;
 
 class UpdateBudgetRequest extends FormRequest
@@ -27,7 +27,7 @@ class UpdateBudgetRequest extends FormRequest
         return [
             'status' => [
                 'sometimes',
-                Rule::enum(Status::class)
+                new Enum(Status::class)
             ],
             'notes' => [
                 'sometimes',
@@ -43,9 +43,7 @@ class UpdateBudgetRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'status' => [
-                'enum' => 'El estado debe ser un valor válido.',
-            ],
+            'status.' . Enum::class => 'El estado debe ser un valor válido.',
             'notes' => [
                 'string' => 'Las notas deben ser una cadena de texto.',
                 'max' => 'Las notas no pueden exceder los 500 caracteres.',
