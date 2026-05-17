@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Reception extends Model
 {
@@ -54,14 +55,19 @@ class Reception extends Model
         return $this->hasOne(ReceptionCheckList::class);
     }
 
-    public function photos()
+    public function photos(): HasMany
     {
         return $this->hasMany(ReceptionPhoto::class);
     }
 
-    public function diagnostics()
+    public function diagnostics(): HasMany
     {
         return $this->hasMany(Diagnostic::class);
+    }
+
+    public function budgets(): HasMany
+    {
+        return $this->hasMany(Budget::class);
     }
 
 }

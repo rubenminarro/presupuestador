@@ -13,6 +13,9 @@ enum Status: string
     case DELIVERED = 'delivered';
     case CANCELLED = 'cancelled';
     case REJECTED = 'rejected';
+    case DRAFT = 'draft';
+    case SENT = 'sent';
+
 
     public function label(): string {
         return match($this) {
@@ -25,6 +28,8 @@ enum Status: string
             self::DELIVERED => 'Entregado',
             self::CANCELLED => 'Cancelado',
             self::REJECTED => 'Rechazado',
+            self::DRAFT => 'Borrador',
+            self::SENT => 'Enviado',
         };
     }
 }
