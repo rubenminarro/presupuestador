@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, HasRoles;
+    use HasApiTokens, HasFactory, HasRoles, SoftDeletes;
     
     protected $guard_name = 'api';
 
@@ -24,12 +24,7 @@ class User extends Authenticatable
         'email',
         'password',
         'first_name',
-        'last_name',
-        'active',
-    ];
-
-    protected $casts = [
-        'active' => 'boolean',
+        'last_name'
     ];
 
     /**

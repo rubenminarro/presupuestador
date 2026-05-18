@@ -20,8 +20,7 @@ class UserResource extends JsonResource
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
             'email' => $this->email,
-            'active'=> $this->active,
-            'roles' => $this->roles->pluck('name'), 
+            'roles' => ShowRoleResource::collection($this->roles)
         ];
     }
 }

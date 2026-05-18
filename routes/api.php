@@ -24,7 +24,7 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     Route::post('/users', [UserRoleController::class, 'store']);
     Route::get('/user/{user}', [UserRoleController::class, 'show']);
     Route::patch('/user/{user}', [UserRoleController::class, 'update']);
-    Route::post('/user/activate/{user}', [UserRoleController::class, 'activate']);
+    Route::delete('/user/{user}', [UserRoleController::class, 'destroy']);
 
     Route::get('/permissions', [PermissionController::class, 'index']);
     Route::post('/permissions', [PermissionController::class, 'store']);

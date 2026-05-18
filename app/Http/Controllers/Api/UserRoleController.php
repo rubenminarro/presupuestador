@@ -19,22 +19,50 @@ class UserRoleController extends Controller
     public function index(Request $request)
     {
         
-        $search = $request->query('search');
+        $users = User::query()
+        ->with(['roles'])
+        ->when($request->filled('search'), function ($query) use ($request) {
+            
+            $search = $request->search;
 
-        $users = User::with('roles')
-            ->when($search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('first_name', 'like', "%{$search}%")
                     ->orWhere('last_name', 'like', "%{$search}%")
                     ->orWhereHas('roles', function ($q2) use ($search) {
-                        $q2->where('name', 'like', "%{$search}%");
-                    });
-                });
-            })
-            ->paginate(10)
-        ;
+                        $q2->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                    }
+                );
+            });
+        })
+        ->when($request->filled('name'), function ($query) use ($request) {
+            $query->where('name', 'like', "%{$request->name}%");
+        })
+        ->when($request->filled('email'), function ($query) use ($request) {
+            $query->where('email', 'like', "%{$request->email}%");
+        })
+        ->when($request->filled('first_name'), function ($query) use ($request) {
+            $query->where('first_name', 'like', "%{$request->first_name}%");
+        })
+        ->when($request->filled('last_name'), function ($query) use ($request) {
+            $query->where('last_name', 'like', "%{$request->last_name}%");
+        })
+        ->when($request->filled('role_name'), function ($query) use ($request) {
+            $query->whereHas('roles', function ($q) use ($request) {
+                $q->where('name', 'like', "%{$request->role_name}%");
+            });
+        })
+        ->when($request->filled('role_description'), function ($query) use ($request) {
+            $query->whereHas('roles', function ($q) use ($request) {
+                $q->where('description', 'like', "%{$request->role_description}%");
+            });
+        })
+        ->latest()
+        ->paginate(
+            $request->per_page ?? 10
+        );
 
         return $this->successResponse(
             'Usuarios obtenidos correctamente.',
@@ -49,11 +77,17 @@ class UserRoleController extends Controller
                 ]
             ]
         );
+
     }
 
     public function show(User $user)
     {
-        return $this->successResponse('Usuario encontrado.', new ShowUserResource($user));
+        
+        return $this->successResponse(
+            'Usuario encontrado.', 
+            new ShowUserResource($user),
+            200
+        );
     }
 
     public function store(StoreUserRequest $request, User $user)
@@ -65,7 +99,11 @@ class UserRoleController extends Controller
 
         $user->assignRole($request->role);
     
-        return $this->successResponse('Usuario creado correctamente.', new ShowUserResource($user));
+        return $this->successResponse(
+            'Usuario creado correctamente.', 
+            new ShowUserResource($user),
+            201
+        );
         
     }
 
@@ -84,22 +122,23 @@ class UserRoleController extends Controller
 
         $user->syncRoles([$request->role]);
 
-        return $this->successResponse('Usuario actualizado correctamente.', new ShowUserResource($user));
+        return $this->successResponse(
+            'Usuario actualizado correctamente.',
+            new ShowUserResource($user),
+            200
+        );
 
     }
 
-    public function activate(User $user)
+    public function destroy(User $user)
     {
-        $user->update(['active' => !$user->active]);
+        $user->delete();
 
-        $data = [
-            'id' => $user->id,
-            'active' => $user->active,
-        ];
-
-        $message = $user->active ? 'Usuario activado correctamente.' : 'Usuario desactivado correctamente.';
-
-        return $this->successResponse($message, $data);
+        return $this->successResponse(
+            'Usuario eliminado correctamente.', 
+            null, 
+            200
+        );
 
     }
 
