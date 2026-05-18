@@ -5,16 +5,16 @@ use App\Models\Budget;
 
 class BudgetService
 {
-    public function calculateTotals(Budget $budget): void
+    public function recalculateBudget(Budget $budget): void
     {
-        $subtotal = $budget->items()->sum('total');
+        $subTotal = $budget->items()->sum('total');
 
-        $tax = $subtotal * 0.10;
+        $tax = $subTotal * 0.10;
 
-        $total = $subtotal + $tax;
+        $total = $subTotal + $tax;
 
         $budget->update([
-            'subtotal' => $subtotal,
+            'subtotal' => $subTotal,
             'tax' => $tax,
             'total' => $total,
         ]);
