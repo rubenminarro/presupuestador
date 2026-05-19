@@ -7,24 +7,16 @@ use Illuminate\Validation\Rule;
 
 class StorePermissionRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
-
     protected function prepareForValidation(): void
     {
         $this->merge([
             'name' => strtolower(trim($this->name)),
+            'api' => strtolower(trim($this->api)),
         ]);
     }
 
@@ -49,11 +41,18 @@ class StorePermissionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'El nombre del permiso es obligatorio.',
-            'name.unique'   => 'Este permiso ya existe en el sistema.',
-            'name.regex'    => 'El formato del permiso debe ser "recurso.accion" (ej: citas.ver).',
-            'guard_name.required' => 'Entorno de programación es obligatorio.',
-            'guard_name.in' => 'El entorno de programación seleccionado no es válido (debe ser web o api).',
+            'name' => [
+                'required' => 'El nombre del permiso es obligatorio.',
+                'string'   => 'El nombre del permiso debe ser una cadena de texto.',
+                'max'      => 'El nombre del permiso no puede exceder los 100 caracteres.',
+                'regex'    => 'El formato del permiso debe ser "recurso.accion" (ej: citas.ver).',
+                'unique'   => 'Este permiso ya existe en el sistema.',
+            ],
+            'guard_name' => [
+                 'required' => 'El entorno de programación es obligatorio.',
+                 'string'   => 'El entorno de programación debe ser una cadena de texto.',
+                 'in'       => 'El entorno de programación seleccionado no es válido (debe ser web o api).',
+            ],
         ];
     }
 }

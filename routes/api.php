@@ -30,7 +30,6 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     Route::post('/permissions', [PermissionController::class, 'store']);
     Route::get('/permission/{permission}', [PermissionController::class, 'show']);
     Route::patch('/permission/{permission}', [PermissionController::class, 'update']);
-    Route::post('/permission/activate/{permission}', [PermissionController::class, 'activate']);
     Route::delete('/permission/{permission}', [PermissionController::class, 'destroy']);
 
     Route::get('/roles', [RoleController::class, 'index']);

@@ -82,7 +82,6 @@ class UserRoleController extends Controller
 
     public function show(User $user)
     {
-        
         return $this->successResponse(
             'Usuario encontrado.', 
             new ShowUserResource($user),

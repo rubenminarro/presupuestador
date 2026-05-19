@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Requests\StorePermissionRequest;
 use App\Http\Requests\UpdatePermissionRequest;
-use App\Http\Resources\ShowPermissionResource;
 use App\Http\Resources\PermissionsResource;
 use App\Models\Permission;
 use App\Traits\ApiResponse;
@@ -19,17 +18,18 @@ class PermissionController extends Controller
     public function index(Request $request)
     {
         
-        $search = $request->query('search');
-        
-        $permissions = Permission::when($search, function ($query, $search) {
+        $permissions = Permission::when($request->filled('search'), function ($query) use ($request) {
+            $search = $request->search;
             $query->where('name', 'like', "%{$search}%");
-        })->orderBy('name')->paginate(10);
-
-        $data = PermissionsResource::collection($permissions->items());
+        })
+        ->latest()
+        ->paginate(
+            $request->per_page ?? 10
+        );
     
         return $this->successResponse(
             'Permisos obtenidos correctamente.',
-            $data,
+            PermissionsResource::collection($permissions->items()),
             200,
             [
                 'pagination' => [
@@ -49,12 +49,20 @@ class PermissionController extends Controller
 
         $permission = Permission::create($data);
     
-        return $this->successResponse('Permiso creado correctamente.', new ShowPermissionResource($permission), 201);
+        return $this->successResponse(
+            'Permiso creado correctamente.', 
+            new PermissionsResource($permission), 
+            201
+        );
     }
 
     public function show(Permission $permission)
     {
-        return $this->successResponse('Permiso encontrado.', new  ShowPermissionResource($permission));
+        return $this->successResponse(
+            'Permiso encontrado.', 
+            new  PermissionsResource($permission),
+            200
+        );
     }
 
     public function update(UpdatePermissionRequest $request, Permission $permission)
@@ -64,37 +72,22 @@ class PermissionController extends Controller
 
         $permission->update($data);
 
-        return $this->successResponse('Permiso actualizado correctamente.', new ShowPermissionResource($permission));
+        return $this->successResponse(
+            'Permiso actualizado correctamente.', 
+            new PermissionsResource($permission), 
+            200
+        );
     
     }
 
     public function destroy(Permission $permission)
     {
-        if (!$permission->canBeDeleted()) {
-
-            return $this->errorResponse('Hubo un error al eliminar el permiso.', ['name' => ['Este permiso está en uso. Desactívalo en lugar de borrarlo.']], 422);
-
-        }
-
         $permission->delete();
         
-        return $this->successResponse('Permiso eliminado correctamente.');
-        
-    }
-
-    public function activate(Permission $permission)
-    {
-        $permission->update(['active' => !$permission->active]);
-        
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-
-        $data = [
-            'id' => $permission->id,
-            'active' => $permission->active,
-        ];
-
-        $message = $permission->active ? 'Permiso activado correctamente.' : 'Permiso desactivado correctamente.';
-
-        return $this->successResponse($message, $data);
+        return $this->successResponse(
+            'Permiso eliminado correctamente.',
+            null,
+            200
+        );
     }
 }

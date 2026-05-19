@@ -24,7 +24,6 @@ return new class extends Migration
             $table->bigIncrements('id');
             $table->string('name');
             $table->string('guard_name');
-            $table->boolean('active')->default(true);
             $table->timestamps();
 
             $table->unique(['name', 'guard_name']);
