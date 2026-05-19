@@ -19,9 +19,6 @@ class RolesResource extends JsonResource
             'name'       => $this->name,
             'description' => $this->description,
             'guard_name' => $this->guard_name,
-            'active'     => $this->active,
-            'created_at' => $this->created_at->format('d/m/Y H:i'),
-            'updated_at' => $this->updated_at->format('d/m/Y H:i'),
         ];
     }
 }

@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Spatie\Permission\Models\Role as SpatiePermission;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Role extends SpatiePermission
 {
@@ -11,19 +10,5 @@ class Role extends SpatiePermission
         'name', 
         'guard_name',
         'description',
-        'active',
     ];
-
-    protected $casts = [
-        'active' => 'boolean',
-    ];
-
-    public function canBeDeleted(): bool
-    {   
-        if ($this->users()->count() > 0) {
-            return false;
-        }
-        return true;
-
-    }
 }

@@ -34,11 +34,10 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
 
     Route::get('/roles', [RoleController::class, 'index']);
     Route::post('/roles', [RoleController::class, 'store']);
-    Route::get('/role/permissions', [RoleController::class, 'permissions']);
     Route::get('/role/{role}', [RoleController::class, 'show']);
     Route::patch('/role/{role}', [RoleController::class, 'update']);
-    Route::post('/role/activate/{role}', [RoleController::class, 'activate']);
     Route::delete('/role/{role}', [RoleController::class, 'destroy']);
+    Route::get('/role/permissions-grouped-by-module', [RoleController::class, 'permissionsGroupedByModule']);
     
     Route::get('/clients', [ClientController::class, 'index']);
     Route::post('/clients', [ClientController::class, 'store']);

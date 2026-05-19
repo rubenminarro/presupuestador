@@ -20,11 +20,15 @@ class RoleController extends Controller
 
     public function index(Request $request)
     {
-        $search = $request->query('search');
-
-        $roles = Role::when($search, function ($query, $search) {
-            $query->where('name', 'like', "%{$search}%");
-        })->orderBy('name')->paginate(10);
+        $roles = Role::when($request->filled('search'), function ($query) use ($request) {
+            $search = $request->search;
+            $query->where('name', 'like', "%{$search}%")
+                ->orWhere('description', 'like', "%{$search}%");
+        })
+        ->latest()
+        ->paginate(
+            $request->per_page ?? 10
+        );
 
         return $this->successResponse(
             'Roles obtenidos correctamente.',
@@ -58,7 +62,11 @@ class RoleController extends Controller
 
     public function show(Role $role)
     {
-        return $this->successResponse('Rol encontrado.', new ShowRoleResource($role));
+        return $this->successResponse(
+            'Rol encontrado.', 
+            new ShowRoleResource($role),
+            200
+        );
     }
 
     public function update(UpdateRoleRequest $request, Role $role)
@@ -74,48 +82,25 @@ class RoleController extends Controller
 
         return $this->successResponse(
             'Rol actualizado correctamente.',
-            new ShowRoleResource($role)
+            new ShowRoleResource($role),
+            200
         );
-    }
-
-    public function activate(Role $role)
-    {
-        $role->update(['active' => !$role->active]);
-
-        $data = [
-            'id' => $role->id,
-            'active' => $role->active,
-        ];
-
-        $message = $role->active ? 'Rol activado correctamente.' : 'Rol desactivado correctamente.';
-
-        return $this->successResponse($message, $data);
     }
 
     public function destroy(Role $role)
     {
-        
-        if (!$role->canBeDeleted()) {
-
-            return $this->errorResponse('Hubo un error al eliminar el rol.', ['name' => ['Este rol está en uso. Desactívalo en lugar de borrarlo.']], 422);
-
-        }
-        
         $role->delete();
         
-        return $this->successResponse('Rol eliminado correctamente.');
+        return $this->successResponse(
+            'Rol eliminado correctamente.', 
+            null, 
+            200
+        );
     }
 
-    public function permissions()
+    public function permissionsGroupedByModule()
     {
-        $permissions = Permission::all()
-        ->groupBy(fn($p) => explode('.', $p->name)[0])
-        ->map(function ($group, $module) {
-            return [
-                'module' => $module,
-                'list'   => $group->map(fn($p) => ['id' => $p->id, 'name' => $p->name])->values()
-            ];
-        })->values();
+        $permissions = Permission::getGroupedByModule();
 
         return $this->successResponse(
             'Permisos obtenidos correctamente.',
