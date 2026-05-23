@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\StoreVehicleModelRequest;
 use App\Http\Resources\ShowVehicleModelResource;
 use App\Http\Requests\UpdateVehicleModelRequest;
+use App\Http\Resources\VehicleModelResource;
 use App\Models\VehicleModel;
 use App\Traits\ApiResponse;
 
@@ -17,26 +18,35 @@ class VehicleModelController extends Controller
     public function index(Request $request)
     {
         
-        $search = $request->query('search');
+        $vehicleModels = VehicleModel::query()
+        ->with(['brand'])
+        ->when($request->filled('search'), function ($query) use ($request) {
+            
+            $search = $request->search;
 
-        $vehicleModels = VehicleModel::when($search, function ($query, $search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                ->orWhereHas('Brand', function ($q2) use ($search) {
-                    $q2->where('name', 'like', "%{$search}%");
-                });
+                    ->orWhereHas('brand', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%");
+                    }
+                );
             });
-        })->orderBy('name')->paginate(10);
-    
+        })
+        ->latest()
+        ->paginate(
+            $request->per_page ?? 10
+        );
+
         return $this->successResponse(
             'Modelos de vehículo obtenidos correctamente.',
+            VehicleModelResource::collection($vehicleModels->items()),
+            200,
             [
-                'items' => ShowVehicleModelResource::collection($vehicleModels->items()),
                 'pagination' => [
-                    'current_page' => $vehicleModels->currentPage(),
-                    'last_page' => $vehicleModels->lastPage(),
-                    'per_page' => $vehicleModels->perPage(),
-                    'total' => $vehicleModels->total(),
+                    'total'       => $vehicleModels->total(),
+                    'perPage'     => $vehicleModels->perPage(),
+                    'currentPage' => $vehicleModels->currentPage(),
+                    'lastPage'    => $vehicleModels->lastPage(),
                 ]
             ]
         );
@@ -50,7 +60,8 @@ class VehicleModelController extends Controller
 
         return $this->successResponse(
             'Modelo de vehículo creado correctamente.',
-            new ShowVehicleModelResource($vehicleModel)
+            new ShowVehicleModelResource($vehicleModel),
+            201
         );
     }
 
@@ -58,7 +69,8 @@ class VehicleModelController extends Controller
     {
         return $this->successResponse(
             'Modelo de vehículo encontrado.', 
-            new ShowVehicleModelResource($vehicleModel)
+            new ShowVehicleModelResource($vehicleModel),
+            200
         );
     }
 
@@ -70,24 +82,28 @@ class VehicleModelController extends Controller
 
         return $this->successResponse(
             'Modelo de vehículo actualizado correctamente.',
-            new ShowVehicleModelResource($vehicleModel)
+            new ShowVehicleModelResource($vehicleModel),
+            200
         );
     }
 
-    public function activate(VehicleModel $vehicleModel)
+    public function destroy(VehicleModel $vehicleModel)
     {
-        $vehicleModel->update([
-            'active' => !$vehicleModel->active
-        ]);
+        
+        $suffix = '//deleted_' . now()->timestamp;
+
+        if ($vehicleModel->name) {
+            $vehicleModel->name = $vehicleModel->name . $suffix;
+        }
+
+        $vehicleModel->save();
+    
+        $vehicleModel->delete();
 
         return $this->successResponse(
-            $vehicleModel->active
-                ? 'Modelo de vehículo activado correctamente.'
-                : 'Modelo de vehículo desactivado correctamente.',
-            [
-                'id' => $vehicleModel->id,
-                'active' => $vehicleModel->active
-            ]
+            'Modelo de vehículo eliminado correctamente.',
+            null,
+            200
         );
     }
 }

@@ -14,7 +14,8 @@ class ShowRoleResource extends JsonResource
             'name'  => strtolower($this->name),
             'description' => $this->description,
             'guard_name' => $this->guard_name,
-            'active'=> $this->active,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
             'permissions' => $this->permissions->pluck('id')
         ];
     }

@@ -12,10 +12,9 @@ class ShowBrandResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'active' => $this->active,
-            'vehicle_models' => VehicleModelResource::collection(
-                $this->whenLoaded('vehicleModels')
-            ),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'deleted_at' => $this->deleted_at,
         ];
     }
 }

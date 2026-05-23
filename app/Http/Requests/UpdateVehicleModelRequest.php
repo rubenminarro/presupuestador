@@ -8,19 +8,11 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateVehicleModelRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
 
@@ -28,7 +20,7 @@ class UpdateVehicleModelRequest extends FormRequest
 
         return [
             'name' => [
-                'required',
+                'sometimes',
                 'min:2',
                 'max:100',
                 'string', 
@@ -36,9 +28,9 @@ class UpdateVehicleModelRequest extends FormRequest
                 Rule::unique('vehicle_models', 'name')->ignore($idVehicleModel),
             ],
             'brand_id' => [
-                'required',
+                'sometimes',
                 'integer',
-                'exists:brands,id',
+                Rule::exists('brands', 'id'),
             ],
         ];
     }
@@ -47,7 +39,6 @@ class UpdateVehicleModelRequest extends FormRequest
     {
         return [
             'name' => [
-                'required' => 'El nombre del modelo de vehículo es obligatorio.',
                 'string'   => 'El nombre del modelo de vehículo debe tener el formato correcto.',
                 'min'      => 'El nombre del modelo de vehículo debe tener al menos 2 caracteres.',
                 'max'      => 'El nombre del modelo de vehículo no debe tener más de 100 caracteres.',
@@ -55,7 +46,6 @@ class UpdateVehicleModelRequest extends FormRequest
                 'unique'   => 'Este modelo de vehículo ya existe en el sistema.',
             ],
             'brand_id' => [
-                'required' => 'El ID de la marca es obligatorio.',
                 'integer'  => 'El ID de la marca debe ser un número entero.',
                 'exists'   => 'La marca seleccionada no existe.',
             ],

@@ -49,13 +49,13 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     Route::post('/brands', [BrandController::class, 'store']);
     Route::get('/brand/{brand}', [BrandController::class, 'show']);
     Route::patch('/brand/{brand}', [BrandController::class, 'update']);
-    Route::post('/brand/activate/{brand}', [BrandController::class, 'activate']);
+    Route::delete('/brand/{brand}', [BrandController::class, 'destroy']);
 
     Route::get('/vehicle-models', [VehicleModelController::class, 'index']);
     Route::post('/vehicle-models', [VehicleModelController::class, 'store']);
     Route::get('/vehicle-model/{vehicleModel}', [VehicleModelController::class, 'show']);
     Route::patch('/vehicle-model/{vehicleModel}', [VehicleModelController::class, 'update']);
-    Route::post('/vehicle-model/activate/{vehicleModel}', [VehicleModelController::class, 'activate']);
+    Route::delete('/vehicle-model/{vehicleModel}', [VehicleModelController::class, 'destroy']);
 
     Route::get('/vehicles', [VehicleController::class, 'index']);
     Route::post('/vehicles', [VehicleController::class, 'store']);

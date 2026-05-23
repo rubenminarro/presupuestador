@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\StoreBrandRequest;
 use App\Http\Resources\ShowBrandResource;
 use App\Http\Requests\UpdateBrandRequest;
+use App\Http\Resources\BrandResource;
 use App\Models\Brand;
 use App\Traits\ApiResponse;
 
@@ -17,21 +18,25 @@ class BrandController extends Controller
     public function index(Request $request)
     {
         
-        $search = $request->query('search');
-
-        $brands = Brand::when($search, function ($query, $search) {
+        $brands = Brand::when($request->filled('search'), function ($query) use ($request) {
+            $search = $request->search;
             $query->where('name', 'like', "%{$search}%");
-        })->orderBy('name')->paginate(10);
+        })
+        ->latest()
+        ->paginate(
+            $request->per_page ?? 10
+        );
     
         return $this->successResponse(
             'Marcas obtenidas correctamente.',
+            BrandResource::collection($brands->items()),
+            200,
             [
-                'items' => ShowBrandResource::collection($brands->items()),
                 'pagination' => [
-                    'current_page' => $brands->currentPage(),
-                    'last_page' => $brands->lastPage(),
-                    'per_page' => $brands->perPage(),
-                    'total' => $brands->total(),
+                    'total'       => $brands->total(),
+                    'perPage'     => $brands->perPage(),
+                    'currentPage' => $brands->currentPage(),
+                    'lastPage'    => $brands->lastPage(),
                 ]
             ]
         );
@@ -46,16 +51,18 @@ class BrandController extends Controller
     
         return $this->successResponse(
             'Marca creada correctamente.',
-            new ShowBrandResource($brand->find($brand->id)),
+            new ShowBrandResource($brand),
             201
         );
     }
 
     public function show(Brand $brand)
     {
+        
         return $this->successResponse(
             'Marca encontrada.', 
-            new ShowBrandResource($brand->with('vehicleModels')->find($brand->id))
+            new ShowBrandResource($brand),
+            200
         );
     }
 
@@ -67,24 +74,28 @@ class BrandController extends Controller
 
         return $this->successResponse(
             'Marca actualizada correctamente.',
-            new ShowBrandResource($brand->with('brandModels')->find($brand->id))
+            new ShowBrandResource($brand),
+            200
         );
     }
 
-    public function activate(Brand $brand)
+    public function destroy(Brand $brand)
     {
-        $brand->update([
-            'active' => !$brand->active
-        ]);
+        
+        $suffix = '//deleted_' . now()->timestamp;
+
+        if ($brand->name) {
+            $brand->name = $brand->name . $suffix;
+        }
+
+        $brand->save();
+
+        $brand->delete();
 
         return $this->successResponse(
-            $brand->active
-                ? 'Marca activada correctamente.'
-                : 'Marca desactivada correctamente.',
-            [
-                'id' => $brand->id,
-                'active' => $brand->active
-            ]
+            'Marca eliminada correctamente.',
+            null,
+            200
         );
     }
     

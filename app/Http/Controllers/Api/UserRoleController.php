@@ -130,6 +130,19 @@ class UserRoleController extends Controller
 
     public function destroy(User $user)
     {
+        
+        $suffix = '//deleted_' . now()->timestamp;
+
+        if ($user->name) {
+            $user->name = substr($user->name . $suffix, 0, 30);
+        }
+
+        if ($user->email) {
+            $user->email = $user->email . $suffix;
+        }
+
+        $user->save();
+    
         $user->delete();
 
         return $this->successResponse(
