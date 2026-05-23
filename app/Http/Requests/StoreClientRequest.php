@@ -42,7 +42,7 @@ class StoreClientRequest extends FormRequest
                 'email:rfc,dns', 
                 'max:50', 
                 'lowercase',
-                'unique:clients,email',
+                Rule::unique('clients', 'email')
             ],
             'phone' => [
                 'required',

@@ -7,12 +7,12 @@ use Illuminate\Http\Request;
 use App\Http\Requests\StorePermissionRequest;
 use App\Http\Requests\UpdatePermissionRequest;
 use App\Http\Resources\PermissionsResource;
+use App\Http\Resources\ShowPermissionResource;
 use App\Models\Permission;
 use App\Traits\ApiResponse;
 
 class PermissionController extends Controller
 {
-    
     use ApiResponse;
 
     public function index(Request $request)
@@ -51,7 +51,7 @@ class PermissionController extends Controller
     
         return $this->successResponse(
             'Permiso creado correctamente.', 
-            new PermissionsResource($permission), 
+            new ShowPermissionResource($permission), 
             201
         );
     }
@@ -60,7 +60,7 @@ class PermissionController extends Controller
     {
         return $this->successResponse(
             'Permiso encontrado.', 
-            new  PermissionsResource($permission),
+            new ShowPermissionResource($permission), 
             200
         );
     }
@@ -74,7 +74,7 @@ class PermissionController extends Controller
 
         return $this->successResponse(
             'Permiso actualizado correctamente.', 
-            new PermissionsResource($permission), 
+            new ShowPermissionResource($permission), 
             200
         );
     

@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('phone')->index();
             $table->string('email')->nullable();
             $table->text('notes')->nullable();
-            $table->boolean('active')->default(true);
+            $table->softDeletes();
             $table->timestamps();
         });
     }

@@ -14,38 +14,41 @@ class UpdateClientRequest extends FormRequest
 
     public function rules(): array
     {
+        
+        $clientId = $this->route('client');
+    
         return [
             'document_number' => [
-                'required', 
+                'sometimes', 
                 'string', 
                 'min:5', 
                 'max:20',
-                Rule::unique('clients', 'document_number')->ignore($this->route('client')->id),
+                Rule::unique('clients', 'document_number')->ignore($clientId),
                 'regex:/^[a-zA-Z0-9-]+$/'
             ],
             'first_name' => [
-                'required', 
+                'sometimes', 
                 'string', 
                 'min:2', 
                 'max:100',
                 'regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚ]+$/u'
             ],
             'last_name' => [
-                'required', 
+                'sometimes', 
                 'string', 
                 'min:2', 
                 'max:100',
                 'regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚ]+$/u'
             ],
             'email' => [
-                'required', 
+                'sometimes', 
                 'email:rfc,dns', 
                 'max:50', 
                 'lowercase',
-                'unique:clients,email,' . $this->route('client')->id,
+                Rule::unique('clients', 'email')->ignore($clientId)
             ],
             'phone' => [
-                'required',
+                'sometimes',
                 'regex:/^\+?[1-9]\d{7,14}$/'
             ],
             'notes' => [
@@ -61,7 +64,6 @@ class UpdateClientRequest extends FormRequest
     {
         return [
             'document_number' => [
-                'required' => 'El número de documento es obligatorio.',
                 'string' => 'El número de documento debe tener el formato correcto.',
                 'min'      => 'El número de documento debe tener al menos 5 caracteres.',
                 'max'      => 'El número de documento no debe tener más de 20 caracteres.',
@@ -69,28 +71,24 @@ class UpdateClientRequest extends FormRequest
                 'regex'  => 'El número de documento solo puede contener letras, números y guiones.',
             ],
             'first_name' => [
-                'required' => 'El nombre es obligatorio.',
                 'string'   => 'El nombre debe tener el formato correcto.',
                 'min'      => 'El nombre debe tener al menos 2 caracteres.',
                 'max'      => 'El nombre no debe tener más de 100 caracteres.',
                 'regex'    => 'El nombre solo puede contener letras y espacios.',
             ],
             'last_name' => [
-                'required' => 'El apellido es obligatorio.',
                 'string'   => 'El apellido debe tener el formato correcto.',
                 'min'      => 'El apellido debe tener al menos 2 caracteres.',
                 'max'      => 'El apellido no debe tener más de 100 caracteres.',
                 'regex'    => 'El apellido solo puede contener letras y espacios.',
             ],
             'email' => [
-                'required'  => 'El correo es obligatorio.',
                 'email'     => 'El correo debe tener el formato correcto.',
                 'max'       => 'El correo no debe tener más de 50 caracteres.',
                 'lowercase' => 'El correo debe estar en minúsculas.',
                 'unique'    => 'Este correo ya está en uso.',
             ],
             'phone' => [
-                'required' => 'El teléfono es obligatorio.',
                 'regex'    => 'El teléfono debe tener un formato válido (opcionalmente con un + al inicio, seguido de 8 a 15 dígitos).',
             ],
             'notes' => [

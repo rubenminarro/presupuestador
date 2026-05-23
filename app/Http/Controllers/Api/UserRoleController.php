@@ -6,11 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
-use App\Models\User;
-use App\Traits\ApiResponse;
 use App\Http\Resources\ShowUserResource;
 use App\Http\Resources\UsersResource;
-
+use App\Models\User;
+use App\Traits\ApiResponse;
 
 class UserRoleController extends Controller
 {
@@ -80,15 +79,6 @@ class UserRoleController extends Controller
 
     }
 
-    public function show(User $user)
-    {
-        return $this->successResponse(
-            'Usuario encontrado.', 
-            new ShowUserResource($user),
-            200
-        );
-    }
-
     public function store(StoreUserRequest $request, User $user)
     {
         $data = $request->validated();
@@ -104,6 +94,15 @@ class UserRoleController extends Controller
             201
         );
         
+    }
+
+    public function show(User $user)
+    {
+        return $this->successResponse(
+            'Usuario encontrado.', 
+            new ShowUserResource($user),
+            200
+        );
     }
 
     public function update(UpdateUserRequest $request, User $user)

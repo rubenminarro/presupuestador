@@ -5,14 +5,14 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class PermissionsResource extends JsonResource
+class ShowPermissionResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
         return [
-            'id'         => $this->id,
+            'id'    => $this->id,
             'name'  => strtolower($this->name),
-            'guard_name' => $this->guard_name
+            'guard_name' => $this->guard_name,
         ];
     }
 }

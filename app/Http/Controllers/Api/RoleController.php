@@ -6,16 +6,14 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRoleRequest;
-use App\Http\Resources\RolesResource;
 use App\Http\Resources\ShowRoleResource;
+use App\Http\Resources\RolesResource;
 use App\Models\Role;
 use App\Models\Permission;
 use App\Traits\ApiResponse;
 
 class RoleController extends Controller
-
 {
-    
     use ApiResponse;
 
     public function index(Request $request)

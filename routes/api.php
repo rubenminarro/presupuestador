@@ -43,7 +43,7 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     Route::post('/clients', [ClientController::class, 'store']);
     Route::get('/client/{client}', [ClientController::class, 'show']);
     Route::patch('/client/{client}', [ClientController::class, 'update']);
-    Route::post('/client/activate/{client}', [ClientController::class, 'activate']);
+    Route::delete('/client/{client}', [ClientController::class, 'destroy']);
 
     Route::get('/brands', [BrandController::class, 'index']);
     Route::post('/brands', [BrandController::class, 'store']);
