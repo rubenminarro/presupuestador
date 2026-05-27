@@ -2,50 +2,51 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
+use App\Enums\FuelType;
+use App\Enums\TransmissionType;
+use App\Enums\VehicleColor;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Models\VehicleModel;
+use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Validator;
 
 class UpdateVehicleRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         
-        $vehicleId = $this->route('vehicle')->id;
-    
+        $vehicleId = $this->route('vehicle');
+
         return [
             'client_id' => [
                 'required',
-                'exists:clients,id',
+                'integer',
+                Rule::exists('clients', 'id')->withoutTrashed(),
             ],
             'brand_id' => [
                 'required',
-                'exists:brands,id',
+                'integer',
+                Rule::exists('brands', 'id'),
             ],
             'vehicle_model_id' => [
                 'required',
-                'exists:vehicle_models,id',
+                'integer',
+                Rule::exists('vehicle_models', 'id'),
             ],
             'chassis' => [
                 'nullable',
-                'required_if:no_plate,true,1',
+                Rule::requiredIf(function () {
+                    return $this->boolean('no_plate');
+                }),
                 'string', 
                 'max:50',
-                Rule::unique('vehicles', 'chassis')->ignore($vehicleId),
+                Rule::unique('vehicles', 'chassis')->ignore($vehicleId, 'id')
             ],
             'plate' => [
                 'nullable',
@@ -53,7 +54,7 @@ class UpdateVehicleRequest extends FormRequest
                 'string', 
                 'max:20', 
                 'regex:/^[A-Z0-9-]+$/i',
-                Rule::unique('vehicles', 'plate')->ignore($vehicleId),
+                Rule::unique('vehicles', 'plate')->ignore($vehicleId, 'id'),
             ],
             'no_plate' => [
                 'required',
@@ -64,17 +65,19 @@ class UpdateVehicleRequest extends FormRequest
                 'integer',
                 'digits:4',
                 'min:1900',
-                'max:' . date('Y'),
+                'max:'.date('Y'),
             ],
             'color' => [
                 'nullable',
-                'string',
+                Rule::enum(VehicleColor::class),
                 'max:30',
             ],
             'engine_number' => [
                 'nullable',
                 'string',
-                'max:100',
+                'alpha_num:ascii',
+                'min:5',
+                'max:30',
             ],
             'mileage' => [
                 'nullable',
@@ -83,12 +86,12 @@ class UpdateVehicleRequest extends FormRequest
             ],
             'fuel_type' => [
                 'nullable',
-                'string',
+                Rule::enum(FuelType::class),
                 'max:50',
             ],
             'transmission' => [
                 'nullable',
-                'string',
+                Rule::enum(TransmissionType::class),
                 'max:50',
             ],
             'notes' => [
@@ -97,21 +100,25 @@ class UpdateVehicleRequest extends FormRequest
                 'max:500', 
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
             ],
-            'active' => [
-                'boolean',
-            ],
         ];
     }
 
     public function messages(): array
     {
         return [
+            'client_id' => [
+                'required' => 'El cliente es obligatorio.',
+                'integer' => 'El ID del cliente debe ser un número entero.',
+                'exists' => 'El cliente seleccionado no existe.'
+            ],
             'brand_id' => [
                 'required' => 'La marca es obligatoria.',
+                'integer' => 'El ID de la marca debe ser un número entero.',
                 'exists' => 'La marca seleccionada no existe.'
             ],
             'vehicle_model_id' => [
                 'required' => 'El modelo es obligatorio.',
+                'integer' => 'El ID del modelo debe ser un número entero.',
                 'exists' => 'El modelo seleccionado no existe.'
             ],
             'chassis' => [
@@ -139,7 +146,8 @@ class UpdateVehicleRequest extends FormRequest
             ],
             'color' => [
                 'string' => 'El color debe ser una cadena de texto.',
-                'max' => 'El color no debe tener más de 30 caracteres.',
+                Enum::class => 'El color seleccionado no es válido.',
+                'max' => 'El color no debe tener más de 30 caracteres.',  
             ],
             'engine_number' => [
                 'string' => 'El número de motor debe ser una cadena de texto.',
@@ -151,10 +159,12 @@ class UpdateVehicleRequest extends FormRequest
             ],
             'fuel_type' => [
                 'string' => 'El tipo de combustible debe ser una cadena de texto.',
+                Enum::class => 'El tipo de combustible seleccionado no es válido.',
                 'max' => 'El tipo de combustible no debe tener más de 50 caracteres.',
             ],
             'transmission' => [
                 'string' => 'La transmisión debe ser una cadena de texto.',
+                Enum::class => 'La transmisión seleccionada no es válida.',
                 'max' => 'La transmisión no debe tener más de 50 caracteres.',
             ],
             'notes' => [
@@ -165,22 +175,24 @@ class UpdateVehicleRequest extends FormRequest
         ];
     }
 
-    public function withValidator($validator)
+    public function withValidator(Validator $validator)
     {
-        $validator->after(function ($validator) {
+        $validator->after(function (Validator $validator) {
             
             $brandId = $this->brand_id;
             $vehicleModelId = $this->vehicle_model_id;
 
-            $exists = VehicleModel::where('id', $vehicleModelId)
-                ->where('brand_id', $brandId)
-                ->exists();
+            if ($brandId && $vehicleModelId) {
+                $exists = VehicleModel::where('id', $vehicleModelId)
+                    ->where('brand_id', $brandId)
+                    ->exists();
 
-            if (!$exists) {
-                $validator->errors()->add(
-                    'vehicle_model_id',
-                    'El modelo seleccionado no pertenece a la marca indicada.'
-                );
+                if (!$exists) {
+                    $validator->errors()->add(
+                        'vehicle_model_id',
+                        'El modelo seleccionado no pertenece a la marca indicada.'
+                    );
+                }
             }
         });
     }

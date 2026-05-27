@@ -61,8 +61,7 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     Route::post('/vehicles', [VehicleController::class, 'store']);
     Route::get('/vehicle/{vehicle}', [VehicleController::class, 'show']);
     Route::patch('/vehicle/{vehicle}', [VehicleController::class, 'update']);
-    Route::post('/vehicle/activate/{vehicle}', [VehicleController::class, 'activate']);
-    Route::get('/vehicle/by-plate/{plate}', [VehicleController::class, 'findByPlate']);
+    Route::delete('/vehicle/{vehicle}', [VehicleController::class, 'destroy']);
 
     Route::get('/receptions', [ReceptionController::class, 'index']);
     Route::post('/receptions', [ReceptionController::class, 'store']);

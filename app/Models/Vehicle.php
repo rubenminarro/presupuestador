@@ -5,9 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Vehicle extends Model
 {
+    
+    use SoftDeletes;
+
     protected $fillable = [
         'client_id',
         'brand_id',
@@ -22,12 +26,10 @@ class Vehicle extends Model
         'fuel_type',
         'transmission',
         'notes',
-        'active',
     ];
 
     protected $casts = [
         'no_plate' => 'boolean',
-        'active' => 'boolean',
         'year' => 'integer',
         'mileage' => 'integer',
     ];

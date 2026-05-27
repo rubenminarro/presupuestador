@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('brand_id')->constrained()->restrictOnDelete();
             $table->foreignId('vehicle_model_id')->constrained()->restrictOnDelete();
             $table->string('chassis', 50)->nullable()->unique();
-            $table->string('plate', 20)->nullable()->unique();
+            $table->string('plate', 50)->nullable()->unique();
             $table->boolean('no_plate')->default(false);
             $table->year('year')->nullable();
             $table->string('color', 30)->nullable();
@@ -26,7 +26,7 @@ return new class extends Migration
             $table->string('fuel_type')->nullable();
             $table->string('transmission')->nullable();
             $table->text('notes')->nullable();
-            $table->boolean('active')->default(true);
+            $table->softDeletes();
             $table->timestamps();
         });
     }
