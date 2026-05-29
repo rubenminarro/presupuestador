@@ -63,17 +63,17 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     Route::patch('/vehicle/{vehicle}', [VehicleController::class, 'update']);
     Route::delete('/vehicle/{vehicle}', [VehicleController::class, 'destroy']);
 
+    Route::get('/checklists', [CheckListController::class, 'index']);
+    Route::post('/checklists', [CheckListController::class, 'store']);
+    Route::get('/checklist/{checkListItem}', [CheckListController::class, 'show']);
+    Route::patch('/checklist/{checkListItem}', [CheckListController::class, 'update']);
+    Route::delete('/checklist/{checkListItem}', [CheckListController::class, 'destroy']);
+    
     Route::get('/receptions', [ReceptionController::class, 'index']);
     Route::post('/receptions', [ReceptionController::class, 'store']);
     Route::get('/reception/{reception}', [ReceptionController::class, 'show']);
     Route::patch('/reception/{reception}', [ReceptionController::class, 'update']);
     Route::post('/reception/activate/{reception}', [ReceptionController::class, 'activate']);
-
-    Route::get('/checklists', [CheckListController::class, 'index']);
-    Route::post('/checklists', [CheckListController::class, 'store']);
-    Route::get('/checklist/{checkListItem}', [CheckListController::class, 'show']);
-    Route::patch('/checklist/{checkListItem}', [CheckListController::class, 'update']);
-    Route::post('/checklist/activate/{checkListItem}', [CheckListController::class, 'activate']);
 
     Route::get('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'show']);
     Route::patch('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'update']);

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Resources\CheckListResource;
 use App\Http\Requests\StoreCheckListRequest;
 use App\Http\Requests\UpdateChecklistRequest;
+use App\Http\Resources\ShowCheckListResource;
 use App\Models\CheckListItem;
 use App\Traits\ApiResponse;
 
@@ -17,21 +18,30 @@ class CheckListController extends Controller
 
     public function index(Request $request)
     {
-        $checklists = CheckListItem::latest()
-            ->paginate(20);
+        
+        $checklists = CheckListItem::when($request->filled('search'), function ($query) use ($request) {
+            $search = $request->search;
+            $query->where('name', 'like', "%{$search}%")
+                ->orWhere('type', 'like', "%{$search}%")
+                ->orWhere('required', 'like', "%{$search}%");
+        })
+        ->latest()
+        ->paginate(
+            $request->per_page ?? 10
+        );
 
         return $this->successResponse(
             'Checklist obtenidos correctamente.',
+            CheckListResource::collection($checklists->items()),
+            200,
             [
-                'items' => CheckListResource::collection($checklists->items()),
                 'pagination' => [
-                    'current_page' => $checklists->currentPage(),
-                    'last_page' => $checklists->lastPage(),
-                    'per_page' => $checklists->perPage(),
-                    'total' => $checklists->total(),
+                    'total'       => $checklists->total(),
+                    'perPage'     => $checklists->perPage(),
+                    'currentPage' => $checklists->currentPage(),
+                    'lastPage'    => $checklists->lastPage(),
                 ]
-            ],
-            201
+            ]
         );
     }
 
@@ -43,7 +53,7 @@ class CheckListController extends Controller
 
         return $this->successResponse(
             'Checklist creado correctamente.',
-            new CheckListResource($checklist),
+            new ShowCheckListResource($checklist),
             201
         );
     }
@@ -52,8 +62,8 @@ class CheckListController extends Controller
     {
         return $this->successResponse(
             'Checklist encontrado.',
-            new CheckListResource($checkListItem)
-            
+            new ShowCheckListResource($checkListItem),
+            200
         );
     }
 
@@ -65,24 +75,28 @@ class CheckListController extends Controller
 
         return $this->successResponse(
             'Checklist actualizado correctamente.',
-            new CheckListResource($checkListItem)
+            new ShowCheckListResource($checkListItem),
+            200
         );   
     }
     
-    public function activate(CheckListItem $checkListItem)
+    public function destroy(CheckListItem $checkListItem)
     {
-        $checkListItem->update([
-            'active' => !$checkListItem->active
-        ]);
+        
+        $suffix = '//deleted_' . now()->timestamp;
+
+        if ($checkListItem->name) {
+            $checkListItem->name = $checkListItem->name . $suffix;
+        }
+
+        $checkListItem->save();
+
+        $checkListItem->delete();
 
         return $this->successResponse(
-            $checkListItem->active
-                ? 'Checklist activado correctamente.'
-                : 'Checklist desactivado correctamente.',
-            [
-                'id' => $checkListItem->id,
-                'active' => $checkListItem->active
-            ]
+            'Checklist eliminado correctamente.',
+            null,
+            200
         );
     }
 }

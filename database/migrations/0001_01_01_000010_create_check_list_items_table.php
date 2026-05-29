@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('check_list_items', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('name')->unique();
             $table->string('type')->default('boolean');
             $table->boolean('required')->default(false);
-            $table->boolean('active')->default(true);
+            $table->softDeletes();
             $table->timestamps();
         });
     }
