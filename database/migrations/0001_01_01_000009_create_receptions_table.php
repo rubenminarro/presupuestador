@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use App\Enums\Status;
+use App\Enums\ReceptionStatus;
 use App\Enums\FuelLevel;
 
 return new class extends Migration
@@ -17,13 +17,14 @@ return new class extends Migration
             $table->id();
             $table->foreignId('client_id')->constrained()->restrictOnDelete();
             $table->foreignId('vehicle_id')->constrained()->restrictOnDelete();
+            $table->string('service_type')->nullable();
             $table->date('reception_date');
             $table->date('estimated_delivery_date')->nullable();
             $table->unsignedInteger('mileage')->nullable();
-            $table->string('fuel_level', 50)->default(FuelLevel::EMPTY->value);
+            $table->string('fuel_level')->default(FuelLevel::EMPTY->value);
             $table->text('problem_description')->nullable();
             $table->text('observations')->nullable();
-            $table->string('status')->default(Status::PENDING->value);
+            $table->string('status')->default(ReceptionStatus::PENDING->value);
             $table->foreignId('created_by')
                 ->nullable()
                 ->constrained('users')
@@ -32,7 +33,7 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('users')
                 ->nullOnDelete();
-            $table->boolean('active')->default(true);
+            $table->softDeletes();
             $table->timestamps();
         });
     }

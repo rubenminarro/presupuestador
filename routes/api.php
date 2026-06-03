@@ -73,7 +73,7 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     Route::post('/receptions', [ReceptionController::class, 'store']);
     Route::get('/reception/{reception}', [ReceptionController::class, 'show']);
     Route::patch('/reception/{reception}', [ReceptionController::class, 'update']);
-    Route::post('/reception/activate/{reception}', [ReceptionController::class, 'activate']);
+    Route::delete('/reception/{reception}', [ReceptionController::class, 'destroy']);
 
     Route::get('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'show']);
     Route::patch('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'update']);

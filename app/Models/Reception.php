@@ -6,12 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Reception extends Model
 {
+    
+    use SoftDeletes;
+
     protected $fillable = [
         'client_id',
         'vehicle_id',
+        'service_type',
         'reception_date',
         'estimated_delivery_date',
         'mileage',
@@ -21,13 +26,11 @@ class Reception extends Model
         'status',
         'created_by',
         'approved_by',
-        'active',
     ];
 
     protected $casts = [
         'reception_date' => 'date',
         'estimated_delivery_date' => 'date',
-        'active' => 'boolean',
     ];
 
     public function client(): BelongsTo

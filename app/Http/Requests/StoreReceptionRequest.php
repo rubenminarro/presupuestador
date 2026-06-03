@@ -4,9 +4,13 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Validator;
+use App\Models\Reception;
 use App\Models\Vehicle;
 use App\Enums\FuelLevel;
-use App\Enums\Status;
+use App\Enums\ServiceType;
+
 
 class StoreReceptionRequest extends FormRequest
 {
@@ -21,12 +25,17 @@ class StoreReceptionRequest extends FormRequest
             'client_id' => [
                 'required',
                 'integer',
-                Rule::exists('clients', 'id')->where('active', true),
+                Rule::exists('clients', 'id'),
             ],
             'vehicle_id' => [
                 'required',
                 'integer',
-                Rule::exists('vehicles', 'id')->where('active', true),
+                Rule::exists('vehicles', 'id'),
+            ],
+            'service_type' => [
+                'required',
+                'string',
+                Rule::enum(ServiceType::class),
             ],
             'reception_date' => [
                 'required',
@@ -44,37 +53,20 @@ class StoreReceptionRequest extends FormRequest
             ],
             'fuel_level' => [
                 'nullable',
-                Rule::in([
-                    FuelLevel::EMPTY->value,
-                    FuelLevel::QUARTER->value,
-                    FuelLevel::HALF->value,
-                    FuelLevel::THREE_QUARTERS->value,
-                    FuelLevel::FULL->value,
-                ]),
+                'string',
+                Rule::enum(FuelLevel::class),
             ],
             'problem_description' => [
-                'required',
-                'string',
-                'min:10',
-                'max:5000',
+                'nullable', 
+                'string', 
+                'max:500', 
+                'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
             ],
             'observations' => [
-                'nullable',
-                'string',
-                'max:5000',
-            ],
-            'status' => [
-                'nullable',
-                Rule::in([
-                    Status::PENDING->value,
-                    Status::DIAGNOSIS->value,
-                    Status::APPROVED->value,
-                    Status::IN_PROGRESS->value,
-                    Status::WAITING_PARTS->value,
-                    Status::COMPLETED->value,
-                    Status::DELIVERED->value,
-                    Status::CANCELLED->value,
-                ]),
+                'nullable', 
+                'string', 
+                'max:500', 
+                'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
             ],
         ];
     }
@@ -92,6 +84,11 @@ class StoreReceptionRequest extends FormRequest
                 'integer' => 'El ID del vehículo debe ser un número entero.',
                 'exists' => 'El vehículo seleccionado no existe.'
             ],
+            'service_type' => [
+                'required' => 'El tipo de servicio es obligatorio.',
+                'string' => 'El tipo de servicio debe ser una cadena de texto.',
+                Enum::class => 'El tipo de servicio seleccionado no es válido.',
+            ],
             'reception_date' => [
                 'required' => 'La fecha de recepción es obligatoria.',
                 'date' => 'La fecha de recepción debe ser una fecha válida.',
@@ -104,43 +101,64 @@ class StoreReceptionRequest extends FormRequest
                 'integer' => 'El kilometraje debe ser un número entero.',
                 'min' => 'El kilometraje no puede ser negativo.',
             ],
+            'fuel_level' => [
+                'string' => 'El nivel de combustible debe ser una cadena de texto.',
+                Enum::class => 'El nivel de combustible seleccionado no es válido.',
+            ],
             'problem_description' => [
-                'required' => 'La descripción del problema es obligatoria.',
                 'string' => 'La descripción del problema debe ser una cadena de texto.',
-                'min' => 'La descripción del problema debe tener al menos 10 caracteres.',
-                'max' => 'La descripción del problema no debe tener más de 5000 caracteres.',
+                'max' => 'La descripción del problema no debe tener más de 500 caracteres.',
+                'regex' => 'La descripción del problema contiene caracteres no permitidos.',
             ],
             'observations' => [
                 'string' => 'Las observaciones deben ser una cadena de texto.',
-                'max' => 'Las observaciones no deben tener más de 5000 caracteres.',
-            ],
-            'status' => [
-                'in' => 'El estado seleccionado no es válido.',
+                'max' => 'Las observaciones no deben tener más de 500 caracteres.',
+                'regex' => 'Las observaciones contienen caracteres no permitidos.',
             ],
         ];
     }
 
-    public function withValidator($validator)
+    public function withValidator(Validator $validator)
     {
         $validator->after(function ($validator) {
             
-        $clientId = $this->client_id;
+            $clientId = $this->client_id;
             $vehicleId = $this->vehicle_id;
 
             if (!$clientId || !$vehicleId) {
                 return;
             }
 
-            $vehicleBelongsToClient = Vehicle::where('id', $vehicleId)
+            $vehicleBelongsToClient = Vehicle::query()
+                ->where('id', $vehicleId)
                 ->where('client_id', $clientId)
                 ->exists();
 
-            if (!$vehicleBelongsToClient) {
+            if (! $vehicleBelongsToClient) {
                 $validator->errors()->add(
                     'vehicle_id',
                     'El vehículo seleccionado no pertenece al cliente indicado.'
                 );
             }
+
+            $hasOpenReception = Reception::query()
+                ->where('vehicle_id', $vehicleId)
+                ->whereIn('status', [
+                    'pending',
+                    'diagnosis',
+                    'approved',
+                    'in_progress',
+                    'waiting_parts',
+                ])
+                ->exists();
+
+            if ($hasOpenReception) {
+                $validator->errors()->add(
+                    'vehicle_id',
+                    'El vehículo ya tiene una recepción activa.'
+                );
+            }
+            
         });
     }
 }

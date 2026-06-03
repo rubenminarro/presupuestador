@@ -4,85 +4,69 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Validator;
+use App\Models\Reception;
 use App\Models\Vehicle;
 use App\Enums\FuelLevel;
-use App\Enums\Status;
+use App\Enums\ServiceType;
+
 
 class UpdateReceptionRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
             'client_id' => [
                 'sometimes',
                 'integer',
-                Rule::exists('clients', 'id')->where('active', true),
+                Rule::exists('clients', 'id'),
             ],
             'vehicle_id' => [
                 'sometimes',
                 'integer',
-                Rule::exists('vehicles', 'id')->where('active', true),
+                Rule::exists('vehicles', 'id'),
+            ],
+            'service_type' => [
+                'sometimes',
+                'string',
+                Rule::enum(ServiceType::class),
             ],
             'reception_date' => [
                 'sometimes',
                 'date',
             ],
             'estimated_delivery_date' => [
-                'nullable',
+                'sometimes',
                 'date',
                 'after_or_equal:reception_date',
             ],
             'mileage' => [
-                'nullable',
+                'sometimes',
                 'integer',
                 'min:0',
             ],
             'fuel_level' => [
-                'nullable',
-                Rule::in([
-                    FuelLevel::EMPTY->value,
-                    FuelLevel::QUARTER->value,
-                    FuelLevel::HALF->value,
-                    FuelLevel::THREE_QUARTERS->value,
-                    FuelLevel::FULL->value,
-                ]),
+                'sometimes',
+                'string',
+                Rule::enum(FuelLevel::class),
             ],
             'problem_description' => [
-                'sometimes',
-                'string',
-                'min:10',
-                'max:5000',
+                'sometimes', 
+                'string', 
+                'max:500', 
+                'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
             ],
             'observations' => [
-                'nullable',
-                'string',
-                'max:5000',
-            ],
-            'status' => [
-                'sometimes',
-                Rule::in([
-                    Status::PENDING->value,
-                    Status::DIAGNOSIS->value,
-                    Status::APPROVED->value,
-                    Status::IN_PROGRESS->value,
-                    Status::WAITING_PARTS->value,
-                    Status::COMPLETED->value,
-                    Status::DELIVERED->value,
-                    Status::CANCELLED->value,
-                ]),
+                'sometimes', 
+                'string', 
+                'max:500', 
+                'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
             ],
         ];
     }
@@ -91,15 +75,19 @@ class UpdateReceptionRequest extends FormRequest
     {
         return [
             'client_id' => [
-                'integer' => 'El ID del cliente debe ser un número entero.',
-                'exists' => 'El cliente seleccionado no existe.'
+                'integer',
+                Rule::exists('clients', 'id'),
             ],
             'vehicle_id' => [
-                'integer' => 'El ID del vehículo debe ser un número entero.',
-                'exists' => 'El vehículo seleccionado no existe.'
+                'integer',
+                Rule::exists('vehicles', 'id'),
+            ],
+            'service_type' => [
+                'string',
+                Enum::class => 'El tipo de servicio seleccionado no es válido.',
             ],
             'reception_date' => [
-                'date' => 'La fecha de recepción debe ser una fecha válida.',
+                'date' => 'La fecha estimada de entrega debe ser una fecha válida.',
             ],
             'estimated_delivery_date' => [
                 'date' => 'La fecha estimada de entrega debe ser una fecha válida.',
@@ -109,42 +97,67 @@ class UpdateReceptionRequest extends FormRequest
                 'integer' => 'El kilometraje debe ser un número entero.',
                 'min' => 'El kilometraje no puede ser negativo.',
             ],
+            'fuel_level' => [
+                'string' => 'El nivel de combustible debe ser una cadena de texto.',
+                Enum::class => 'El nivel de combustible seleccionado no es válido.',
+            ],
             'problem_description' => [
                 'string' => 'La descripción del problema debe ser una cadena de texto.',
-                'min' => 'La descripción del problema debe tener al menos 10 caracteres.',
-                'max' => 'La descripción del problema no debe tener más de 5000 caracteres.',
+                'max' => 'La descripción del problema no debe tener más de 500 caracteres.',
+                'regex' => 'La descripción del problema contiene caracteres no permitidos.',
             ],
             'observations' => [
                 'string' => 'Las observaciones deben ser una cadena de texto.',
-                'max' => 'Las observaciones no deben tener más de 5000 caracteres.',
-            ],
-            'status' => [
-                'in' => 'El estado seleccionado no es válido.',
+                'max' => 'Las observaciones no deben tener más de 500 caracteres.',
+                'regex' => 'Las observaciones contienen caracteres no permitidos.',
             ],
         ];
     }
 
-    public function withValidator($validator)
+    public function withValidator(Validator $validator)
     {
         $validator->after(function ($validator) {
             
-        $clientId = $this->client_id;
+            $clientId = $this->client_id;
             $vehicleId = $this->vehicle_id;
 
             if (!$clientId || !$vehicleId) {
                 return;
             }
 
-            $vehicleBelongsToClient = Vehicle::where('id', $vehicleId)
+            $vehicleBelongsToClient = Vehicle::query()
+                ->where('id', $vehicleId)
                 ->where('client_id', $clientId)
                 ->exists();
 
-            if (!$vehicleBelongsToClient) {
+            if (! $vehicleBelongsToClient) {
                 $validator->errors()->add(
                     'vehicle_id',
                     'El vehículo seleccionado no pertenece al cliente indicado.'
                 );
             }
+
+            $reception = $this->route('reception');
+
+            $hasOpenReception = Reception::query()
+                ->where('vehicle_id', $vehicleId)
+                ->whereIn('status', [
+                    'pending',
+                    'diagnosis',
+                    'approved',
+                    'in_progress',
+                    'waiting_parts',
+                ])
+                ->where('id', '!=', $reception->id)
+                ->exists();
+
+            if ($hasOpenReception) {
+                $validator->errors()->add(
+                    'vehicle_id',
+                    'El vehículo ya tiene una recepción activa.'
+                );
+            }
+            
         });
     }
 }

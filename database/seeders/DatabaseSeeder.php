@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             ClientsSeeder::class,
             VehiclesSeeder::class,
             CheckListItemSeeder::class,
+            /*ReceptionSeeder::class,*/
         ]);
     }
 }
