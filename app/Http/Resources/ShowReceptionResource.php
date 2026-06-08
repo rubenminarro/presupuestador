@@ -58,6 +58,14 @@ class ShowReceptionResource extends JsonResource
                     'engine_number' => $this->vehicle->engine_number,
                 ];
             }),
+            'service_categories' => $this->whenLoaded('serviceCategories', function () {
+                return $this->serviceCategories->map(function ($category) {
+                    return [
+                        'id' => $category->id,
+                        'name' => $category->name,
+                    ];
+                });
+            }),
         ];
     }
 }

@@ -14,6 +14,7 @@ use App\Http\Requests\UpdateReceptionRequest;
 use App\Http\Resources\ShowReceptionResource;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ReceptionController extends Controller
 {
@@ -103,64 +104,37 @@ class ReceptionController extends Controller
 
         $data['created_by'] = Auth::id();
 
-        $reception = Reception::create($data);
+        $reception = DB::transaction(function () use ($request, $data) {
+            
+            $reception = Reception::create($data);
 
-        $reception->serviceCategories()->sync(
-            $request->service_category_ids
-        );
+            $reception->serviceCategories()->sync(
+                $request->service_category_ids
+            );
 
-        $checkList = ReceptionCheckList::create([
-            'reception_id' => $reception->id,
-        ]);
-
-        $items = CheckListItem::whereHas(
-            'serviceCategories',
-            function ($query) use ($request) {
-                $query->whereIn(
-                    'service_categories.id',
-                    $request->service_category_ids
-                );
-            }
-        )
-        ->distinct()
-        ->get();
-
-        foreach ($items as $item) {
-            ReceptionCheckListItem::create([
-                'reception_check_list_id' => $checkList->id,
-                'check_list_item_id'      => $item->id,
-                'value'                   => null,
-                'observation'             => null,
+            $checkList = ReceptionCheckList::create([
+                'reception_id' => $reception->id,
             ]);
-        }
+
+            $this->generateChecklistItems($checkList, $request->service_category_ids);
+
+            return $reception;
+            
+        });
 
         return $this->successResponse(
             'Recepción creada correctamente.',
             new ShowReceptionResource(
-                $reception->load([
+                $reception->fresh()->load([
                     'client',
                     'vehicle',
                     'createdBy',
                     'approvedBy',
+                    'serviceCategories',
                 ])
             ),
             201
         );
-
-        /**return $this->successResponse(
-        'Recepción creada correctamente.',
-        new ShowReceptionResource(
-            $reception->load([
-                'client',
-                'vehicle',
-                'createdBy',
-                'approvedBy',
-                'serviceCategories',
-                'checkList.items.checkListItem',
-            ])
-        ),
-        201
-    ); */
     }
 
     public function show(Reception $reception)
@@ -173,26 +147,67 @@ class ReceptionController extends Controller
                     'vehicle',
                     'createdBy',
                     'approvedBy',
+                    'serviceCategories',
                 ])
             ),
             200
         );
     }
 
-    public function update(UpdateReceptionRequest $request, Reception $reception) 
+    public function update(UpdateReceptionRequest $request, Reception $reception)
     {
         $data = $request->validated();
 
-        $reception->update($data);
+        if (
+            $request->has('service_category_ids')
+            && $reception->status !== 'pending'
+        ) {
+            return $this->errorResponse(
+                'No se pueden modificar las categorías de servicio una vez procesada la recepción.',
+                422
+            );
+        }
+
+        DB::transaction(function () use (
+            $request,
+            $reception,
+            $data
+        ) {
+
+            $reception->update($data);
+
+            if ($request->has('service_category_ids')) {
+
+                $reception->serviceCategories()->sync(
+                    $request->service_category_ids
+                );
+
+                $checkList = $reception->checkList;
+
+                if ($checkList) {
+
+                    ReceptionCheckListItem::where(
+                        'reception_check_list_id',
+                        $checkList->id
+                    )->delete();
+
+                    $this->generateChecklistItems(
+                        $checkList,
+                        $request->service_category_ids
+                    );
+                }
+            }
+        });
 
         return $this->successResponse(
             'Recepción actualizada correctamente.',
             new ShowReceptionResource(
-                $reception->load([
+                $reception->fresh()->load([
                     'client',
                     'vehicle',
                     'createdBy',
                     'approvedBy',
+                    'serviceCategories',
                 ])
             )
         );
@@ -220,5 +235,29 @@ class ReceptionController extends Controller
             null,
             200
         );
+    }
+
+    private function generateChecklistItems( ReceptionCheckList $checkList, array $serviceCategoryIds): void
+    {
+       $items = CheckListItem::whereHas(
+            'serviceCategories',
+            fn ($query) =>
+                $query->whereIn(
+                    'service_categories.id',
+                    $serviceCategoryIds
+                )
+        )
+        ->distinct()
+        ->get();
+
+        foreach ($items as $item) {
+
+            ReceptionCheckListItem::create([
+                'reception_check_list_id' => $checkList->id,
+                'check_list_item_id'      => $item->id,
+                'value'                   => null,
+                'observation'             => null,
+            ]);
+        }
     }
 }

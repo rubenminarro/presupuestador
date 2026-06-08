@@ -12,27 +12,34 @@ class ServiceCategorySeeder extends Seeder
      */
     public function run(): void
     {
-        $data = [
-            [
-                'code' => 'mechanical',
-                'name' => 'Mecánica',
-            ],
-            [
-                'code' => 'bodywork',
-                'name' => 'Chapería',
-            ],
-            [
-                'code' => 'electrical',
-                'name' => 'Electricidad',
-            ],
-            [
-                'code' => 'tires',
-                'name' => 'Neumáticos',
-            ],
+        $categories = [
+        [
+            'code' => 'general',
+            'name' => 'General',
+        ],
+        [
+            'code' => 'mechanical',
+            'name' => 'Mecánica',
+        ],
+        [
+            'code' => 'bodywork',
+            'name' => 'Chapería',
+        ],
+        [
+            'code' => 'electrical',
+            'name' => 'Electricidad',
+        ],
+        [
+            'code' => 'tires',
+            'name' => 'Neumáticos',
+        ],
         ];
 
-        foreach ($data as $serviceCategory) {
-            ServiceCategory::create($serviceCategory);
+        foreach ($categories as $category) {
+            ServiceCategory::updateOrCreate(
+                ['code' => $category['code']],
+                ['name' => $category['name']]
+            );
         }
 
     }
