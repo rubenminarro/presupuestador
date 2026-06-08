@@ -9,8 +9,6 @@ use Illuminate\Validation\Validator;
 use App\Models\Reception;
 use App\Models\Vehicle;
 use App\Enums\FuelLevel;
-use App\Enums\ServiceType;
-
 
 class StoreReceptionRequest extends FormRequest
 {
@@ -32,10 +30,17 @@ class StoreReceptionRequest extends FormRequest
                 'integer',
                 Rule::exists('vehicles', 'id'),
             ],
-            'service_type' => [
+            'service_category_ids' => [
                 'required',
-                'string',
-                Rule::enum(ServiceType::class),
+                'array',
+                'min:1'
+            ],
+            'service_category_ids.*' => [
+                'integer',
+                Rule::exists(
+                    'service_categories',
+                    'id'
+                )
             ],
             'reception_date' => [
                 'required',
@@ -84,10 +89,14 @@ class StoreReceptionRequest extends FormRequest
                 'integer' => 'El ID del vehículo debe ser un número entero.',
                 'exists' => 'El vehículo seleccionado no existe.'
             ],
-            'service_type' => [
-                'required' => 'El tipo de servicio es obligatorio.',
-                'string' => 'El tipo de servicio debe ser una cadena de texto.',
-                Enum::class => 'El tipo de servicio seleccionado no es válido.',
+            'service_category_ids' => [
+                'required' => 'Debes seleccionar al menos una categoría.',
+                'array'    => 'El formato de envío no es válido.',
+                'min'      => 'Debes incluir al menos una categoría.',
+            ],
+            'service_category_ids.*' => [
+                'integer' => 'Cada categoría seleccionada debe ser un número entero.',
+                'exists'  => 'Una o más categorías seleccionadas no existen en el sistema.',
             ],
             'reception_date' => [
                 'required' => 'La fecha de recepción es obligatoria.',

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Reception extends Model
@@ -16,7 +17,6 @@ class Reception extends Model
     protected $fillable = [
         'client_id',
         'vehicle_id',
-        'service_type',
         'reception_date',
         'estimated_delivery_date',
         'mileage',
@@ -71,6 +71,11 @@ class Reception extends Model
     public function budgets(): HasMany
     {
         return $this->hasMany(Budget::class);
+    }
+
+    public function serviceCategories(): BelongsToMany
+    {
+        return $this->belongsToMany(ServiceCategory::class);
     }
 
 }

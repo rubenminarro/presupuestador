@@ -105,18 +105,32 @@ class ReceptionController extends Controller
 
         $reception = Reception::create($data);
 
+        $reception->serviceCategories()->sync(
+            $request->service_category_ids
+        );
+
         $checkList = ReceptionCheckList::create([
             'reception_id' => $reception->id,
         ]);
 
-        $items = CheckListItem::get();
+        $items = CheckListItem::whereHas(
+            'serviceCategories',
+            function ($query) use ($request) {
+                $query->whereIn(
+                    'service_categories.id',
+                    $request->service_category_ids
+                );
+            }
+        )
+        ->distinct()
+        ->get();
 
         foreach ($items as $item) {
             ReceptionCheckListItem::create([
                 'reception_check_list_id' => $checkList->id,
-                'check_list_item_id' => $item->id,
-                'value' => null,
-                'observation' => null,
+                'check_list_item_id'      => $item->id,
+                'value'                   => null,
+                'observation'             => null,
             ]);
         }
 
@@ -132,6 +146,21 @@ class ReceptionController extends Controller
             ),
             201
         );
+
+        /**return $this->successResponse(
+        'Recepción creada correctamente.',
+        new ShowReceptionResource(
+            $reception->load([
+                'client',
+                'vehicle',
+                'createdBy',
+                'approvedBy',
+                'serviceCategories',
+                'checkList.items.checkListItem',
+            ])
+        ),
+        201
+    ); */
     }
 
     public function show(Reception $reception)

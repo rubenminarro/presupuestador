@@ -17,7 +17,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('client_id')->constrained()->restrictOnDelete();
             $table->foreignId('vehicle_id')->constrained()->restrictOnDelete();
-            $table->string('service_type')->nullable();
             $table->date('reception_date');
             $table->date('estimated_delivery_date')->nullable();
             $table->unsignedInteger('mileage')->nullable();
@@ -25,14 +24,8 @@ return new class extends Migration
             $table->text('problem_description')->nullable();
             $table->text('observations')->nullable();
             $table->string('status')->default(ReceptionStatus::PENDING->value);
-            $table->foreignId('created_by')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
-            $table->foreignId('approved_by')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
             $table->softDeletes();
             $table->timestamps();
         });

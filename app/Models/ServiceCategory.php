@@ -3,30 +3,23 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class CheckListItem extends Model
+class ServiceCategory extends Model
 {
     
     use SoftDeletes;
 
     protected $fillable = [
+        'code',
         'name',
-        'type',
-        'required'
     ];
 
-    public function receptionItems(): HasMany
-    {
-        return $this->hasMany(ReceptionCheckListItem::class);
-    }
-
-    public function serviceCategories(): BelongsToMany
+    public function checkListItems(): BelongsToMany
     {
         return $this->belongsToMany(
-            ServiceCategory::class,
+            CheckListItem::class,
             'check_list_item_service_category'
         );
     }
