@@ -79,38 +79,50 @@ class UpdateReceptionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'client_id.required' => 'El cliente es obligatorio.',
-            'client_id.integer' => 'El ID del cliente debe ser un número entero.',
-            'client_id.exists' => 'El cliente seleccionado no existe.',
-
-            'vehicle_id.required' => 'El vehículo es obligatorio.',
-            'vehicle_id.integer' => 'El ID del vehículo debe ser un número entero.',
-            'vehicle_id.exists' => 'El vehículo seleccionado no existe.',
-
-            'service_category_ids.array' => 'El formato de categorías no es válido.',
-            'service_category_ids.min' => 'Debes seleccionar al menos una categoría.',
-
-            'service_category_ids.*.integer' => 'Cada categoría debe ser un número entero.',
-            'service_category_ids.*.exists' => 'Una o más categorías seleccionadas no existen en el sistema.',
-
-            'reception_date.required' => 'La fecha de recepción es obligatoria.',
-            'reception_date.date' => 'La fecha de recepción debe ser una fecha válida.',
-
-            'estimated_delivery_date.date' => 'La fecha estimada de entrega debe ser una fecha válida.',
-            'estimated_delivery_date.after_or_equal' => 'La fecha estimada de entrega no puede ser anterior a la fecha de recepción.',
-
-            'mileage.integer' => 'El kilometraje debe ser un número entero.',
-            'mileage.min' => 'El kilometraje no puede ser negativo.',
-
-            'fuel_level.string' => 'El nivel de combustible debe ser una cadena de texto.',
-
-            'problem_description.string' => 'La descripción del problema debe ser una cadena de texto.',
-            'problem_description.max' => 'La descripción del problema no debe tener más de 500 caracteres.',
-            'problem_description.regex' => 'La descripción del problema contiene caracteres no permitidos.',
-
-            'observations.string' => 'Las observaciones deben ser una cadena de texto.',
-            'observations.max' => 'Las observaciones no deben tener más de 500 caracteres.',
-            'observations.regex' => 'Las observaciones contienen caracteres no permitidos.',
+            'client_id' => [
+                'required' => 'El cliente es obligatorio.',
+                'integer' => 'El ID del cliente debe ser un número entero.',
+                'exists' => 'El cliente seleccionado no existe.'
+            ],
+            'vehicle_id' => [
+                'required' => 'El vehículo es obligatorio.',
+                'integer' => 'El ID del vehículo debe ser un número entero.',
+                'exists' => 'El vehículo seleccionado no existe.'
+            ],
+            'service_category_ids' => [
+                'array' => 'El formato de categorías no es válido.',
+                'min' => 'Debes seleccionar al menos una categoría.',
+            ],
+            'service_category_ids.*' => [
+                'integer' => 'Cada categoría debe ser un número entero.',
+                'exists' => 'Una o más categorías seleccionadas no existen en el sistema.',
+            ],
+            'reception_date' => [
+                'required' => 'La fecha de recepción es obligatoria.',
+                'date' => 'La fecha de recepción debe ser una fecha válida.',
+            ],
+            'estimated_delivery_date' => [
+                'date' => 'La fecha estimada de entrega debe ser una fecha válida.',
+                'after_or_equal' => 'La fecha estimada de entrega no puede ser anterior a la fecha de recepción.',
+            ],
+            'mileage' => [
+                'integer' => 'El kilometraje debe ser un número entero.',
+                'min' => 'El kilometraje no puede ser negativo.',
+            ],
+            'fuel_level' => [
+                'string' => 'El nivel de combustible debe ser una cadena de texto.',
+                Enum::class => 'El nivel de combustible seleccionado no es válido.',
+            ],
+            'problem_description' => [
+                'string' => 'La descripción del problema debe ser una cadena de texto.',
+                'max' => 'La descripción del problema no debe tener más de 500 caracteres.',
+                'regex' => 'La descripción del problema contiene caracteres no permitidos.',
+            ],
+            'observations' => [
+                'string' => 'Las observaciones deben ser una cadena de texto.',
+                'max' => 'Las observaciones no deben tener más de 500 caracteres.',
+                'regex' => 'Las observaciones contienen caracteres no permitidos.',
+            ],
         ];
     }
 

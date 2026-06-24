@@ -3,58 +3,84 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\ReceptionCheckList;
-use App\Models\ReceptionCheckListItem;
 use App\Http\Requests\UpdateReceptionCheckListRequest;
 use App\Http\Resources\ReceptionCheckListResource;
 use App\Services\ReceptionCheckListItemService;
+use App\Traits\ApiResponse;
+use Illuminate\Support\Facades\DB;
 
 class ReceptionCheckListController extends Controller
 {
    
+    use ApiResponse;
+
     public function show(ReceptionCheckList $receptionCheckList)
     {
-        $receptionCheckList->load('items.checkListItem');
-
-        return response()->json([
-            'success' => true,
-            'status' => 200,
-            'message' => 'Checklist obtenido.',
-            'data' => new ReceptionCheckListResource($receptionCheckList),
-        ]);
+        return $this->successResponse(
+            'Checklist obtenido correctamente.',
+            new ReceptionCheckListResource(
+                $receptionCheckList->load([
+                    'items.checkListItem',
+                ])
+            )
+        );
     }
 
-    public function update(UpdateReceptionCheckListRequest $request, ReceptionCheckList $receptionCheckList, ReceptionCheckListItemService $service)
-    {
-        $data = $request->validated();
-
-        foreach ($data['items'] as $item) {
-            ReceptionCheckListItem::updateOrCreate(
+    public function update(
+        UpdateReceptionCheckListRequest $request,
+        ReceptionCheckList $receptionCheckList,
+        ReceptionCheckListItemService $service
+    ) {
+        if (
+            in_array(
+                $receptionCheckList->reception->status,
                 [
-                    'reception_check_list_id' => $receptionCheckList->id,
-                    'check_list_item_id' => $item['check_list_item_id'],
-                ],
-                [
-                    'value' => $item['value'] ?? null,
-                    'observation' => $item['observation'] ?? null,
+                    'in_progress',
+                    'completed',
+                    'delivered',
                 ]
+            )
+        ) {
+            return $this->errorResponse(
+                'No se puede modificar el checklist de una recepción procesada.',
+                422
             );
         }
 
-        $receptionCheckList->load('items.checkListItem');
+        DB::transaction(function () use (
+            $request,
+            $receptionCheckList,
+            $service
+        ) {
 
-        $status = $service->calculateCheckListStatus($receptionCheckList);
+            foreach ($request->items as $item) {
 
-        $receptionCheckList->update(['status' => $status]);
+                $receptionCheckList
+                    ->items()
+                    ->where('id', $item['id'])
+                    ->update([
+                        'value'       => $item['value'] ?? null,
+                        'observation' => $item['observation'] ?? null,
+                    ]);
+            }
 
-        $receptionCheckList->load('items.checkListItem');
+            $status = $service->calculateCheckListStatus(
+                $receptionCheckList->fresh()->load('items')
+            );
 
-        return response()->json([
-            'success' => true,
-            'status' => 200,
-            'message' => 'Checklist actualizado correctamente.',
-            'data' => new ReceptionCheckListResource($receptionCheckList),
-        ]);
+            $receptionCheckList->update([
+                'status' => $status,
+            ]);
+        });
+
+        return $this->successResponse(
+            'Checklist actualizado correctamente.',
+            new ReceptionCheckListResource(
+                $receptionCheckList->fresh()->load([
+                    'items.checkListItem',
+                ])
+            )
+        );
     }
 }

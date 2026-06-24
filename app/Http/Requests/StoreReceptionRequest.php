@@ -88,7 +88,8 @@ class StoreReceptionRequest extends FormRequest
                 'required' => 'El vehículo es obligatorio.',
                 'integer' => 'El ID del vehículo debe ser un número entero.',
                 'exists' => 'El vehículo seleccionado no existe.'
-            ],'service_category_ids.*' => [
+            ],
+            'service_category_ids.*' => [
                 'required' => 'Debes seleccionar al menos una categoría.',
                 'array'    => 'El formato de envío no es válido.',
                 'integer' => 'Cada categoría seleccionada debe ser un número entero.',
