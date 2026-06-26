@@ -10,6 +10,8 @@ use App\Http\Requests\UploadReceptionPhotosRequest;
 use App\Http\Requests\UpdateReceptionPhotoRequest;
 use App\Http\Resources\ReceptionPhotoResource;
 use App\Traits\ApiResponse;
+use Illuminate\Support\Facades\DB;
+use Exception;
 
 class ReceptionPhotoController extends Controller
 {
@@ -20,9 +22,8 @@ class ReceptionPhotoController extends Controller
     {
         return $this->successResponse(
             'Fotos obtenidas correctamente.',
-            ReceptionPhotoResource::collection(
-                $reception->photos
-            )
+            ReceptionPhotoResource::collection($reception->photos),
+            200
         );
     }
 
@@ -30,68 +31,85 @@ class ReceptionPhotoController extends Controller
     {
 
         $data = $request->validated();
-
+        $uploadedFiles = [];
         $photos = [];
 
-        foreach ($data['photos'] as $photoData) {
+        DB::beginTransaction();
 
-            $file = $photoData['file'];
+        try {
+            foreach ($data['photos'] as $photoData) {
+                $file = $photoData['file'];
+                
+                $path = $file->store('receptions', 'public');
+                $uploadedFiles[] = $path;
 
-            $path = $file->store('receptions', 'public');
+                $photo = $reception->photos()->create([
+                    'path' => $path,
+                    'original_name' => $file->getClientOriginalName(),
+                    'description' => $photoData['description'] ?? null,
+                ]);
 
-            $photo = ReceptionPhoto::create([
-                'reception_id' => $reception->id,
-                'path' => $path,
-                'original_name' => $file->getClientOriginalName(),
-                'description' => $photoData['description'] ?? null,
-            ]);
+                $photos[] = $photo;
+            }
 
-            $photos[] = $photo;
+            DB::commit();
+
+            return $this->successResponse(
+                'Fotos cargadas correctamente.',
+                ReceptionPhotoResource::collection(collect($photos)),
+                201
+            );
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            
+            foreach ($uploadedFiles as $path) {
+                Storage::disk('public')->delete($path);
+            }
+
+            return $this->errorResponse('Error al cargar las fotos.', 500); 
         }
-
-        return $this->successResponse(
-            'Fotos cargadas correctamente.',
-            ReceptionPhotoResource::collection(collect($photos)),
-            201
-        );
     }
 
-    public function update(UpdateReceptionPhotoRequest $request, Reception $reception, ReceptionPhoto $receptionPhoto)
+    public function update(UpdateReceptionPhotoRequest $request, Reception $reception, ReceptionPhoto $photo)
     {
 
         $data = $request->validated();
+        $oldPath = null;
 
         if ($request->hasFile('file')) {
-
-            Storage::disk('public')->delete($receptionPhoto->path);
-
+            $oldPath = $photo->path;
             $file = $request->file('file');
-
-            $path = $file->store('receptions', 'public');
-
-            $receptionPhoto->path = $path;
-            $receptionPhoto->original_name = $file->getClientOriginalName();
+            
+            $photo->path = $file->store('receptions', 'public');
+            $photo->original_name = $file->getClientOriginalName();
         }
 
         if (array_key_exists('description', $data)) {
-            $receptionPhoto->description = $data['description'];
+            $photo->description = $data['description'];
         }
 
-        $receptionPhoto->save();
+        $photo->save();
+
+        if ($oldPath) {
+            Storage::disk('public')->delete($oldPath);
+        }
 
         return $this->successResponse(
             'Foto actualizada correctamente.',
-            new ReceptionPhotoResource($receptionPhoto)
+            new ReceptionPhotoResource($photo),
+            200
         );
     }
 
-    public function destroy(Reception $reception, ReceptionPhoto $receptionPhoto)
+    public function destroy(Reception $reception, ReceptionPhoto $photo)
     {
-        if ($receptionPhoto->path && Storage::disk('public')->exists($receptionPhoto->path)) {
-            Storage::disk('public')->delete($receptionPhoto->path);
+        
+        if ($photo->path && Storage::disk('public')->exists($photo->path)) {
+            Storage::disk('public')->delete($photo->path);
         }
 
-        $receptionPhoto->delete();
+        $photo->delete();
 
         return $this->successResponse(
             'Foto eliminada correctamente.'

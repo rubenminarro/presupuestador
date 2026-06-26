@@ -80,8 +80,8 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
 
     Route::get('/receptions/{reception}/photos', [ReceptionPhotoController::class, 'index']);
     Route::post('/receptions/{reception}/photos', [ReceptionPhotoController::class, 'store']);
-    Route::patch('/receptions/{reception}/photos/{receptionPhoto}', [ReceptionPhotoController::class, 'update']);
-    Route::delete('/receptions/{reception}/photos/{receptionPhoto}', [ReceptionPhotoController::class, 'destroy']);
+    Route::patch('/receptions/{reception}/photos/{photo}', [ReceptionPhotoController::class, 'update']);
+    Route::delete('/receptions/{reception}/photos/{photo}', [ReceptionPhotoController::class, 'destroy']);
 
     Route::get('/diagnostics', [DiagnosticController::class, 'index']);
     Route::post('/diagnostics', [DiagnosticController::class, 'store']);

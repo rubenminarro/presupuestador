@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ReceptionPhoto extends Model
 {
@@ -13,7 +14,7 @@ class ReceptionPhoto extends Model
         'description',
     ];
 
-    public function reception()
+    public function reception(): BelongsTo
     {
         return $this->belongsTo(Reception::class);
     }
