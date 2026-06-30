@@ -40,7 +40,7 @@ class UpdateVehicleRequest extends FormRequest
                 Rule::exists('vehicle_models', 'id'),
             ],
             'chassis' => [
-                'nullable',
+                'sometimes',
                 Rule::requiredIf(function () {
                     return $this->boolean('no_plate');
                 }),
@@ -49,7 +49,7 @@ class UpdateVehicleRequest extends FormRequest
                 Rule::unique('vehicles', 'chassis')->ignore($vehicleId, 'id')
             ],
             'plate' => [
-                'nullable',
+                'sometimes',
                 'required_if:no_plate,false,0',
                 'string', 
                 'max:20', 
@@ -61,41 +61,41 @@ class UpdateVehicleRequest extends FormRequest
                 'boolean',
             ],
             'year' => [
-                'nullable',
+                'sometimes',
                 'integer',
                 'digits:4',
                 'min:1900',
                 'max:'.date('Y'),
             ],
             'color' => [
-                'nullable',
+                'sometimes',
                 Rule::enum(VehicleColor::class),
                 'max:30',
             ],
             'engine_number' => [
-                'nullable',
+                'sometimes',
                 'string',
                 'alpha_num:ascii',
                 'min:5',
                 'max:30',
             ],
             'mileage' => [
-                'nullable',
+                'sometimes',
                 'integer',
                 'min:0',
             ],
             'fuel_type' => [
-                'nullable',
+                'sometimes',
                 Rule::enum(FuelType::class),
                 'max:50',
             ],
             'transmission' => [
-                'nullable',
+                'sometimes',
                 Rule::enum(TransmissionType::class),
                 'max:50',
             ],
             'notes' => [
-                'nullable', 
+                'sometimes', 
                 'string', 
                 'max:500', 
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'

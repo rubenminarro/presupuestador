@@ -35,7 +35,7 @@ class UpdateUserRequest extends FormRequest
                 Rule::unique('users', 'email')->ignore($userId),
             ],
             'password' => [
-                'nullable', 
+                'sometimes', 
                 'confirmed',
                 Password::min(5)
                     ->letters()

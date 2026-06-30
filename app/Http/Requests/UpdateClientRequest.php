@@ -52,7 +52,7 @@ class UpdateClientRequest extends FormRequest
                 'regex:/^\+?[1-9]\d{7,14}$/'
             ],
             'notes' => [
-                'nullable', 
+                'sometimes', 
                 'string', 
                 'max:1000',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u',
