@@ -7,8 +7,12 @@ use Illuminate\Http\Request;
 use App\Http\Resources\DiagnosticResource;
 use App\Http\Requests\StoreDiagnosticRequest;
 use App\Http\Requests\UpdateDiagnosticRequest;
+use App\Http\Resources\ShowDiagnosticResource;
 use App\Models\Diagnostic;
 use App\Traits\ApiResponse;
+use App\Enums\DiagnosticStatus;
+use Illuminate\Support\Facades\DB;
+use Exception;
 
 class DiagnosticController extends Controller
 {
@@ -17,34 +21,47 @@ class DiagnosticController extends Controller
 
     public function index(Request $request)
     {
-        $search = $request->query('search');
+        $search = $request->input('search');
 
-        $diagnostics = Diagnostic::query()
-            ->with([
-                'reception',
-                'mechanic'
-            ])
-            ->when($search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('customer_complaint', 'like', "%{$search}%")
-                    ->orWhere('diagnosis', 'like', "%{$search}%")
-                    ->orWhere('recommendation', 'like', "%{$search}%")
-                    ->orWhereHas('reception', function ($q2) use ($search) {
-                        $q2->where('reception_id', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('mechanic', function ($q3) use ($search) {
-                        $q3->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('first_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%");
-                    });
+        $query = Diagnostic::query()
+        ->with(['reception', 'mechanic']);
+
+        $query->when($request->filled('search'), function ($q) use ($search) {
+            $q->where(function ($subQuery) use ($search) {
+                $subQuery->where('id', 'like', "%{$search}%")
+                ->orWhere('customer_complaint', 'like', "%{$search}%")
+                ->orWhere('diagnosis', 'like', "%{$search}%")
+                ->orWhere('recommendation', 'like', "%{$search}%")
+                ->orWhere('priority', 'like', "%{$search}%")
+                ->orWhere('status', 'like', "%{$search}%")
+                ->orWhereHas('reception', function ($r) use ($search) {
+                    $r->where('id', 'like', "%{$search}%")
+                    ->orWhere('problem_description', 'like', "%{$search}%")
+                    ->orWhere('observations', 'like', "%{$search}%")
+                    ->orWhere('mileage', 'like', "%{$search}%")
+                    ->orWhere('status', 'like', "%{$search}%")
+                    ->orWhere('fuel_level', 'like', "%{$search}%");
+                })
+                ->orWhereHas('reception.client', function ($rc) use ($search) {
+                    $rc->where('document_number', 'like', "%{$search}%")
+                    ->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+                })
+                ->orWhereHas('mechanic', function ($v) use ($search) {
+                    $v->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%");
                 });
-            })
-            ->latest()
-            ->paginate(10);
+            });
+        });
+
+        $diagnostics = $query->latest()->paginate($request->per_page ?? 10);
 
         return $this->successResponse(
-            'Lista de diagnósticos obtenida correctamente.',
+            'Diagnósticos obtenidos correctamente.',
             DiagnosticResource::collection($diagnostics->items()),
             200,
             [
@@ -62,30 +79,46 @@ class DiagnosticController extends Controller
     {
         
         $data = $request->validated();
-    
-        $diagnostic = Diagnostic::create($data);
 
-        $diagnostic->load([
-            'reception',
-            'mechanic'
-        ]);
+        $data['status'] = DiagnosticStatus::PENDING;
+        $data['diagnosed_at'] = now();
 
-        return $this->successResponse(
-            'Diagnóstico creado correctamente.',
-            new DiagnosticResource($diagnostic),
-            201
-        );
+        DB::beginTransaction();
+
+        try {
+            $diagnostic = Diagnostic::create($data);
+
+            DB::commit();
+
+            $diagnostic->load([
+                'reception',
+                'mechanic'
+            ]);
+
+            return $this->successResponse(
+                'Diagnóstico creado correctamente.',
+                new ShowDiagnosticResource($diagnostic),
+                201
+            );
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            return $this->errorResponse('Error al crear el diagnóstico: ' . $e->getMessage(), 500);
+        }
     }
 
     public function show(Diagnostic $diagnostic)
     {
         $diagnostic->load([
-            'reception',
-            'mechanic'
+            'reception.client',
+            'reception.vehicle',
+            'reception.photos',
+            'mechanic',
+            'items.photos',
         ]);
 
         return $this->successResponse(
-            new DiagnosticResource($diagnostic),
+            new ShowDiagnosticResource($diagnostic),
             'Diagnóstico obtenido correctamente'
         );
     }
@@ -102,7 +135,7 @@ class DiagnosticController extends Controller
         ]);
 
         return $this->successResponse(
-            new DiagnosticResource($diagnostic),
+            new ShowDiagnosticResource($diagnostic),
             'Diagnóstico actualizado correctamente'
         );
     }

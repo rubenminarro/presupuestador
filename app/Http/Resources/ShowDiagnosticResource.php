@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class DiagnosticResource extends JsonResource
+class ShowDiagnosticResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
@@ -18,15 +18,10 @@ class DiagnosticResource extends JsonResource
             'recommendation' => $this->recommendation,
             'priority' => $this->priority,
             'status' => $this->status,
-            'requires_parts' => $this->requires_parts,
-            'requires_repair' => $this->requires_repair,
-            'diagnosed_at' => $this->diagnosed_at,
-            'reception' => $this->whenLoaded('reception', function () {
-                return [
-                    'id' => $this->reception->id,
-                    'reception_date' => $this->reception->reception_date->format('d/m/Y H:i'),
-                ];
-            }),
+            'diagnosed_at' => optional($this->diagnosed_at)->format('d/m/Y H:i'),
+            'reception' => new ShowReceptionResource(
+                $this->whenLoaded('reception')
+            ),
             'mechanic' => $this->whenLoaded('mechanic', function () {
                 return [
                     'id' => $this->mechanic->id,
@@ -34,6 +29,9 @@ class DiagnosticResource extends JsonResource
                     'email' => $this->mechanic->email,
                 ];
             }),
+            'items' => DiagnosticItemResource::collection(
+                $this->whenLoaded('items')
+            ),
             'created_at' => $this->created_at->format('d/m/Y H:i'),
             'updated_at' => $this->updated_at->format('d/m/Y H:i'),
         ];

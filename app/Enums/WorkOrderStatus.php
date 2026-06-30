@@ -2,34 +2,24 @@
 
 namespace App\Enums;
 
-enum Status: string
+enum WorkOrderStatus: string
 {
     case PENDING = 'pending';
-    case DIAGNOSIS = 'diagnosis';
-    case APPROVED = 'approved';
     case IN_PROGRESS = 'in_progress';
     case WAITING_PARTS = 'waiting_parts';
     case COMPLETED = 'completed';
     case DELIVERED = 'delivered';
     case CANCELLED = 'cancelled';
-    case REJECTED = 'rejected';
-    case DRAFT = 'draft';
-    case SENT = 'sent';
 
 
     public function label(): string {
         return match($this) {
             self::PENDING => 'Pendiente',
-            self::DIAGNOSIS => 'En diagnóstico',
-            self::APPROVED => 'Aprobado',
             self::IN_PROGRESS => 'En reparación',
             self::WAITING_PARTS => 'Esperando repuestos',
             self::COMPLETED => 'Terminado',
             self::DELIVERED => 'Entregado',
             self::CANCELLED => 'Cancelado',
-            self::REJECTED => 'Rechazado',
-            self::DRAFT => 'Borrador',
-            self::SENT => 'Enviado',
         };
     }
 }

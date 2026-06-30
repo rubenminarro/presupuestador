@@ -2,27 +2,18 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Enums\Priority;
-use App\Enums\Status;
+use Illuminate\Validation\Rules\Enum;
 
 class StoreDiagnosticRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
@@ -56,19 +47,13 @@ class StoreDiagnosticRequest extends FormRequest
                 'nullable',
                 Rule::enum(Priority::class),
             ],
-            'status' => [
-                'nullable',
-                Rule::enum(Status::class)
-            ],
             'requires_parts' => [
+                'required',
                 'boolean'
             ],
             'requires_repair' => [
+                'required',
                 'boolean'
-            ],
-            'diagnosed_at' => [
-                'nullable',
-                'date'
             ],
         ];
     }
@@ -84,28 +69,30 @@ class StoreDiagnosticRequest extends FormRequest
                 'exists' => 'El ID del mecánico no existe en la base de datos.',
             ],
             'customer_complaint' => [
+                'string' => 'La queja del cliente debe ser una cadena de texto.',
+                'max' => 'La queja del cliente no debe exceder los 1000 caracteres.',
                 'regex' => 'La queja del cliente contiene caracteres no permitidos.',
             ],
             'diagnosis' => [
+                'string' => 'El diagnóstico debe ser una cadena de texto.',
+                'max' => 'El diagnóstico no debe exceder los 1000 caracteres.',
                 'regex' => 'El diagnóstico contiene caracteres no permitidos.',
             ],
             'recommendation' => [
+                'string' => 'La recomendación debe ser una cadena de texto.',
+                'max' => 'La recomendación no debe exceder los 1000 caracteres.',
                 'regex' => 'La recomendación contiene caracteres no permitidos.',
             ],
             'priority' => [
-                'enum' => 'La prioridad debe ser uno de los siguientes: low, medium, high.',
-            ],
-            'status' => [
-                'enum' => 'El estado debe ser uno de los siguientes: pending, in_progress, completed, approved, rejected.',
+                Enum::class => 'La prioridad debe ser uno de los siguientes: low, medium, high.',
             ],
             'requires_parts' => [
+                'required' => 'El campo requiere piezas es obligatorio.',
                 'boolean' => 'El campo requiere piezas debe ser un valor booleano.',
             ],
             'requires_repair' => [
+                'required' => 'El campo requiere reparación es obligatorio.',
                 'boolean' => 'El campo requiere reparación debe ser un valor booleano.',
-            ],
-            'diagnosed_at' => [
-                'date' => 'La fecha de diagnóstico debe ser una fecha válida.',
             ],
         ];
     }
