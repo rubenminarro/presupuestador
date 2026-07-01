@@ -24,7 +24,13 @@ class DiagnosticController extends Controller
         $search = $request->input('search');
 
         $query = Diagnostic::query()
-        ->with(['reception', 'mechanic']);
+        ->with([
+                'reception.client',
+                'reception.vehicle.brand',
+                'reception.vehicle.vehicleModel',
+                'mechanic.user',
+            ]
+        );
 
         $query->when($request->filled('search'), function ($q) use ($search) {
             $q->where(function ($subQuery) use ($search) {
@@ -49,8 +55,20 @@ class DiagnosticController extends Controller
                     ->orWhere('phone', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
                 })
-                ->orWhereHas('mechanic', function ($v) use ($search) {
-                    $v->where('name', 'like', "%{$search}%")
+                ->orWhereHas('reception.vehicle', function ($rv) use ($search) {
+                    $rv->where('chassis', 'like', "%{$search}%")
+                    ->orWhere('plate', 'like', "%{$search}%")
+                    ->orWhere('engine_number', 'like', "%{$search}%")
+                    ->orWhere('year', 'like', "%{$search}%");
+                })
+                ->orWhereHas('reception.vehicle.brand', function ($rvb) use ($search) {
+                    $rvb->where('name', 'like', "%{$search}%");
+                })
+                ->orWhereHas('reception.vehicle.vehicleModel', function ($rvm) use ($search) {
+                    $rvm->where('name', 'like', "%{$search}%");
+                })
+                ->orWhereHas('mechanic.user', function ($mu) use ($search) {
+                    $mu->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('first_name', 'like', "%{$search}%")
                     ->orWhere('last_name', 'like', "%{$search}%");

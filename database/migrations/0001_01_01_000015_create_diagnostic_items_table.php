@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use App\Enums\Severity;
-use App\Enums\Status;
+use App\Enums\DiagnosticItemStatus;
 
 return new class extends Migration
 {
@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('title');
             $table->longText('description')->nullable();
             $table->string('severity')->default(Severity::MEDIUM->value);
-            $table->string('status')->default(Status::PENDING->value);
+            $table->string('status')->default(DiagnosticItemStatus::PENDING->value);
             $table->boolean('requires_repair')->default(false);
             $table->boolean('requires_replacement')->default(false);
             $table->decimal('estimated_cost', 10, 2)->nullable();

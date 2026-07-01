@@ -30,8 +30,19 @@ class DiagnosticResource extends JsonResource
             'mechanic' => $this->whenLoaded('mechanic', function () {
                 return [
                     'id' => $this->mechanic->id,
-                    'name' => $this->mechanic->name,
-                    'email' => $this->mechanic->email,
+                    'employee_code' => $this->mechanic->employee_code,
+                    'specialty' => $this->mechanic->specialty,
+                    'status' => $this->mechanic->status,
+
+                    /*'user' => $this->whenLoaded('user', function () {
+                        return [
+                            'id' => $this->mechanic->user->id,
+                            'name' => $this->mechanic->user->name,
+                            'first_name' => $this->mechanic->user->first_name,
+                            'last_name' => $this->mechanic->user->last_name,
+                            'email' => $this->mechanic->user->email,
+                        ];
+                    }),*/
                 ];
             }),
             'created_at' => $this->created_at->format('d/m/Y H:i'),

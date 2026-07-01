@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use App\Enums\Status;
+use App\Enums\BudgetStatus;
 
 return new class extends Migration
 {
@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('reception_id')->constrained()->cascadeOnDelete();
             $table->foreignId('created_by')->constrained('users');
             $table->string('code')->unique();
-            $table->string('status')->default(Status::DRAFT->value);
+            $table->string('status')->default(BudgetStatus::DRAFT->value);
             $table->decimal('subtotal', 10, 2)->default(0);
             $table->decimal('tax', 10, 2)->default(0);
             $table->decimal('total', 10, 2)->default(0);

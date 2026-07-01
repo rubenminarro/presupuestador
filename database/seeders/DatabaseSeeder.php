@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
             ServiceCategorySeeder::class,
             CheckListItemSeeder::class,
             CheckListItemServiceCategorySeeder::class,
-            /*ReceptionSeeder::class,*/
+            ReceptionSeeder::class,
         ]);
     }
 }

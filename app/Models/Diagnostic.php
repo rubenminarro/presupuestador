@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Diagnostic extends Model
 {
@@ -25,17 +27,17 @@ class Diagnostic extends Model
         'diagnosed_at' => 'datetime',
     ];
 
-    public function reception()
+    public function reception(): BelongsTo
     {
         return $this->belongsTo(Reception::class);
     }
 
-    public function mechanic()
+    public function mechanic(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'mechanic_id');
+        return $this->belongsTo(Mechanic::class);
     }
 
-    public function items()
+    public function items(): HasMany
     {
         return $this->hasMany(DiagnosticItem::class);
     }
