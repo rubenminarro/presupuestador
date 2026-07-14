@@ -21,39 +21,46 @@ class DiagnosticController extends Controller
 
     public function index(Request $request)
     {
-        $search = $request->input('search');
+        $search = trim($request->input('search', ''));
 
         $query = Diagnostic::query()
         ->with([
-                'reception.client',
-                'reception.vehicle.brand',
-                'reception.vehicle.vehicleModel',
-                'mechanic.user',
-            ]
-        );
+            'reception.client',
+            'reception.vehicle.brand',
+            'reception.vehicle.vehicleModel',
+            'mechanic.user',
+        ]);
 
         $query->when($request->filled('search'), function ($q) use ($search) {
-            $q->where(function ($subQuery) use ($search) {
-                $subQuery->where('id', 'like', "%{$search}%")
-                ->orWhere('customer_complaint', 'like', "%{$search}%")
+           
+            $q->where(function ($d) use ($search) {
+
+                if (is_numeric($search)) {
+                    $d->orWhere('id', (int) $search);
+                }
+
+                $d->orWhere('customer_complaint', 'like', "%{$search}%")
                 ->orWhere('diagnosis', 'like', "%{$search}%")
                 ->orWhere('recommendation', 'like', "%{$search}%")
-                ->orWhere('priority', 'like', "%{$search}%")
-                ->orWhere('status', 'like', "%{$search}%")
                 ->orWhereHas('reception', function ($r) use ($search) {
-                    $r->where('id', 'like', "%{$search}%")
-                    ->orWhere('problem_description', 'like', "%{$search}%")
-                    ->orWhere('observations', 'like', "%{$search}%")
-                    ->orWhere('mileage', 'like', "%{$search}%")
-                    ->orWhere('status', 'like', "%{$search}%")
-                    ->orWhere('fuel_level', 'like', "%{$search}%");
+
+                    if (is_numeric($search)) {
+                        $r->orWhere('id', (int) $search);
+                    }
+
+                    $r->orWhere('problem_description', 'like', "%{$search}%")
+                    ->orWhere('observations', 'like', "%{$search}%");
                 })
                 ->orWhereHas('reception.client', function ($rc) use ($search) {
                     $rc->where('document_number', 'like', "%{$search}%")
                     ->orWhere('first_name', 'like', "%{$search}%")
                     ->orWhere('last_name', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw(
+                        "CONCAT(first_name,' ',last_name) LIKE ?",
+                        ["%{$search}%"]
+                    );
                 })
                 ->orWhereHas('reception.vehicle', function ($rv) use ($search) {
                     $rv->where('chassis', 'like', "%{$search}%")
@@ -71,10 +78,18 @@ class DiagnosticController extends Controller
                     $mu->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%");
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhereRaw(
+                        "CONCAT(first_name,' ',last_name) LIKE ?",
+                        ["%{$search}%"]
+                    );
                 });
             });
         });
+
+        /*$query->when($request->filled('priority'), function ($q) use ($request) {
+            $q->where('priority', $request->priority);
+        });*/
 
         $diagnostics = $query->latest()->paginate($request->per_page ?? 10);
 
@@ -131,7 +146,7 @@ class DiagnosticController extends Controller
             'reception.client',
             'reception.vehicle',
             'reception.photos',
-            'mechanic',
+            'mechanic.user',
             'items.photos',
         ]);
 

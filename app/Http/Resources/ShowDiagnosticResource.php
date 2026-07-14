@@ -22,13 +22,9 @@ class ShowDiagnosticResource extends JsonResource
             'reception' => new ShowReceptionResource(
                 $this->whenLoaded('reception')
             ),
-            'mechanic' => $this->whenLoaded('mechanic', function () {
-                return [
-                    'id' => $this->mechanic->id,
-                    'name' => $this->mechanic->name,
-                    'email' => $this->mechanic->email,
-                ];
-            }),
+            'mechanic' => new MechanicResource(
+                $this->whenLoaded('mechanic')
+            ),
             'items' => DiagnosticItemResource::collection(
                 $this->whenLoaded('items')
             ),

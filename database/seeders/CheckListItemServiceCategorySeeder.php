@@ -8,9 +8,6 @@ use App\Models\ServiceCategory;
 
 class CheckListItemServiceCategorySeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $general = ServiceCategory::where('code', 'general')->firstOrFail();

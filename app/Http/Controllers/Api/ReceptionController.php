@@ -15,6 +15,7 @@ use App\Http\Resources\ShowReceptionResource;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Services\ReceptionChecklistService;
 
 class ReceptionController extends Controller
 {
@@ -98,13 +99,13 @@ class ReceptionController extends Controller
         );
     }
 
-    public function store(StoreReceptionRequest $request)
+    public function store(StoreReceptionRequest $request, ReceptionChecklistService $checklistService)
     {
         $data = $request->validated();
 
         $data['created_by'] = Auth::id();
 
-        $reception = DB::transaction(function () use ($request, $data) {
+        $reception = DB::transaction(function () use ($request, $data, $checklistService) {
             
             $reception = Reception::create($data);
 
@@ -116,7 +117,7 @@ class ReceptionController extends Controller
                 'reception_id' => $reception->id,
             ]);
 
-            $this->generateChecklistItems($checkList, $request->service_category_ids);
+            $checklistService->generateChecklistItems($checkList, $request->service_category_ids);
 
             return $reception;
             

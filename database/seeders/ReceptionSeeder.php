@@ -4,15 +4,21 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Reception;
+use App\Models\User;
+use App\Models\ReceptionCheckList;
 use App\Enums\FuelLevel;
+use App\Services\ReceptionChecklistService;
+use Illuminate\Support\Facades\DB;
 
 class ReceptionSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
+        
+        $checklistService = app(ReceptionChecklistService::class);
+        
+        $adminId = User::where('email', 'admin@mail.com.py')->value('id') ?? 1;
+    
         $data = [
             [
                 'client_id' => 1,
@@ -72,12 +78,23 @@ class ReceptionSeeder extends Seeder
         ];
 
         foreach ($data as $receptionData) {
-            $categoryIds = $receptionData['service_category_id'];
-            unset($receptionData['service_category_id']);
+            DB::transaction(function () use ($receptionData, $adminId, $checklistService) {
+                
+                $serviceCategoryIds = $receptionData['service_category_id'];
+                unset($receptionData['service_category_id']);
 
-            $reception = Reception::create($receptionData);
+                $receptionData['created_by'] = $adminId;
 
-            $reception->serviceCategories()->attach($categoryIds);
+                $reception = Reception::create($receptionData);
+
+                $reception->serviceCategories()->sync($serviceCategoryIds);
+
+                $checkList = ReceptionCheckList::create([
+                    'reception_id' => $reception->id,
+                ]);
+
+                $checklistService->generateChecklistItems($checkList, $serviceCategoryIds);
+            });
         }
     }
 }

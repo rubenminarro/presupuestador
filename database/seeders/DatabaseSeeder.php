@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesAndPermissionsSeeder::class,
             AdminUserSeeder::class,
+            MechanicSeeder::class,
             BrandSeeder::class,
             ServiceCategorySeeder::class,
             VehicleModelSeeder::class,
@@ -26,6 +27,7 @@ class DatabaseSeeder extends Seeder
             CheckListItemSeeder::class,
             CheckListItemServiceCategorySeeder::class,
             ReceptionSeeder::class,
+            DiagnosticSeeder::class,
         ]);
     }
 }
