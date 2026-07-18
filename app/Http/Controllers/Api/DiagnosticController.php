@@ -24,74 +24,172 @@ class DiagnosticController extends Controller
         $search = trim($request->input('search', ''));
 
         $query = Diagnostic::query()
-        ->with([
-            'reception.client',
-            'reception.vehicle.brand',
-            'reception.vehicle.vehicleModel',
-            'mechanic.user',
-        ]);
+            ->with([
+                'reception.client',
+                'reception.vehicle.brand',
+                'reception.vehicle.vehicleModel',
+                'mechanic.user',
+            ]);
 
-        $query->when($request->filled('search'), function ($q) use ($search) {
-           
-            $q->where(function ($d) use ($search) {
+        $query->when($request->filled('search'), function ($query) use ($search) {
+
+            $query->where(function ($q) use ($search) {
 
                 if (is_numeric($search)) {
-                    $d->orWhere('id', (int) $search);
+                    $q->orWhere('id', (int) $search)
+                    ->orWhere('reception_id', (int) $search);
                 }
 
-                $d->orWhere('customer_complaint', 'like', "%{$search}%")
+                $q->orWhere('customer_complaint', 'like', "%{$search}%")
                 ->orWhere('diagnosis', 'like', "%{$search}%")
-                ->orWhere('recommendation', 'like', "%{$search}%")
-                ->orWhereHas('reception', function ($r) use ($search) {
+                ->orWhere('recommendation', 'like', "%{$search}%");
 
-                    if (is_numeric($search)) {
-                        $r->orWhere('id', (int) $search);
-                    }
+                $q->orWhereHas('reception.client', function ($client) use ($search) {
 
-                    $r->orWhere('problem_description', 'like', "%{$search}%")
-                    ->orWhere('observations', 'like', "%{$search}%");
-                })
-                ->orWhereHas('reception.client', function ($rc) use ($search) {
-                    $rc->where('document_number', 'like', "%{$search}%")
-                    ->orWhere('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhereRaw(
-                        "CONCAT(first_name,' ',last_name) LIKE ?",
-                        ["%{$search}%"]
-                    );
-                })
-                ->orWhereHas('reception.vehicle', function ($rv) use ($search) {
-                    $rv->where('chassis', 'like', "%{$search}%")
-                    ->orWhere('plate', 'like', "%{$search}%")
-                    ->orWhere('engine_number', 'like', "%{$search}%")
-                    ->orWhere('year', 'like', "%{$search}%");
-                })
-                ->orWhereHas('reception.vehicle.brand', function ($rvb) use ($search) {
-                    $rvb->where('name', 'like', "%{$search}%");
-                })
-                ->orWhereHas('reception.vehicle.vehicleModel', function ($rvm) use ($search) {
-                    $rvm->where('name', 'like', "%{$search}%");
-                })
-                ->orWhereHas('mechanic.user', function ($mu) use ($search) {
-                    $mu->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhereRaw(
-                        "CONCAT(first_name,' ',last_name) LIKE ?",
-                        ["%{$search}%"]
-                    );
+                    $client->where('document_number', 'like', "%{$search}%")
+                        ->orWhere('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhereRaw(
+                            "CONCAT(first_name,' ',last_name) LIKE ?",
+                            ["%{$search}%"]
+                        );
+
                 });
+
+                $q->orWhereHas('reception.vehicle', function ($vehicle) use ($search) {
+
+                    $vehicle->where('plate', 'like', "%{$search}%")
+                        ->orWhere('chassis', 'like', "%{$search}%")
+                        ->orWhere('engine_number', 'like', "%{$search}%")
+                        ->orWhere('year', 'like', "%{$search}%");
+
+                });
+
+                $q->orWhereHas('reception.vehicle.brand', function ($brand) use ($search) {
+
+                    $brand->where('name', 'like', "%{$search}%");
+
+                });
+
+                $q->orWhereHas('reception.vehicle.vehicleModel', function ($model) use ($search) {
+
+                    $model->where('name', 'like', "%{$search}%");
+
+                });
+
+                $q->orWhereHas('mechanic.user', function ($user) use ($search) {
+
+                    $user->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhereRaw(
+                            "CONCAT(first_name,' ',last_name) LIKE ?",
+                            ["%{$search}%"]
+                        );
+
+                });
+
+            });
+
+        });
+
+        $query->when($request->filled('status'), function ($q) use ($request) {
+            $q->where('status', $request->status);
+        });
+
+        $query->when($request->filled('priority'), function ($q) use ($request) {
+            $q->where('priority', $request->priority);
+        });
+
+        $query->when($request->filled('mechanic_id'), function ($q) use ($request) {
+            $q->where('mechanic_id', $request->mechanic_id);
+        });
+
+        $query->when($request->filled('reception_id'), function ($q) use ($request) {
+            $q->where('reception_id', $request->reception_id);
+        });
+
+        $query->when($request->filled('client_id'), function ($q) use ($request) {
+            $q->whereHas('reception', function ($reception) use ($request) {
+                $reception->where('client_id', $request->client_id);
             });
         });
 
-        /*$query->when($request->filled('priority'), function ($q) use ($request) {
-            $q->where('priority', $request->priority);
-        });*/
+        $query->when($request->filled('vehicle_id'), function ($q) use ($request) {
+            $q->whereHas('reception', function ($reception) use ($request) {
+                $reception->where('vehicle_id', $request->vehicle_id);
+            });
+        });
 
-        $diagnostics = $query->latest()->paginate($request->per_page ?? 10);
+        $query->when($request->filled('plate'), function ($q) use ($request) {
+            $q->whereHas('reception.vehicle', function ($vehicle) use ($request) {
+                $vehicle->where('plate', 'like', "%{$request->plate}%");
+            });
+        });
+
+        $query->when($request->filled('requires_parts'), function ($q) use ($request) {
+            $q->where('requires_parts', $request->boolean('requires_parts'));
+        });
+
+        $query->when($request->filled('requires_repair'), function ($q) use ($request) {
+            $q->where('requires_repair', $request->boolean('requires_repair'));
+        });
+
+        $query->when($request->filled('diagnosed_from'), function ($q) use ($request) {
+            $q->whereDate('diagnosed_at', '>=', $request->diagnosed_from);
+
+        });
+
+        $query->when($request->filled('diagnosed_to'), function ($q) use ($request) {
+            $q->whereDate('diagnosed_at', '<=', $request->diagnosed_to);
+        });
+
+        $query->when($request->filled('reception_start_date'), function ($q) use ($request) {
+            $q->whereHas('reception', function ($reception) use ($request) {
+                $reception->whereDate(
+                    'reception_date',
+                    '>=',
+                    $request->reception_start_date
+                );
+            });
+        });
+
+        $query->when($request->filled('reception_end_date'), function ($q) use ($request) {
+            $q->whereHas('reception', function ($reception) use ($request) {
+                $reception->whereDate(
+                    'reception_date',
+                    '<=',
+                    $request->reception_end_date
+                );
+            });
+        });
+
+        $query->when($request->filled('estimated_delivery_start_date'), function ($q) use ($request) {
+            $q->whereHas('reception', function ($reception) use ($request) {
+                $reception->whereDate(
+                    'estimated_delivery_date',
+                    '>=',
+                    $request->estimated_delivery_start_date
+                );
+            });
+        });
+
+        $query->when($request->filled('estimated_delivery_end_date'), function ($q) use ($request) {
+            $q->whereHas('reception', function ($reception) use ($request) {
+                $reception->whereDate(
+                    'estimated_delivery_date',
+                    '<=',
+                    $request->estimated_delivery_end_date
+                );
+            });
+        });
+
+        $diagnostics = $query
+            ->latest()
+            ->paginate($request->input('per_page', 10));
 
         return $this->successResponse(
             'Diagnósticos obtenidos correctamente.',

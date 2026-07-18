@@ -62,8 +62,6 @@ class DiagnosticResource extends JsonResource
                     'last_name' => $this->mechanic->user->last_name,
                     ];
             }),
-            'created_at' => $this->created_at->format('d/m/Y H:i'),
-            'updated_at' => $this->updated_at->format('d/m/Y H:i'),
         ];
     }
 }
