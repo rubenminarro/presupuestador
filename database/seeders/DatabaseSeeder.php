@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             CheckListItemServiceCategorySeeder::class,
             ReceptionSeeder::class,
             DiagnosticSeeder::class,
+            DiagnosticItemSeeder::class,
         ]);
     }
 }
