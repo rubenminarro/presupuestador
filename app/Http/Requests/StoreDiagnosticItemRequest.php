@@ -2,31 +2,24 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 use App\Enums\Severity;
-use App\Enums\Status;
+use App\Enums\DiagnosticItemStatus;
 
 class StoreDiagnosticItemRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
             'diagnostic_id' => [
+                'integer',
                 'required',
                 Rule::exists('diagnostics', 'id')
             ],
@@ -42,17 +35,19 @@ class StoreDiagnosticItemRequest extends FormRequest
                 'regex:/^[\pL\pN\s.,;:()\-#@!?%]*$/u'
             ],
             'severity' => [
-                'nullable',
+                'required',
                 Rule::enum(Severity::class),
             ],
             'status' => [
-                'nullable',
-                Rule::enum(Status::class)
+                'required',
+                Rule::enum(DiagnosticItemStatus::class)
             ],
             'requires_repair' => [
+                'required',
                 'boolean'
             ],
             'requires_replacement' => [
+                'required',
                 'boolean'
             ],
             'estimated_cost' => [
@@ -77,6 +72,7 @@ class StoreDiagnosticItemRequest extends FormRequest
     {
         return [
             'diagnostic_id' => [
+                'integer' => 'El ID del diagnóstico debe ser un número entero.',
                 'required' => 'El ID del diagnóstico es obligatorio.',
                 'exists' => 'El diagnóstico especificado no existe.',
             ],
@@ -91,15 +87,19 @@ class StoreDiagnosticItemRequest extends FormRequest
                 'regex' => 'La descripción solo pueden contener letras, números, espacios y los siguientes caracteres: . , ; : ( ) - # @ ! ? %',
             ],
             'severity' => [
-                'enum' => 'La severidad debe ser un valor válido.',
+                'required' => 'La severidad es obligatoria.',
+                Enum::class => 'La prioridad debe ser uno de los siguientes: low, medium, high, critical.',
             ],
             'status' => [
-                'enum' => 'El estado debe ser un valor válido.',
+                'required' => 'El estado es obligatorio.',
+                Enum::class => 'El estado debe ser uno de los siguientes: pending, ok, observation, repair_required, replace_required, not_applicable.',
             ],
             'requires_repair' => [
+                'required' => 'El campo requiere_repair es obligatorio.',
                 'boolean' => 'El campo requiere_repair debe ser verdadero o falso.',
             ],
             'requires_replacement' => [
+                'required' => 'El campo requires_replacement es obligatorio.',
                 'boolean' => 'El campo requires_replacement debe ser verdadero o falso.',
             ],
             'estimated_cost' => [

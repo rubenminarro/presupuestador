@@ -2,34 +2,22 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 use App\Enums\Severity;
-use App\Enums\Status;
+use App\Enums\DiagnosticItemStatus;
 
 class UpdateDiagnosticItemRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            'diagnostic_id' => [
-                'sometimes',
-                Rule::exists('diagnostics', 'id')
-            ],
             'title' => [
                 'sometimes',
                 'string',
@@ -37,35 +25,43 @@ class UpdateDiagnosticItemRequest extends FormRequest
                 'regex:/^[\pL\pN\s]*$/u'
             ],
             'description' => [
+                'sometimes',
                 'nullable',
                 'string',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?%]*$/u'
             ],
             'severity' => [
+                'sometimes',
                 'nullable',
                 Rule::enum(Severity::class),
             ],
             'status' => [
+                'sometimes',
                 'nullable',
-                Rule::enum(Status::class)
+                Rule::enum(DiagnosticItemStatus::class)
             ],
             'requires_repair' => [
+                'sometimes',
                 'boolean'
             ],
             'requires_replacement' => [
+                'sometimes',
                 'boolean'
             ],
             'estimated_cost' => [
+                'sometimes',
                 'nullable',
                 'numeric',
                 'min:0'
             ],
             'estimated_time' => [
+                'sometimes',
                 'nullable',
                 'integer',
                 'min:0'
             ],
             'recommendation' => [
+                'sometimes',
                 'nullable',
                 'string',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
@@ -76,9 +72,6 @@ class UpdateDiagnosticItemRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'diagnostic_id' => [
-                'exists' => 'El diagnóstico especificado no existe.',
-            ],
             'title' => [
                 'string' => 'El título debe ser una cadena de texto.',
                 'max' => 'El título no puede exceder los 255 caracteres.',
@@ -89,10 +82,10 @@ class UpdateDiagnosticItemRequest extends FormRequest
                 'regex' => 'La descripción solo pueden contener letras, números, espacios y los siguientes caracteres: . , ; : ( ) - # @ ! ? %',
             ],
             'severity' => [
-                'enum' => 'La severidad debe ser un valor válido.',
+                Enum::class => 'La prioridad debe ser uno de los siguientes: low, medium, high, critical.',
             ],
             'status' => [
-                'enum' => 'El estado debe ser un valor válido.',
+                Enum::class => 'El estado debe ser uno de los siguientes: pending, ok, observation, repair_required, replace_required, not_applicable.',
             ],
             'requires_repair' => [
                 'boolean' => 'El campo requiere_repair debe ser verdadero o falso.',

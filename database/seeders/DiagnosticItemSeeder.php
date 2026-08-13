@@ -1,0 +1,235 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Enums\DiagnosticItemStatus;
+use App\Enums\Severity;
+use App\Models\Diagnostic;
+use App\Models\DiagnosticItem;
+use Illuminate\Database\Seeder;
+
+class DiagnosticItemSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $diagnosticIds = Diagnostic::query()
+            ->pluck('id');
+
+        if ($diagnosticIds->isEmpty()) {
+            $this->command->warn(
+                'No existen diagnósticos. Ejecuta primero el seeder de Diagnostic.'
+            );
+
+            return;
+        }
+
+        $items = [
+            [
+                'title' => 'Pastillas delanteras desgastadas',
+                'description' => 'Las pastillas tienen menos del 10% de vida útil.',
+                'severity' => Severity::HIGH->value,
+                'status' => DiagnosticItemStatus::REPLACE_REQUIRED->value,
+                'requires_repair' => false,
+                'requires_replacement' => true,
+                'estimated_cost' => 350000,
+                'estimated_time' => 60,
+                'recommendation' => 'Reemplazar pastillas delanteras.',
+            ],
+            [
+                'title' => 'Discos de freno delanteros desgastados',
+                'description' => 'Los discos presentan desgaste irregular y marcas profundas.',
+                'severity' => Severity::HIGH->value,
+                'status' => DiagnosticItemStatus::REPLACE_REQUIRED->value,
+                'requires_repair' => false,
+                'requires_replacement' => true,
+                'estimated_cost' => 850000,
+                'estimated_time' => 120,
+                'recommendation' => 'Reemplazar ambos discos delanteros.',
+            ],
+            [
+                'title' => 'Amortiguador delantero derecho',
+                'description' => 'Se observa pérdida de aceite en el amortiguador.',
+                'severity' => Severity::CRITICAL->value,
+                'status' => DiagnosticItemStatus::REPAIR_REQUIRED->value,
+                'requires_repair' => true,
+                'requires_replacement' => false,
+                'estimated_cost' => 500000,
+                'estimated_time' => 90,
+                'recommendation' => 'Revisar y reparar el sistema de suspensión.',
+            ],
+            [
+                'title' => 'Nivel de líquido de frenos',
+                'description' => 'El nivel se encuentra dentro de los parámetros normales.',
+                'severity' => Severity::LOW->value,
+                'status' => DiagnosticItemStatus::OK->value,
+                'requires_repair' => false,
+                'requires_replacement' => false,
+                'estimated_cost' => 0,
+                'estimated_time' => 10,
+                'recommendation' => 'Continuar con controles periódicos.',
+            ],
+            [
+                'title' => 'Neumático delantero izquierdo',
+                'description' => 'El neumático presenta desgaste moderado.',
+                'severity' => Severity::MEDIUM->value,
+                'status' => DiagnosticItemStatus::OBSERVATION->value,
+                'requires_repair' => false,
+                'requires_replacement' => false,
+                'estimated_cost' => 0,
+                'estimated_time' => 15,
+                'recommendation' => 'Controlar el desgaste en próximos servicios.',
+            ],
+            [
+                'title' => 'Batería',
+                'description' => 'La batería presenta capacidad de arranque reducida.',
+                'severity' => Severity::MEDIUM->value,
+                'status' => DiagnosticItemStatus::REPLACE_REQUIRED->value,
+                'requires_repair' => false,
+                'requires_replacement' => true,
+                'estimated_cost' => 950000,
+                'estimated_time' => 30,
+                'recommendation' => 'Reemplazar la batería.',
+            ],
+            [
+                'title' => 'Correa de accesorios',
+                'description' => 'Se observan pequeñas grietas en la superficie.',
+                'severity' => Severity::MEDIUM->value,
+                'status' => DiagnosticItemStatus::OBSERVATION->value,
+                'requires_repair' => false,
+                'requires_replacement' => false,
+                'estimated_cost' => 0,
+                'estimated_time' => 20,
+                'recommendation' => 'Programar reemplazo preventivo.',
+            ],
+            [
+                'title' => 'Fuga de aceite de motor',
+                'description' => 'Se detecta una pequeña pérdida de aceite en la parte inferior del motor.',
+                'severity' => Severity::HIGH->value,
+                'status' => DiagnosticItemStatus::REPAIR_REQUIRED->value,
+                'requires_repair' => true,
+                'requires_replacement' => false,
+                'estimated_cost' => 450000,
+                'estimated_time' => 120,
+                'recommendation' => 'Reparar la fuga y verificar el nivel de aceite.',
+            ],
+            [
+                'title' => 'Filtro de aire',
+                'description' => 'El filtro presenta acumulación considerable de suciedad.',
+                'severity' => Severity::LOW->value,
+                'status' => DiagnosticItemStatus::REPLACE_REQUIRED->value,
+                'requires_repair' => false,
+                'requires_replacement' => true,
+                'estimated_cost' => 180000,
+                'estimated_time' => 20,
+                'recommendation' => 'Reemplazar el filtro de aire.',
+            ],
+            [
+                'title' => 'Bujías',
+                'description' => 'Las bujías presentan desgaste debido al kilometraje.',
+                'severity' => Severity::MEDIUM->value,
+                'status' => DiagnosticItemStatus::PENDING->value,
+                'requires_repair' => false,
+                'requires_replacement' => false,
+                'estimated_cost' => 300000,
+                'estimated_time' => 45,
+                'recommendation' => 'Verificar las bujías y reemplazarlas si corresponde.',
+            ],
+            [
+                'title' => 'Alineación del tren delantero',
+                'description' => 'Se detectan valores fuera de los parámetros recomendados.',
+                'severity' => Severity::MEDIUM->value,
+                'status' => DiagnosticItemStatus::REPAIR_REQUIRED->value,
+                'requires_repair' => true,
+                'requires_replacement' => false,
+                'estimated_cost' => 250000,
+                'estimated_time' => 60,
+                'recommendation' => 'Realizar alineación del tren delantero.',
+            ],
+            [
+                'title' => 'Terminal de dirección',
+                'description' => 'La terminal presenta juego excesivo.',
+                'severity' => Severity::HIGH->value,
+                'status' => DiagnosticItemStatus::REPLACE_REQUIRED->value,
+                'requires_repair' => false,
+                'requires_replacement' => true,
+                'estimated_cost' => 400000,
+                'estimated_time' => 90,
+                'recommendation' => 'Reemplazar la terminal de dirección.',
+            ],
+            [
+                'title' => 'Luces delanteras',
+                'description' => 'Las luces funcionan correctamente.',
+                'severity' => Severity::LOW->value,
+                'status' => DiagnosticItemStatus::OK->value,
+                'requires_repair' => false,
+                'requires_replacement' => false,
+                'estimated_cost' => 0,
+                'estimated_time' => 10,
+                'recommendation' => 'No requiere intervención.',
+            ],
+            [
+                'title' => 'Nivel de refrigerante',
+                'description' => 'El nivel se encuentra ligeramente por debajo del recomendado.',
+                'severity' => Severity::LOW->value,
+                'status' => DiagnosticItemStatus::OBSERVATION->value,
+                'requires_repair' => false,
+                'requires_replacement' => false,
+                'estimated_cost' => 50000,
+                'estimated_time' => 15,
+                'recommendation' => 'Completar el nivel y verificar posibles pérdidas.',
+            ],
+            [
+                'title' => 'Radiador',
+                'description' => 'Se observan signos de corrosión en la superficie.',
+                'severity' => Severity::HIGH->value,
+                'status' => DiagnosticItemStatus::PENDING->value,
+                'requires_repair' => false,
+                'requires_replacement' => false,
+                'estimated_cost' => 1200000,
+                'estimated_time' => 180,
+                'recommendation' => 'Realizar prueba de presión del sistema.',
+            ],
+            [
+                'title' => 'Escape',
+                'description' => 'El sistema de escape presenta una vibración anormal.',
+                'severity' => Severity::MEDIUM->value,
+                'status' => DiagnosticItemStatus::REPAIR_REQUIRED->value,
+                'requires_repair' => true,
+                'requires_replacement' => false,
+                'estimated_cost' => 300000,
+                'estimated_time' => 90,
+                'recommendation' => 'Revisar soportes y fijaciones del escape.',
+            ],
+            [
+                'title' => 'Sensor de temperatura',
+                'description' => 'El sensor presenta lecturas intermitentes.',
+                'severity' => Severity::HIGH->value,
+                'status' => DiagnosticItemStatus::REPLACE_REQUIRED->value,
+                'requires_repair' => false,
+                'requires_replacement' => true,
+                'estimated_cost' => 280000,
+                'estimated_time' => 45,
+                'recommendation' => 'Reemplazar el sensor de temperatura.',
+            ],
+            [
+                'title' => 'Sistema de limpiaparabrisas',
+                'description' => 'El sistema funciona correctamente.',
+                'severity' => Severity::LOW->value,
+                'status' => DiagnosticItemStatus::NOT_APPLICABLE->value,
+                'requires_repair' => false,
+                'requires_replacement' => false,
+                'estimated_cost' => 0,
+                'estimated_time' => 0,
+                'recommendation' => 'No requiere intervención.',
+            ],
+        ];
+
+        foreach ($items as $index => $item) {
+
+            DiagnosticItem::create([
+                'diagnostic_id' => $diagnosticIds[$index % $diagnosticIds->count()],
+                ...$item,
+            ]);
+        }
+    }
+}

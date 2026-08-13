@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDiagnosticItemRequest;
 use App\Http\Requests\UpdateDiagnosticItemRequest;
-use App\Http\Resources\DiagnosticItemCollection;
 use App\Http\Resources\DiagnosticItemResource;
+use App\Http\Resources\ShowDiagnosticItemResource;
 use App\Models\DiagnosticItem;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class DiagnosticItemController extends Controller
 {
@@ -17,36 +18,69 @@ class DiagnosticItemController extends Controller
 
     public function index(Request $request)
     {
-        $search = $request->query('search');
+        $search = trim($request->input('search', ''));
 
-        $diagnostics = DiagnosticItem::query()
+        $query = DiagnosticItem::query()
             ->with([
-                'diagnostic'
-            ])
-            ->when($search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%")
-                    ->orWhere('severity', 'like', "%{$search}%")
-                    ->orWhere('status', 'like', "%{$search}%")
-                    ->orWhereHas('diagnostic', function ($q2) use ($search) {
-                        $q2->where('diagnostic_id', 'like', "%{$search}%");
-                    });
-                });
-            })
+                'photos',
+            ]);
+        
+        $query->when($request->filled('search'), function ($query) use ($search) {
+            $query->where(function ($q) use ($search) {
+
+                if (is_numeric($search)) {
+                    $q->orWhere('id', $search)
+                    ->orWhere('diagnostic_id', $search);
+                }
+
+                 $q->orWhere('title', 'like', "%{$search}%")
+                ->orWhere('description', 'like', "%{$search}%")
+                ->orWhere('severity', 'like', "%{$search}%")
+                ->orWhere('status', 'like', "%{$search}%")
+                ->orWhere('recommendation', 'like', "%{$search}%");
+            });
+        });
+
+        $query->when($request->filled('diagnostic_id'), function ($q) use ($request) {
+            $q->where('diagnostic_id', $request->diagnostic_id);
+        });
+
+        $query->when($request->filled('severity'), function ($q) use ($request) {
+            $q->where('severity', $request->severity);
+        });
+
+        $query->when($request->filled('status'), function ($q) use ($request) {
+            $q->where('status', $request->status);
+        });
+
+        $query->when($request->filled('requires_repair'), function ($q) use ($request) {
+            $q->where(
+                'requires_repair',
+                $request->boolean('requires_repair')
+            );
+        });
+
+        $query->when($request->filled('requires_replacement'), function ($q) use ($request) {
+            $q->where(
+                'requires_replacement',
+                $request->boolean('requires_replacement')
+            );
+        });
+
+        $diagnosticsItems = $query
             ->latest()
-            ->paginate(10);
+            ->paginate($request->input('per_page', 10));
 
         return $this->successResponse(
-            'Lista de diagnósticos obtenida correctamente.',
-            DiagnosticItemResource::collection($diagnostics->items()),
+            'Items de diagnósticos obtenidos correctamente.',
+            DiagnosticItemResource::collection($diagnosticsItems->items()),
             200,
             [
                 'pagination' => [
-                    'total'       => $diagnostics->total(),
-                    'perPage'     => $diagnostics->perPage(),
-                    'currentPage' => $diagnostics->currentPage(),
-                    'lastPage'    => $diagnostics->lastPage(),
+                    'total'       => $diagnosticsItems->total(),
+                    'perPage'     => $diagnosticsItems->perPage(),
+                    'currentPage' => $diagnosticsItems->currentPage(),
+                    'lastPage'    => $diagnosticsItems->lastPage(),
                 ]
             ]
         );
@@ -56,16 +90,16 @@ class DiagnosticItemController extends Controller
     {
         
         $data = $request->validated();
-    
+
         $diagnosticItem = DiagnosticItem::create($data);
 
         $diagnosticItem->load([
-            'diagnostic',
+            'photos',
         ]);
 
         return $this->successResponse(
             new DiagnosticItemResource($diagnosticItem),
-            'Item de diagnóstico creado correctamente',
+            'Item de diagnóstico creado correctamente.',
             201
         );
     }
@@ -74,10 +108,11 @@ class DiagnosticItemController extends Controller
     {
         $diagnosticItem->load([
             'diagnostic',
+            'photos',
         ]);
 
         return $this->successResponse(
-            new DiagnosticItemResource($diagnosticItem),
+            new ShowDiagnosticItemResource($diagnosticItem),
             'Item de diagnóstico obtenido correctamente'
         );
     }
@@ -100,11 +135,23 @@ class DiagnosticItemController extends Controller
 
     public function destroy(DiagnosticItem $diagnosticItem)
     {
+        $diagnosticItem->load('photos');
+
+        foreach ($diagnosticItem->photos as $photo) {
+
+            if ($photo->path && Storage::disk('public')->exists($photo->path)) {
+                Storage::disk('public')->delete($photo->path);
+            }
+
+            $photo->delete();
+        }
+
         $diagnosticItem->delete();
 
         return $this->successResponse(
             null,
-            'Item de diagnóstico eliminado correctamente'
+            'Item de diagnóstico eliminado correctamente.'
         );
     }
+    
 }

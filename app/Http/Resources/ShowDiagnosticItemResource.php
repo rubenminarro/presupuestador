@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class DiagnosticItemResource extends JsonResource
+class ShowDiagnosticItemResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
@@ -21,6 +21,9 @@ class DiagnosticItemResource extends JsonResource
             'estimated_cost' => $this->estimated_cost,
             'estimated_time' => $this->estimated_time,
             'recommendation' => $this->recommendation,
+            'diagnostic' => new DiagnosticResource(
+                $this->whenLoaded('diagnostic')
+            ),
             'photos' => DiagnosticItemPhotoResource::collection(
                 $this->whenLoaded('photos')
             ),
