@@ -96,10 +96,27 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     Route::patch('/diagnostic-item/{diagnosticItem}', [DiagnosticItemController::class, 'update']);
     Route::delete('/diagnostic-item/{diagnosticItem}', [DiagnosticItemController::class, 'destroy']);
 
-    Route::get('/diagnostic-item/{diagnosticItem}/photos', [DiagnosticItemPhotoController::class, 'index']);
-    Route::post('/diagnostic-item/{diagnosticItem}/photos', [DiagnosticItemPhotoController::class, 'store']);
-    Route::patch('/diagnostic-item/{diagnosticItem}/photos/{diagnosticItemPhoto}', [DiagnosticItemPhotoController::class, 'update']);
-    Route::delete('/diagnostic-item/{diagnosticItem}/photos/{diagnosticItemPhoto}', [DiagnosticItemPhotoController::class, 'destroy']);
+    Route::scopeBindings()->group(function () {
+        Route::get(
+            '/diagnostic-item/{diagnosticItem}/photos',
+            [DiagnosticItemPhotoController::class, 'index']
+        );
+
+        Route::post(
+            '/diagnostic-item/{diagnosticItem}/photos',
+            [DiagnosticItemPhotoController::class, 'store']
+        );
+
+        Route::patch(
+            '/diagnostic-item/{diagnosticItem}/photos/{diagnosticItemPhoto}',
+            [DiagnosticItemPhotoController::class, 'update']
+        );
+
+        Route::delete(
+            '/diagnostic-item/{diagnosticItem}/photos/{diagnosticItemPhoto}',
+            [DiagnosticItemPhotoController::class, 'destroy']
+        );
+    });
 
     Route::get('/budgets', [BudgetController::class, 'index']);
     Route::post('/budgets', [BudgetController::class, 'store']);

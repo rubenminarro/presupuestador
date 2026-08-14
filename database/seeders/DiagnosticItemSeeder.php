@@ -12,16 +12,7 @@ class DiagnosticItemSeeder extends Seeder
 {
     public function run(): void
     {
-        $diagnosticIds = Diagnostic::query()
-            ->pluck('id');
-
-        if ($diagnosticIds->isEmpty()) {
-            $this->command->warn(
-                'No existen diagnósticos. Ejecuta primero el seeder de Diagnostic.'
-            );
-
-            return;
-        }
+        $diagnosticIds = Diagnostic::query()->pluck('id');
 
         $items = [
             [
