@@ -49,7 +49,7 @@ class DiagnosticItemPhotoController extends Controller
                     $file = $photoData['file'];
 
                     $path = $file->store(
-                        'diagnostic-items',
+                        "diagnostic-items/{$diagnosticItem->id}",
                         'public'
                     );
 
@@ -80,7 +80,8 @@ class DiagnosticItemPhotoController extends Controller
         );
     }
 
-    public function update(UpdateDiagnosticItemPhotoRequest $request, DiagnosticItem $diagnosticItem, DiagnosticItemPhoto $diagnosticItemPhoto) {
+    public function update(UpdateDiagnosticItemPhotoRequest $request, DiagnosticItem $diagnosticItem, DiagnosticItemPhoto $photo) 
+    {
         
         $data = $request->validated();
 
@@ -95,34 +96,35 @@ class DiagnosticItemPhotoController extends Controller
             );
         }
 
-        $oldPath = $diagnosticItemPhoto->path;
+        $oldPath = $photo->path;
         $newPath = null;
 
         try {
             DB::transaction(function () use (
                 $data,
-                $diagnosticItemPhoto,
+                $photo,
+                $diagnosticItem,
                 &$newPath
             ) {
                 if (array_key_exists('file', $data)) {
                     $file = $data['file'];
 
                     $newPath = $file->store(
-                        'diagnostic-items',
+                        "diagnostic-items/{$diagnosticItem->id}",
                         'public'
                     );
 
-                    $diagnosticItemPhoto->path = $newPath;
-                    $diagnosticItemPhoto->original_name =
+                    $photo->path = $newPath;
+                    $photo->original_name =
                         $file->getClientOriginalName();
                 }
 
                 if (array_key_exists('description', $data)) {
-                    $diagnosticItemPhoto->description =
+                    $photo->description =
                         $data['description'];
                 }
 
-                $diagnosticItemPhoto->save();
+                $photo->save();
             });
 
         } catch (\Throwable $e) {
@@ -145,21 +147,21 @@ class DiagnosticItemPhotoController extends Controller
         return $this->successResponse(
             'Foto actualizada correctamente.',
             new DiagnosticItemPhotoResource(
-                $diagnosticItemPhoto
+                $photo
             )
         );
     }
 
-    public function destroy(DiagnosticItem $diagnosticItem, DiagnosticItemPhoto $diagnosticItemPhoto) 
+    public function destroy(DiagnosticItem $diagnosticItem, DiagnosticItemPhoto $photo) 
     {
 
-        $path = $diagnosticItemPhoto->path;
+        $path = $photo->path;
 
         if ($path) {
             Storage::disk('public')->delete($path);
         }
 
-        $diagnosticItemPhoto->delete();
+        $photo->delete();
 
         return $this->successResponse(
             'Foto eliminada correctamente.'

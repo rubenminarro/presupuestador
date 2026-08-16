@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             ReceptionSeeder::class,
             DiagnosticSeeder::class,
             DiagnosticItemSeeder::class,
+            DiagnosticItemPhotoSeeder::class,
         ]);
     }
 }

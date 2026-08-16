@@ -97,6 +97,7 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     Route::delete('/diagnostic-item/{diagnosticItem}', [DiagnosticItemController::class, 'destroy']);
 
     Route::scopeBindings()->group(function () {
+
         Route::get(
             '/diagnostic-item/{diagnosticItem}/photos',
             [DiagnosticItemPhotoController::class, 'index']
@@ -108,14 +109,15 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
         );
 
         Route::patch(
-            '/diagnostic-item/{diagnosticItem}/photos/{diagnosticItemPhoto}',
+            '/diagnostic-item/{diagnosticItem}/photos/{photo}',
             [DiagnosticItemPhotoController::class, 'update']
         );
 
         Route::delete(
-            '/diagnostic-item/{diagnosticItem}/photos/{diagnosticItemPhoto}',
+            '/diagnostic-item/{diagnosticItem}/photos/{photo}',
             [DiagnosticItemPhotoController::class, 'destroy']
         );
+
     });
 
     Route::get('/budgets', [BudgetController::class, 'index']);
