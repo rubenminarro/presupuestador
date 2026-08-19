@@ -120,18 +120,42 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
 
     });
 
-    Route::get('/budgets', [BudgetController::class, 'index']);
-    Route::post('/budgets', [BudgetController::class, 'store']);
-    Route::get('/budget/{budget}', [BudgetController::class, 'show']);
-    Route::patch('/budget/{budget}', [BudgetController::class, 'update']);
-    Route::delete('/budget/{budget}', [BudgetController::class, 'destroy']);
+    Route::scopeBindings()->group(function () {
 
-    Route::get('/budget/{budget}/items', [BudgetItemController::class, 'index']);
-    Route::post('/budget/{budget}/items', [BudgetItemController::class, 'store']);
-    Route::get('/budget/{budget}/item/{item}', [BudgetItemController::class, 'show']);
-    Route::patch('/budget/{budget}/item/{item}', [BudgetItemController::class, 'update']);
-    Route::delete('/budget/{budget}/item/{item}', [BudgetItemController::class, 'destroy']);
+        Route::apiResource('budgets', BudgetController::class);
 
+        Route::post(
+            'budgets/{budget}/send',
+            [BudgetController::class, 'send']
+        )->name('budgets.send');
+
+        Route::post(
+            'budgets/{budget}/approve',
+            [BudgetController::class, 'approve']
+        )->name('budgets.approve');
+
+        Route::post(
+            'budgets/{budget}/reject',
+            [BudgetController::class, 'reject']
+        )->name('budgets.reject');
+
+        Route::post(
+            'budgets/{budget}/cancel',
+            [BudgetController::class, 'cancel']
+        )->name('budgets.cancel');
+
+        Route::post(
+            'budgets/{budget}/reopen',
+            [BudgetController::class, 'reopen']
+        )->name('budgets.reopen');
+
+        Route::apiResource(
+            'budgets.items',
+            BudgetItemController::class
+        );
+
+    });
+    
     Route::get('/mechanics', [MechanicController::class, 'index']);
     Route::post('/mechanics', [MechanicController::class, 'store']);
     Route::get('/mechanic/{mechanic}', [MechanicController::class, 'show']);

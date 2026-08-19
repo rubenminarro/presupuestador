@@ -2,33 +2,18 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Enum;
-use App\Enums\Status;
 
 class UpdateBudgetRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            'status' => [
-                'sometimes',
-                new Enum(Status::class)
-            ],
             'notes' => [
                 'sometimes',
                 'nullable',
@@ -43,7 +28,6 @@ class UpdateBudgetRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'status.' . Enum::class => 'El estado debe ser un valor válido.',
             'notes' => [
                 'string' => 'Las notas deben ser una cadena de texto.',
                 'max' => 'Las notas no pueden exceder los 500 caracteres.',

@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class BudgetResource extends JsonResource
+class ShowBudgetResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
@@ -25,6 +25,9 @@ class BudgetResource extends JsonResource
             'created_by' => $this->created_by,
             'creator' => new UserResource(
                 $this->whenLoaded('creator')
+            ),
+            'items' => BudgetItemResource::collection(
+                $this->whenLoaded('items')
             ),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

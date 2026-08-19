@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Enums\BudgetItemType;
 
 
 class BudgetItem extends Model
@@ -20,6 +21,7 @@ class BudgetItem extends Model
     ];
 
     protected $casts = [
+        'type' => BudgetItemType::class,
         'quantity' => 'decimal:2',
         'unit_price' => 'decimal:2',
         'total' => 'decimal:2',

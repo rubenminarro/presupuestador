@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Enums\BudgetStatus;
 
 class Budget extends Model
 {
@@ -25,6 +26,7 @@ class Budget extends Model
     ];
 
     protected $casts = [
+        'status' => BudgetStatus::class,
         'subtotal' => 'decimal:2',
         'tax' => 'decimal:2',
         'total' => 'decimal:2',

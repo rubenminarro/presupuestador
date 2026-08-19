@@ -26,15 +26,18 @@ class BudgetItemController extends Controller
 
         return $this->successResponse(
             BudgetItemResource::collection($items),
-            'El item del presupuesto recuperado exitosamente.'
+            'Items del presupuesto recuperados exitosamente.'
         );
     }
 
-    public function store(StoreBudgetItemRequest $request, Budget $budget) {
+    public function store(StoreBudgetItemRequest $request, Budget $budget) 
+    {
+
+        $this->budgetService->ensureEditable($budget);
 
         $data = $request->validated();
 
-        $data['total'] =  $data['quantity'] * $data['unit_price'];
+        $data['total'] = $data['quantity'] * $data['unit_price'];
 
         $item = $budget->items()->create($data);
 
@@ -65,7 +68,6 @@ class BudgetItemController extends Controller
 
     public function update(UpdateBudgetItemRequest $request, Budget $budget, BudgetItem $item) 
     {
-
         if ($item->budget_id !== $budget->id) {
             return $this->errorResponse(
                 'El item no pertenece a este presupuesto.',
@@ -73,10 +75,11 @@ class BudgetItemController extends Controller
             );
         }
 
+        $this->budgetService->ensureEditable($budget);
+
         $data = $request->validated();
 
         $quantity = $data['quantity'] ?? $item->quantity;
-
         $unitPrice = $data['unit_price'] ?? $item->unit_price;
 
         $data['total'] = $quantity * $unitPrice;
@@ -86,21 +89,21 @@ class BudgetItemController extends Controller
         $this->budgetService->recalculateBudget($budget);
 
         return $this->successResponse(
-            new BudgetItemResource($item),
+            new BudgetItemResource($item->refresh()),
             'El item del presupuesto actualizado exitosamente.'
         );
     }
 
     public function destroy(Budget $budget, BudgetItem $item) 
     {
-
-       if ($item->budget_id !== $budget->id) {
-
+        if ($item->budget_id !== $budget->id) {
             return $this->errorResponse(
                 'El item no pertenece a este presupuesto.',
                 422
             );
         }
+
+        $this->budgetService->ensureEditable($budget);
 
         $item->delete();
 
@@ -111,4 +114,5 @@ class BudgetItemController extends Controller
             'El item del presupuesto eliminado exitosamente.'
         );
     }
+
 }

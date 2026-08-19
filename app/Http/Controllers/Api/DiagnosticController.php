@@ -58,30 +58,30 @@ class DiagnosticController extends Controller
 
                 });
 
-                $q->orWhereHas('reception.vehicle', function ($vehicle) use ($search) {
+                $q->orWhereHas('reception.vehicle', function ($vehicleQuery) use ($search) {
 
-                    $vehicle->where('plate', 'like', "%{$search}%")
+                    $vehicleQuery->where('plate', 'like', "%{$search}%")
                         ->orWhere('chassis', 'like', "%{$search}%")
                         ->orWhere('engine_number', 'like', "%{$search}%")
                         ->orWhere('year', 'like', "%{$search}%");
 
                 });
 
-                $q->orWhereHas('reception.vehicle.brand', function ($brand) use ($search) {
+                $q->orWhereHas('reception.vehicle.brand', function ($brandQuery) use ($search) {
 
-                    $brand->where('name', 'like', "%{$search}%");
-
-                });
-
-                $q->orWhereHas('reception.vehicle.vehicleModel', function ($model) use ($search) {
-
-                    $model->where('name', 'like', "%{$search}%");
+                    $brandQuery->where('name', 'like', "%{$search}%");
 
                 });
 
-                $q->orWhereHas('mechanic.user', function ($user) use ($search) {
+                $q->orWhereHas('reception.vehicle.vehicleModel', function ($modelQuery) use ($search) {
 
-                    $user->where('name', 'like', "%{$search}%")
+                    $modelQuery->where('name', 'like', "%{$search}%");
+
+                });
+
+                $q->orWhereHas('mechanic.user', function ($userQuery) use ($search) {
+
+                    $userQuery->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
                         ->orWhere('first_name', 'like', "%{$search}%")
                         ->orWhere('last_name', 'like', "%{$search}%")
@@ -140,7 +140,6 @@ class DiagnosticController extends Controller
 
         $query->when($request->filled('diagnosed_from'), function ($q) use ($request) {
             $q->whereDate('diagnosed_at', '>=', $request->diagnosed_from);
-
         });
 
         $query->when($request->filled('diagnosed_to'), function ($q) use ($request) {
