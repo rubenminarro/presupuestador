@@ -12,7 +12,7 @@ class AdminUserSeeder extends Seeder
     public function run()
     {
         
-        $roles = ['administrador', 'mecanico'];
+        $roles = ['administrador', 'mechanic'];
         $createdRoles = [];
 
         foreach ($roles as $roleName) {
@@ -24,28 +24,28 @@ class AdminUserSeeder extends Seeder
 
         $usersData = [
             [
-                'email' => 'admin@mail.com.py',
-                'name' => 'administrador',
+                'email' => 'rminarro@mail.com.py',
+                'name' => 'rminarro',
                 'first_name' => 'Ruben',
                 'last_name' => 'Minarro',
                 'password' => Hash::make(env('ADMIN_PASSWORD')),
                 'role' => 'administrador'
             ],
             [
-                'email' => 'mecanico1@mail.com.py',
-                'name' => 'mecanico1',
+                'email' => 'jperez@mail.com.py',
+                'name' => 'jperez',
                 'first_name' => 'Juan',
                 'last_name' => 'Pérez',
                 'password' => Hash::make(env('ADMIN_PASSWORD')),
-                'role' => 'mecanico'
+                'role' => 'mechanic'
             ],
             [
-                'email' => 'mecanico2@mail.com.py',
-                'name' => 'mecanico2',
+                'email' => 'cgomez@mail.com.py',
+                'name' => 'cgomez',
                 'first_name' => 'Carlos',
                 'last_name' => 'Gómez',
                 'password' => Hash::make(env('ADMIN_PASSWORD')),
-                'role' => 'mecanico'
+                'role' => 'mechanic'
             ],
         ];
 

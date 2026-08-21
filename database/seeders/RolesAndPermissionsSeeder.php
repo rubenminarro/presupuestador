@@ -20,13 +20,23 @@ class RolesAndPermissionsSeeder  extends Seeder
             'name' => 'administrador',
             'guard_name' => 'api'
         ]);
+
+        $mecanico = Role::firstOrCreate([
+            'name' => 'mechanic',
+            'guard_name' => 'api',
+        ]);
         
         $permissions = [
+            
+            /*user permissions*/
             'user.index',
             'user.store',
             'user.show',
             'user.update',
             'user.activate',
+            'user.destroy',
+            
+            /*role and permission permissions*/
             'permission.index',
             'permission.store',
             'permission.show',
@@ -38,7 +48,24 @@ class RolesAndPermissionsSeeder  extends Seeder
             'role.show',
             'role.update',
             'role.activate',
-            'role.destroy'
+            'role.destroy',
+
+            /*budget permissions*/
+            'budget.view',
+            'budget.create',
+            'budget.update',
+            'budget.delete',
+            'budget.send',
+            'budget.approve',
+            'budget.reject',
+            'budget.cancel',
+            'budget.reopen',
+
+            /*budget item permissions*/
+            'budget_item.view',
+            'budget_item.create',
+            'budget_item.update',
+            'budget_item.delete',
         ];
         
         foreach ($permissions as $permission) {
@@ -46,6 +73,7 @@ class RolesAndPermissionsSeeder  extends Seeder
         }
 
         $admin->givePermissionTo(Permission::all());
+        $mecanico->syncPermissions([]);
 
     }
 }
