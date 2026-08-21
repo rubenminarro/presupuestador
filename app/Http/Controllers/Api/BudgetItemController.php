@@ -26,7 +26,7 @@ class BudgetItemController extends Controller
 
         return $this->successResponse(
             BudgetItemResource::collection($items),
-            'Items del presupuesto recuperados exitosamente.'
+            'Items del presupuesto obtenidos exitosamente.'
         );
     }
 
@@ -53,13 +53,6 @@ class BudgetItemController extends Controller
     public function show(Budget $budget, BudgetItem $item)
     {
         
-        if ($item->budget_id !== $budget->id) {
-            return $this->errorResponse(
-                'El item no pertenece a este presupuesto.',
-                422
-            );
-        }
-
         return $this->successResponse(
             new BudgetItemResource($item),
             'El item del presupuesto recuperado exitosamente.'
@@ -68,13 +61,7 @@ class BudgetItemController extends Controller
 
     public function update(UpdateBudgetItemRequest $request, Budget $budget, BudgetItem $item) 
     {
-        if ($item->budget_id !== $budget->id) {
-            return $this->errorResponse(
-                'El item no pertenece a este presupuesto.',
-                422
-            );
-        }
-
+        
         $this->budgetService->ensureEditable($budget);
 
         $data = $request->validated();
@@ -96,13 +83,6 @@ class BudgetItemController extends Controller
 
     public function destroy(Budget $budget, BudgetItem $item) 
     {
-        if ($item->budget_id !== $budget->id) {
-            return $this->errorResponse(
-                'El item no pertenece a este presupuesto.',
-                422
-            );
-        }
-
         $this->budgetService->ensureEditable($budget);
 
         $item->delete();

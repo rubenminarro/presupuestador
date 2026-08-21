@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use App\Exceptions\BudgetException;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -39,6 +40,18 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (ModelNotFoundException $e, Request $request) 
+        {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 404,
+                    'message' => 'Recurso no encontrado en la base de datos.',
+                    'data' => null,
+                ], 404);
+            }
+        });
+
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) 
         {
             if ($request->expectsJson()) {
                 return response()->json([

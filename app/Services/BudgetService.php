@@ -123,5 +123,31 @@ class BudgetService
         }
 
     }
+
+    public function create(array $data, int $userId): Budget
+    {
+        return Budget::create([
+            'reception_id' => $data['reception_id'],
+            'created_by' => $userId,
+            'code' => $this->generateCode(),
+            'status' => BudgetStatus::DRAFT,
+            'subtotal' => 0,
+            'tax' => 0,
+            'total' => 0,
+            'notes' => $data['notes'] ?? null,
+        ]);
+    }
+
+    private function generateCode(): string
+    {
+        $nextId = (Budget::withTrashed()->max('id') ?? 0) + 1;
+
+        return 'BUD-' . str_pad(
+            $nextId,
+            6,
+            '0',
+            STR_PAD_LEFT
+        );
+    }
     
 }

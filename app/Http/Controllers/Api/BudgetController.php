@@ -12,7 +12,6 @@ use App\Models\Budget;
 use App\Services\BudgetService;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\Auth;
-use App\Enums\BudgetStatus;
 
 class BudgetController extends Controller
 {
@@ -133,16 +132,10 @@ class BudgetController extends Controller
     {
         $data = $request->validated();
 
-        $budget = Budget::create([
-            'reception_id' => $data['reception_id'],
-            'created_by'   => Auth::id(),
-            'code'         => $this->generateCode(),
-            'status'       => BudgetStatus::DRAFT,
-            'subtotal'     => 0,
-            'tax'          => 0,
-            'total'        => 0,
-            'notes'        => $data['notes'] ?? null,
-        ]);
+        $budget = $this->budgetService->create(
+            $data,
+            Auth::id()
+        );
 
         $this->loadShowRelations($budget);
 
@@ -259,16 +252,5 @@ class BudgetController extends Controller
             'creator',
         ]);
     }
-
-    private function generateCode(): string
-    {
-        $nextId = Budget::max('id') + 1;
-
-        return 'BUD-' . str_pad(
-            $nextId,
-            6,
-            '0',
-            STR_PAD_LEFT
-        );
-    }
+    
 }
