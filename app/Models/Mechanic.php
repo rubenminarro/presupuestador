@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Enums\MechanicStatus;
 
 class Mechanic extends Model
 {
@@ -23,6 +24,7 @@ class Mechanic extends Model
     ];
 
     protected $casts = [
+        'status' => MechanicStatus::class,
         'hire_date' => 'date',
         'hour_cost' => 'decimal:2',
         'commission_percentage' => 'decimal:2',
@@ -36,5 +38,10 @@ class Mechanic extends Model
     public function diagnostics(): HasMany
     {
         return $this->hasMany(Diagnostic::class);
+    }
+
+    public function workOrders(): HasMany
+    {
+        return $this->hasMany(WorkOrder::class);
     }
 }

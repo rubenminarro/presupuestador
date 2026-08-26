@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Enums\BudgetStatus;
 
@@ -47,4 +48,10 @@ class Budget extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function workOrder(): HasOne
+    {
+        return $this->hasOne(WorkOrder::class);
+    }
+
 }

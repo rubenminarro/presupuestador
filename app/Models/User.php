@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
@@ -30,6 +31,11 @@ class User extends Authenticatable
     public function mechanic(): HasOne
     {
         return $this->hasOne(Mechanic::class);
+    }
+
+    public function createdWorkOrders(): HasMany
+    {
+        return $this->hasMany(WorkOrder::class, 'created_by');
     }
 
 }
