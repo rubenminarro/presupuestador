@@ -19,7 +19,26 @@ use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\BudgetItemController;
 use App\Http\Controllers\Api\MechanicController;
 
-Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/users', [UserRoleController::class, 'index'])
+        ->middleware('permission:user.index');
+
+    Route::post('/users', [UserRoleController::class, 'store'])
+        ->middleware('permission:user.store');
+
+    Route::get('/user/{user}', [UserRoleController::class, 'show'])
+        ->middleware('permission:user.show');
+
+    Route::patch('/user/{user}', [UserRoleController::class, 'update'])
+        ->middleware('permission:user.update');
+
+    Route::delete('/user/{user}', [UserRoleController::class, 'destroy'])
+        ->middleware('permission:user.destroy');
+
+});
+
+/*Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     
     Route::get('/users', [UserRoleController::class, 'index']);
     Route::post('/users', [UserRoleController::class, 'store']);
@@ -162,6 +181,6 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     Route::patch('/mechanic/{mechanic}', [MechanicController::class, 'update']);
     Route::delete('/mechanic/{mechanic}', [MechanicController::class, 'destroy']);
 
-});
+});*/
 
 
