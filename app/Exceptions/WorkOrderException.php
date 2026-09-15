@@ -2,8 +2,14 @@
 
 namespace App\Exceptions;
 
-use RuntimeException;
+use Exception;
 
-class WorkOrderException extends RuntimeException
+class WorkOrderException extends Exception
 {
+    protected int $status = 422;
+
+    public function status(): int
+    {
+        return $this->status;
+    }
 }

@@ -18,9 +18,8 @@ class UpdateWorkOrderRequest extends FormRequest
             'mechanic_id' => [
                 'sometimes',
                 'integer',
-                Rule::exists('mechanics', 'id'),
+                Rule::exists('mechanics', 'id')->whereNull('deleted_at'),
             ],
-
             'notes' => [
                 'sometimes',
                 'nullable',

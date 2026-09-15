@@ -252,6 +252,7 @@ class WorkOrderService
         WorkOrder $workOrder,
         WorkOrderItem $item
     ): WorkOrderItem {
+        
         return DB::transaction(function () use ($workOrder, $item) {
 
             $workOrder->refresh();
@@ -345,7 +346,8 @@ class WorkOrderService
         WorkOrder $workOrder,
         WorkOrderItem $item
     ): void {
-        if ($item->work_order_id !== $workOrder->id) {
+
+        if ((int) $item->work_order_id !== (int) $workOrder->id) {
             throw new WorkOrderException(
                 'El item no pertenece a la orden de trabajo indicada.'
             );

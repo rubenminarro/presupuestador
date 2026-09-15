@@ -18,6 +18,8 @@ use App\Http\Controllers\Api\DiagnosticItemPhotoController;
 use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\BudgetItemController;
 use App\Http\Controllers\Api\MechanicController;
+use App\Http\Controllers\Api\WorkOrderController;
+use App\Http\Controllers\Api\WorkOrderItemController;
 
 Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
     
@@ -149,19 +151,77 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
             [BudgetController::class, 'reopen']
         )->name('budgets.reopen');
 
-        Route::apiResource(
-            'budgets.items',
-            BudgetItemController::class
-        );
+        Route::apiResource('budgets.items', BudgetItemController::class);
 
     });
     
-    Route::get('/mechanics', [MechanicController::class, 'index']);
-    Route::post('/mechanics', [MechanicController::class, 'store']);
-    Route::get('/mechanic/{mechanic}', [MechanicController::class, 'show']);
-    Route::patch('/mechanic/{mechanic}', [MechanicController::class, 'update']);
-    Route::delete('/mechanic/{mechanic}', [MechanicController::class, 'destroy']);
+    Route::scopeBindings()->group(function () {
+        Route::apiResource('mechanics', MechanicController::class);
+    });
+    
+    Route::scopeBindings()->group(function () {
+
+        Route::get(
+            'work-orders',
+            [WorkOrderController::class, 'index']
+        )->name('work-orders.index');
+
+        Route::post(
+            'work-orders',
+            [WorkOrderController::class, 'store']
+        )->name('work-orders.store');
+
+        Route::get(
+            'work-orders/{workOrder}',
+            [WorkOrderController::class, 'show']
+        )->name('work-orders.show');
+
+        Route::patch(
+            'work-orders/{workOrder}',
+            [WorkOrderController::class, 'update']
+        )->name('work-orders.update');
+
+
+        Route::post(
+            'work-orders/{workOrder}/start',
+            [WorkOrderController::class, 'start']
+        )->name('work-orders.start');
+
+        Route::post(
+            'work-orders/{workOrder}/pause',
+            [WorkOrderController::class, 'pause']
+        )->name('work-orders.pause');
+
+        Route::post(
+            'work-orders/{workOrder}/resume',
+            [WorkOrderController::class, 'resume']
+        )->name('work-orders.resume');
+
+        Route::post(
+            'work-orders/{workOrder}/complete',
+            [WorkOrderController::class, 'complete']
+        )->name('work-orders.complete');
+
+        Route::post(
+            'work-orders/{workOrder}/cancel',
+            [WorkOrderController::class, 'cancel']
+        )->name('work-orders.cancel');
+
+        Route::post(
+            'work-orders/{workOrder}/items/{item}/start',
+            [WorkOrderItemController::class, 'start']
+        )->name('work-orders.items.start');
+
+        Route::post(
+            'work-orders/{workOrder}/items/{item}/complete',
+            [WorkOrderItemController::class, 'complete']
+        )->name('work-orders.items.complete');
+
+        Route::post(
+            'work-orders/{workOrder}/items/{item}/cancel',
+            [WorkOrderItemController::class, 'cancel']
+        )->name('work-orders.items.cancel');
+
+    });
 
 });
-
-

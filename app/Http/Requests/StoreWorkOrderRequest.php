@@ -15,6 +15,11 @@ class StoreWorkOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'budget_id' => [
+                'required',
+                'integer',
+                Rule::exists('budgets', 'id'),
+            ],
             'mechanic_id' => [
                 'required',
                 'integer',
@@ -26,6 +31,11 @@ class StoreWorkOrderRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'budget_id' => [
+                'required' => 'El presupuesto es obligatorio.',
+                'integer' => 'El ID del presupuesto debe ser un número entero.',
+                'exists' => 'El presupuesto seleccionado no existe.'
+            ],
             'mechanic_id' => [
                 'required' => 'El mecánico es obligatorio.',
                 'integer' => 'El ID del mecánico debe ser un número entero.',
