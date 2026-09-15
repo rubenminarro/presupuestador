@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Enums\BudgetItemType;
 
 
@@ -30,5 +31,10 @@ class BudgetItem extends Model
     public function budget(): BelongsTo
     {
         return $this->belongsTo(Budget::class);
+    }
+
+    public function workOrderItems(): HasMany
+    {
+        return $this->hasMany(WorkOrderItem::class);
     }
 }

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Enums\ReceptionStatus;
 
 class Reception extends Model
 {
@@ -29,6 +30,7 @@ class Reception extends Model
     ];
 
     protected $casts = [
+        'status' => ReceptionStatus::class,
         'reception_date' => 'date',
         'estimated_delivery_date' => 'date',
     ];
@@ -76,6 +78,11 @@ class Reception extends Model
     public function serviceCategories(): BelongsToMany
     {
         return $this->belongsToMany(ServiceCategory::class);
+    }
+
+    public function workOrders(): HasMany
+    {
+        return $this->hasMany(WorkOrder::class);
     }
 
 }
