@@ -21,20 +21,22 @@ use App\Http\Controllers\Api\MechanicController;
 use App\Http\Controllers\Api\WorkOrderController;
 use App\Http\Controllers\Api\WorkOrderItemController;
 
-Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::apiResource('users', UserRoleController::class);
+
+    Route::apiResource('permissions', PermissionController::class);
+
+    Route::apiResource('roles', RoleController::class);
+    Route::get('/roles/permissions-grouped-by-module', [RoleController::class, 'permissionsGroupedByModule']);
+
+    Route::apiResource('vehicles', VehicleController::class);
+
+});
+
+
+/*Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {  
     
-    Route::get('/users', [UserRoleController::class, 'index']);
-    Route::post('/users', [UserRoleController::class, 'store']);
-    Route::get('/user/{user}', [UserRoleController::class, 'show']);
-    Route::patch('/user/{user}', [UserRoleController::class, 'update']);
-    Route::delete('/user/{user}', [UserRoleController::class, 'destroy']);
-
-    Route::get('/permissions', [PermissionController::class, 'index']);
-    Route::post('/permissions', [PermissionController::class, 'store']);
-    Route::get('/permission/{permission}', [PermissionController::class, 'show']);
-    Route::patch('/permission/{permission}', [PermissionController::class, 'update']);
-    Route::delete('/permission/{permission}', [PermissionController::class, 'destroy']);
-
     Route::get('/roles', [RoleController::class, 'index']);
     Route::post('/roles', [RoleController::class, 'store']);
     Route::get('/role/{role}', [RoleController::class, 'show']);
@@ -224,4 +226,4 @@ Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {
 
     });
 
-});
+});*/

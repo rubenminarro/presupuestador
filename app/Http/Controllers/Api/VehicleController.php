@@ -10,10 +10,23 @@ use App\Http\Requests\UpdateVehicleRequest;
 use App\Http\Resources\VehicleResource;
 use App\Http\Resources\ShowVehicleResource;
 use App\Traits\ApiResponse;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class VehicleController extends Controller
+class VehicleController extends Controller implements HasMiddleware
 {
     use ApiResponse;
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:vehicles.index', only: ['index']),
+            new Middleware('permission:vehicles.store', only: ['store']),
+            new Middleware('permission:vehicles.show', only: ['show']),
+            new Middleware('permission:vehicles.update', only: ['update']),
+            new Middleware('permission:vehicles.destroy', only: ['destroy']),
+        ];
+    }
 
     public function index(Request $request)
     {

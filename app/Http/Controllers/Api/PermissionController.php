@@ -10,10 +10,23 @@ use App\Http\Resources\PermissionsResource;
 use App\Http\Resources\ShowPermissionResource;
 use App\Models\Permission;
 use App\Traits\ApiResponse;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class PermissionController extends Controller
+class PermissionController extends Controller implements HasMiddleware
 {
     use ApiResponse;
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:permission.index', only: ['index']),
+            new Middleware('permission:permission.store', only: ['store']),
+            new Middleware('permission:permission.show', only: ['show']),
+            new Middleware('permission:permission.update', only: ['update']),
+            new Middleware('permission:permission.destroy', only: ['destroy']),
+        ];
+    }
 
     public function index(Request $request)
     {

@@ -11,10 +11,24 @@ use App\Http\Resources\RolesResource;
 use App\Models\Role;
 use App\Models\Permission;
 use App\Traits\ApiResponse;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class RoleController extends Controller
+class RoleController extends Controller implements HasMiddleware
 {
     use ApiResponse;
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:roles.index', only: ['index']),
+            new Middleware('permission:roles.store', only: ['store']),
+            new Middleware('permission:roles.show', only: ['show']),
+            new Middleware('permission:roles.update', only: ['update']),
+            new Middleware('permission:roles.destroy', only: ['destroy']),
+            new Middleware('permission:roles.permissionsGroupedByModule', only: ['permissionsGroupedByModule']),
+        ];
+    }
 
     public function index(Request $request)
     {

@@ -6,14 +6,10 @@ use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
-class RolesAndPermissionsSeeder  extends Seeder
+class RolesAndPermissionsSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         $admin = Role::firstOrCreate([
@@ -25,26 +21,21 @@ class RolesAndPermissionsSeeder  extends Seeder
             'name' => 'mechanic',
             'guard_name' => 'api',
         ]);
-        
+
         $permissions = [
             
-            /* user permissions */
-            'user.index',
-            'user.store',
-            'user.show',
-            'user.update',
-            'user.activate',
-            'user.destroy',
+            'users.index',
+            'users.store',
+            'users.show',
+            'users.update',
+            'users.destroy',
 
-            /* permission permissions */
             'permission.index',
             'permission.store',
             'permission.show',
             'permission.update',
-            'permission.activate',
             'permission.destroy',
 
-            /* role permissions */
             'role.index',
             'role.store',
             'role.show',
@@ -75,11 +66,11 @@ class RolesAndPermissionsSeeder  extends Seeder
             'vehicle_model.destroy',
 
             /* vehicle permissions */
-            'vehicle.index',
-            'vehicle.store',
-            'vehicle.show',
-            'vehicle.update',
-            'vehicle.destroy',
+            'vehicles.index',
+            'vehicles.store',
+            'vehicles.show',
+            'vehicles.update',
+            'vehicles.destroy',
 
             /* checklist permissions */
             'checklist.index',
@@ -150,17 +141,49 @@ class RolesAndPermissionsSeeder  extends Seeder
             'mechanic.show',
             'mechanic.update',
             'mechanic.destroy',
+
+            /* work order permissions */
+            'work_order.index',
+            'work_order.store',
+            'work_order.show',
+            'work_order.update',
+            'work_order.start',
+            'work_order.pause',
+            'work_order.resume',
+            'work_order.complete',
+            'work_order.cancel',
+
+            /* work order item permissions */
+            'work_order_item.start',
+            'work_order_item.complete',
+            'work_order_item.cancel',
         ];
-        
+
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'api']);
         }
 
+        // Asignar absolutamente todos los permisos al administrador
         $admin->syncPermissions(
             Permission::where('guard_name', 'api')->get()
         );
-        
-        $mecanico->syncPermissions([]);
 
+        // Permisos operativos asignados al mecánico
+        $mechanicPermissions = [
+            'vehicles.index', 
+            'vehicles.show',
+            'reception.index', 'reception.show', 'reception.update',
+            'reception_checklist.show', 'reception_checklist.update',
+            'reception_photo.index', 'reception_photo.store', 'reception_photo.destroy',
+            'diagnostic.index', 'diagnostic.store', 'diagnostic.show', 'diagnostic.update',
+            'diagnostic_item.index', 'diagnostic_item.store', 'diagnostic_item.show', 'diagnostic_item.update', 'diagnostic_item.destroy',
+            'diagnostic_item_photo.index', 'diagnostic_item_photo.store', 'diagnostic_item_photo.update', 'diagnostic_item_photo.destroy',
+            'work_order.index', 'work_order.show', 'work_order.start', 'work_order.pause', 'work_order.resume', 'work_order.complete',
+            'work_order_item.start', 'work_order_item.complete',
+        ];
+
+        $mecanico->syncPermissions(
+            Permission::where('guard_name', 'api')->whereIn('name', $mechanicPermissions)->get()
+        );
     }
 }

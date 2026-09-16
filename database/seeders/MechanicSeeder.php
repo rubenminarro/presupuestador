@@ -13,8 +13,8 @@ class MechanicSeeder extends Seeder
     public function run(): void
     {
         
-        $userMecanico1 = User::where('email', 'mecanico1@mail.com.py')->first();
-        $userMecanico2 = User::where('email', 'mecanico2@mail.com.py')->first();
+        $userMecanico1 = User::where('email', 'jperez@mail.com.py')->first();
+        $userMecanico2 = User::where('email', 'cgomez@mail.com.py')->first();
 
         $mechanicsData = [
             [

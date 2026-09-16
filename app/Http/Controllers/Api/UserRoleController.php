@@ -10,10 +10,23 @@ use App\Http\Resources\ShowUserResource;
 use App\Http\Resources\UsersResource;
 use App\Models\User;
 use App\Traits\ApiResponse;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class UserRoleController extends Controller
+class UserRoleController extends Controller implements HasMiddleware
 {
     use ApiResponse;
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:users.index', only: ['index']),
+            new Middleware('permission:users.store', only: ['store']),
+            new Middleware('permission:users.show', only: ['show']),
+            new Middleware('permission:users.update', only: ['update']),
+            new Middleware('permission:users.destroy', only: ['destroy']),
+        ];
+    }
     
     public function index(Request $request)
     {
