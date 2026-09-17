@@ -10,10 +10,23 @@ use App\Http\Resources\ClientResource;
 use App\Http\Resources\ShowClientResource;
 use App\Models\Client;
 use App\Traits\ApiResponse;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class ClientController extends Controller
+class ClientController extends Controller implements HasMiddleware
 {
     use ApiResponse;
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:clients.index', only: ['index']),
+            new Middleware('permission:clients.store', only: ['store']),
+            new Middleware('permission:clients.show', only: ['show']),
+            new Middleware('permission:clients.update', only: ['update']),
+            new Middleware('permission:clients.destroy', only: ['destroy']),
+        ];
+    }
 
     public function index(Request $request)
     {

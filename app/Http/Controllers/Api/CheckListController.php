@@ -10,11 +10,24 @@ use App\Http\Requests\UpdateChecklistRequest;
 use App\Http\Resources\ShowCheckListResource;
 use App\Models\CheckListItem;
 use App\Traits\ApiResponse;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class CheckListController extends Controller
+class CheckListController extends Controller implements HasMiddleware
 {
     
     use ApiResponse;
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:checklists.index', only: ['index']),
+            new Middleware('permission:checklists.store', only: ['store']),
+            new Middleware('permission:checklists.show', only: ['show']),
+            new Middleware('permission:checklists.update', only: ['update']),
+            new Middleware('permission:checklists.destroy', only: ['destroy']),
+        ];
+    }
 
     public function index(Request $request)
     {
@@ -58,40 +71,40 @@ class CheckListController extends Controller
         );
     }
 
-    public function show(CheckListItem $checkListItem)
+    public function show(CheckListItem $checklist)
     {
         return $this->successResponse(
             'Checklist encontrado.',
-            new ShowCheckListResource($checkListItem),
+            new ShowCheckListResource($checklist),
             200
         );
     }
 
-    public function update(UpdateChecklistRequest $request, CheckListItem $checkListItem) {
+    public function update(UpdateChecklistRequest $request, CheckListItem $checklist) {
         
         $data = $request->validated();
 
-        $checkListItem->update($data);
+        $checklist->update($data);
 
         return $this->successResponse(
             'Checklist actualizado correctamente.',
-            new ShowCheckListResource($checkListItem),
+            new ShowCheckListResource($checklist),
             200
         );   
     }
     
-    public function destroy(CheckListItem $checkListItem)
+    public function destroy(CheckListItem $checklist)
     {
         
         $suffix = '//deleted_' . now()->timestamp;
 
-        if ($checkListItem->name) {
-            $checkListItem->name = $checkListItem->name . $suffix;
+        if ($checklist->name) {
+            $checklist->name = $checklist->name . $suffix;
         }
 
-        $checkListItem->save();
+        $checklist->save();
 
-        $checkListItem->delete();
+        $checklist->delete();
 
         return $this->successResponse(
             'Checklist eliminado correctamente.',

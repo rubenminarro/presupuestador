@@ -24,46 +24,48 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $permissions = [
             
+            /* users permissions */
             'users.index',
             'users.store',
             'users.show',
             'users.update',
             'users.destroy',
 
-            'permission.index',
-            'permission.store',
-            'permission.show',
-            'permission.update',
-            'permission.destroy',
+            /* permissions permissions */
+            'permissions.index',
+            'permissions.store',
+            'permissions.show',
+            'permissions.update',
+            'permissions.destroy',
 
-            'role.index',
-            'role.store',
-            'role.show',
-            'role.update',
-            'role.activate',
-            'role.destroy',
-            'role.permissionsGroupedByModule',
+            /* roles permissions */
+            'roles.index',
+            'roles.store',
+            'roles.show',
+            'roles.update',
+            'roles.destroy',
+            'roles.permissions-grouped-by-module',
 
-            /* client permissions */
-            'client.index',
-            'client.store',
-            'client.show',
-            'client.update',
-            'client.destroy',
+            /* clients permissions */
+            'clients.index',
+            'clients.store',
+            'clients.show',
+            'clients.update',
+            'clients.destroy',
 
             /* brand permissions */
-            'brand.index',
-            'brand.store',
-            'brand.show',
-            'brand.update',
-            'brand.destroy',
+            'brands.index',
+            'brands.store',
+            'brands.show',
+            'brands.update',
+            'brands.destroy',
 
             /* vehicle model permissions */
-            'vehicle_model.index',
-            'vehicle_model.store',
-            'vehicle_model.show',
-            'vehicle_model.update',
-            'vehicle_model.destroy',
+            'vehicle_models.index',
+            'vehicle_models.store',
+            'vehicle_models.show',
+            'vehicle_models.update',
+            'vehicle_models.destroy',
 
             /* vehicle permissions */
             'vehicles.index',
@@ -73,42 +75,42 @@ class RolesAndPermissionsSeeder extends Seeder
             'vehicles.destroy',
 
             /* checklist permissions */
-            'checklist.index',
-            'checklist.store',
-            'checklist.show',
-            'checklist.update',
-            'checklist.destroy',
+            'checklists.index',
+            'checklists.store',
+            'checklists.show',
+            'checklists.update',
+            'checklists.destroy',
 
             /* reception permissions */
-            'reception.index',
-            'reception.store',
-            'reception.show',
-            'reception.update',
-            'reception.destroy',
+            'receptions.index',
+            'receptions.store',
+            'receptions.show',
+            'receptions.update',
+            'receptions.destroy',
 
             /* reception checklist permissions */
-            'reception_checklist.show',
-            'reception_checklist.update',
+            'reception_checklists.show',
+            'reception_checklists.update',
 
             /* reception photo permissions */
-            'reception_photo.index',
-            'reception_photo.store',
-            'reception_photo.update',
-            'reception_photo.destroy',
+            'reception_photos.index',
+            'reception_photos.store',
+            'reception_photos.update',
+            'reception_photos.destroy',
 
             /* diagnostic permissions */
-            'diagnostic.index',
-            'diagnostic.store',
-            'diagnostic.show',
-            'diagnostic.update',
-            'diagnostic.destroy',
+            'diagnostics.index',
+            'diagnostics.store',
+            'diagnostics.show',
+            'diagnostics.update',
+            'diagnostics.destroy',
 
             /* diagnostic item permissions */
-            'diagnostic_item.index',
-            'diagnostic_item.store',
-            'diagnostic_item.show',
-            'diagnostic_item.update',
-            'diagnostic_item.destroy',
+            'diagnostic_items.index',
+            'diagnostic_items.store',
+            'diagnostic_items.show',
+            'diagnostic_items.update',
+            'diagnostic_items.destroy',
 
             /* diagnostic item photo permissions */
             'diagnostic_item_photo.index',
@@ -117,46 +119,46 @@ class RolesAndPermissionsSeeder extends Seeder
             'diagnostic_item_photo.destroy',
 
             /* budget permissions */
-            'budget.index',
-            'budget.store',
-            'budget.show',
-            'budget.update',
-            'budget.destroy',
-            'budget.send',
-            'budget.approve',
-            'budget.reject',
-            'budget.cancel',
-            'budget.reopen',
+            'budgets.index',
+            'budgets.store',
+            'budgets.show',
+            'budgets.update',
+            'budgets.destroy',
+            'budgets.send',
+            'budgets.approve',
+            'budgets.reject',
+            'budgets.cancel',
+            'budgets.reopen',
 
             /* budget item permissions */
-            'budget_item.index',
-            'budget_item.store',
-            'budget_item.show',
-            'budget_item.update',
-            'budget_item.destroy',
+            'budget_items.index',
+            'budget_items.store',
+            'budget_items.show',
+            'budget_items.update',
+            'budget_items.destroy',
 
             /* mechanic permissions */
-            'mechanic.index',
-            'mechanic.store',
-            'mechanic.show',
-            'mechanic.update',
-            'mechanic.destroy',
+            'mechanics.index',
+            'mechanics.store',
+            'mechanics.show',
+            'mechanics.update',
+            'mechanics.destroy',
 
             /* work order permissions */
-            'work_order.index',
-            'work_order.store',
-            'work_order.show',
-            'work_order.update',
-            'work_order.start',
-            'work_order.pause',
-            'work_order.resume',
-            'work_order.complete',
-            'work_order.cancel',
+            'work_orders.index',
+            'work_orders.store',
+            'work_orders.show',
+            'work_orders.update',
+            'work_orders.start',
+            'work_orders.pause',
+            'work_orders.resume',
+            'work_orders.complete',
+            'work_orders.cancel',
 
             /* work order item permissions */
-            'work_order_item.start',
-            'work_order_item.complete',
-            'work_order_item.cancel',
+            'work_order_items.start',
+            'work_order_items.complete',
+            'work_order_items.cancel',
         ];
 
         foreach ($permissions as $permission) {
@@ -172,14 +174,44 @@ class RolesAndPermissionsSeeder extends Seeder
         $mechanicPermissions = [
             'vehicles.index', 
             'vehicles.show',
-            'reception.index', 'reception.show', 'reception.update',
-            'reception_checklist.show', 'reception_checklist.update',
-            'reception_photo.index', 'reception_photo.store', 'reception_photo.destroy',
-            'diagnostic.index', 'diagnostic.store', 'diagnostic.show', 'diagnostic.update',
-            'diagnostic_item.index', 'diagnostic_item.store', 'diagnostic_item.show', 'diagnostic_item.update', 'diagnostic_item.destroy',
-            'diagnostic_item_photo.index', 'diagnostic_item_photo.store', 'diagnostic_item_photo.update', 'diagnostic_item_photo.destroy',
-            'work_order.index', 'work_order.show', 'work_order.start', 'work_order.pause', 'work_order.resume', 'work_order.complete',
-            'work_order_item.start', 'work_order_item.complete',
+            
+            'receptions.index', 
+            'receptions.show', 
+            'receptions.update',
+            
+            'reception_checklists.show', 
+            'reception_checklists.update',
+            
+            'reception_photos.index', 
+            'reception_photos.store', 
+            'reception_photos.destroy',
+
+            'diagnostics.index', 
+            'diagnostics.store', 
+            'diagnostics.show', 
+            'diagnostics.update',
+            
+            'diagnostic_items.index', 
+            'diagnostic_items.store', 
+            'diagnostic_items.show', 
+            'diagnostic_items.update', 
+            'diagnostic_items.destroy',
+
+            'diagnostic_item_photos.index', 
+            'diagnostic_item_photos.store', 
+            'diagnostic_item_photos.update', 
+            'diagnostic_item_photos.destroy',
+
+            'work_orders.index', 
+            'work_orders.show', 
+            'work_orders.start', 
+            'work_orders.pause', 
+            'work_orders.resume', 
+            'work_orders.complete',
+            
+            'work_order_items.start', 
+            'work_order_items.complete',
+
         ];
 
         $mecanico->syncPermissions(

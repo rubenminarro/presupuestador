@@ -17,7 +17,7 @@ class UpdateChecklistRequest extends FormRequest
     public function rules(): array
     {
         
-        $checkListItemId = $this->route('checkListItem');
+        $id = $this->route('checklist');
     
         return [
             'name' => [
@@ -26,7 +26,7 @@ class UpdateChecklistRequest extends FormRequest
                 'min:2',
                 'max:100',
                 'regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚ]+$/u',
-                Rule::unique('check_list_items', 'name')->ignore($checkListItemId),
+                Rule::unique('check_list_items', 'name')->ignore($id),
             ],
             'type' => [
                 'sometimes',

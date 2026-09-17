@@ -21,78 +21,42 @@ use App\Http\Controllers\Api\MechanicController;
 use App\Http\Controllers\Api\WorkOrderController;
 use App\Http\Controllers\Api\WorkOrderItemController;
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
     Route::apiResource('users', UserRoleController::class);
 
     Route::apiResource('permissions', PermissionController::class);
 
     Route::apiResource('roles', RoleController::class);
+    
     Route::get('/roles/permissions-grouped-by-module', [RoleController::class, 'permissionsGroupedByModule']);
 
+    Route::apiResource('clients', ClientController::class);
+
+    Route::apiResource('brands', BrandController::class);
+
+    Route::apiResource('vehicle-models', VehicleModelController::class);
+
     Route::apiResource('vehicles', VehicleController::class);
+
+    Route::apiResource('checklists', CheckListController::class);
+
+    Route::apiResource('receptions', ReceptionController::class);
+
+    Route::get('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'show']);
+    
+    Route::patch('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'update']);
+
+    Route::apiResource('receptions.photos', ReceptionPhotoController::class)->except(['show']);
+
+    Route::apiResource('diagnostics', DiagnosticController::class);
+
+    Route::apiResource('diagnostic-items', DiagnosticItemController::class);
 
 });
 
 
-/*Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () {  
-    
-    Route::get('/roles', [RoleController::class, 'index']);
-    Route::post('/roles', [RoleController::class, 'store']);
-    Route::get('/role/{role}', [RoleController::class, 'show']);
-    Route::patch('/role/{role}', [RoleController::class, 'update']);
-    Route::delete('/role/{role}', [RoleController::class, 'destroy']);
-    Route::get('/role/permissions-grouped-by-module', [RoleController::class, 'permissionsGroupedByModule']);
-    
-    Route::get('/clients', [ClientController::class, 'index']);
-    Route::post('/clients', [ClientController::class, 'store']);
-    Route::get('/client/{client}', [ClientController::class, 'show']);
-    Route::patch('/client/{client}', [ClientController::class, 'update']);
-    Route::delete('/client/{client}', [ClientController::class, 'destroy']);
-
-    Route::get('/brands', [BrandController::class, 'index']);
-    Route::post('/brands', [BrandController::class, 'store']);
-    Route::get('/brand/{brand}', [BrandController::class, 'show']);
-    Route::patch('/brand/{brand}', [BrandController::class, 'update']);
-    Route::delete('/brand/{brand}', [BrandController::class, 'destroy']);
-
-    Route::get('/vehicle-models', [VehicleModelController::class, 'index']);
-    Route::post('/vehicle-models', [VehicleModelController::class, 'store']);
-    Route::get('/vehicle-model/{vehicleModel}', [VehicleModelController::class, 'show']);
-    Route::patch('/vehicle-model/{vehicleModel}', [VehicleModelController::class, 'update']);
-    Route::delete('/vehicle-model/{vehicleModel}', [VehicleModelController::class, 'destroy']);
-
-    Route::get('/vehicles', [VehicleController::class, 'index']);
-    Route::post('/vehicles', [VehicleController::class, 'store']);
-    Route::get('/vehicle/{vehicle}', [VehicleController::class, 'show']);
-    Route::patch('/vehicle/{vehicle}', [VehicleController::class, 'update']);
-    Route::delete('/vehicle/{vehicle}', [VehicleController::class, 'destroy']);
-
-    Route::get('/checklists', [CheckListController::class, 'index']);
-    Route::post('/checklists', [CheckListController::class, 'store']);
-    Route::get('/checklist/{checkListItem}', [CheckListController::class, 'show']);
-    Route::patch('/checklist/{checkListItem}', [CheckListController::class, 'update']);
-    Route::delete('/checklist/{checkListItem}', [CheckListController::class, 'destroy']);
-    
-    Route::get('/receptions', [ReceptionController::class, 'index']);
-    Route::post('/receptions', [ReceptionController::class, 'store']);
-    Route::get('/reception/{reception}', [ReceptionController::class, 'show']);
-    Route::patch('/reception/{reception}', [ReceptionController::class, 'update']);
-    Route::delete('/reception/{reception}', [ReceptionController::class, 'destroy']);
-
-    Route::get('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'show']);
-    Route::patch('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'update']);
-
-    Route::get('/receptions/{reception}/photos', [ReceptionPhotoController::class, 'index']);
-    Route::post('/receptions/{reception}/photos', [ReceptionPhotoController::class, 'store']);
-    Route::patch('/receptions/{reception}/photos/{photo}', [ReceptionPhotoController::class, 'update']);
-    Route::delete('/receptions/{reception}/photos/{photo}', [ReceptionPhotoController::class, 'destroy']);
-
-    Route::get('/diagnostics', [DiagnosticController::class, 'index']);
-    Route::post('/diagnostics', [DiagnosticController::class, 'store']);
-    Route::get('/diagnostic/{diagnostic}', [DiagnosticController::class, 'show']);
-    Route::patch('/diagnostic/{diagnostic}', [DiagnosticController::class, 'update']);
-    Route::delete('/diagnostic/{diagnostic}', [DiagnosticController::class, 'destroy']);
+/*Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () { 
 
     Route::get('/diagnostic-items', [DiagnosticItemController::class, 'index']);
     Route::post('/diagnostic-items', [DiagnosticItemController::class, 'store']);

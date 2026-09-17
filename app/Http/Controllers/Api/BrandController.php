@@ -10,10 +10,23 @@ use App\Http\Requests\UpdateBrandRequest;
 use App\Http\Resources\BrandResource;
 use App\Models\Brand;
 use App\Traits\ApiResponse;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class BrandController extends Controller
+class BrandController extends Controller implements HasMiddleware
 {
     use ApiResponse;
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:brands.index', only: ['index']),
+            new Middleware('permission:brands.store', only: ['store']),
+            new Middleware('permission:brands.show', only: ['show']),
+            new Middleware('permission:brands.update', only: ['update']),
+            new Middleware('permission:brands.destroy', only: ['destroy']),
+        ];
+    }
 
     public function index(Request $request)
     {

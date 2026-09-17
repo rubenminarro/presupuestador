@@ -13,11 +13,24 @@ use App\Traits\ApiResponse;
 use App\Enums\DiagnosticStatus;
 use Illuminate\Support\Facades\DB;
 use Exception;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class DiagnosticController extends Controller
+class DiagnosticController extends Controller implements HasMiddleware
 {
     
     use ApiResponse;
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:diagnostics.index', only: ['index']),
+            new Middleware('permission:diagnostics.store', only: ['store']),
+            new Middleware('permission:diagnostics.show', only: ['show']),
+            new Middleware('permission:diagnostics.update', only: ['update']),
+            new Middleware('permission:diagnostics.destroy', only: ['destroy']),
+        ];
+    }
 
     public function index(Request $request)
     {

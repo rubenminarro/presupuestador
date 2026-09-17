@@ -9,11 +9,21 @@ use App\Http\Resources\ReceptionCheckListResource;
 use App\Services\ReceptionCheckListItemService;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class ReceptionCheckListController extends Controller
+class ReceptionCheckListController extends Controller implements HasMiddleware
 {
    
     use ApiResponse;
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:reception-check-lists.show', only: ['show']),
+            new Middleware('permission:reception-check-lists.update', only: ['update']),
+        ];
+    }
 
     public function show(ReceptionCheckList $receptionCheckList)
     {

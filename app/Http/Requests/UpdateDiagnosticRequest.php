@@ -2,27 +2,18 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Enums\Priority;
-use App\Enums\Status;
+use App\Enums\DiagnosticStatus;
 
 class UpdateDiagnosticRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
@@ -31,43 +22,45 @@ class UpdateDiagnosticRequest extends FormRequest
                 Rule::exists('receptions', 'id')
             ],
             'mechanic_id' => [
-                'nullable',
+                'sometimes',
                 Rule::exists('users', 'id')
             ],
             'customer_complaint' => [
-                'nullable',
+                'sometimes',
                 'string',
                 'max:1000',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
             ],
             'diagnosis' => [
-                'nullable',
+                'sometimes',
                 'string',
                 'max:1000',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
             ],
             'recommendation' => [
-                'nullable',
+                'sometimes',
                 'string',
                 'max:1000',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
             ],
             'priority' => [
-                'nullable',
+                'sometimes',
                 Rule::enum(Priority::class),
             ],
             'status' => [
-                'nullable',
-                Rule::enum(Status::class)
+                'sometimes',
+                Rule::enum(DiagnosticStatus::class)
             ],
             'requires_parts' => [
+                'sometimes',
                 'boolean'
             ],
             'requires_repair' => [
+                'sometimes',
                 'boolean'
             ],
             'diagnosed_at' => [
-                'nullable',
+                'sometimes',
                 'date'
             ],
         ];

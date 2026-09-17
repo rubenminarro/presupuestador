@@ -11,10 +11,23 @@ use App\Models\DiagnosticItem;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class DiagnosticItemController extends Controller
+class DiagnosticItemController extends Controller implements HasMiddleware
 {
     use ApiResponse;
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:diagnostic-items.index', only: ['index']),
+            new Middleware('permission:diagnostic-items.store', only: ['store']),
+            new Middleware('permission:diagnostic-items.show', only: ['show']),
+            new Middleware('permission:diagnostic-items.update', only: ['update']),
+            new Middleware('permission:diagnostic-items.destroy', only: ['destroy']),
+        ];
+    }
 
     public function index(Request $request)
     {

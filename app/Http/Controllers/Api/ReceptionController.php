@@ -16,11 +16,24 @@ use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Services\ReceptionChecklistService;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class ReceptionController extends Controller
+class ReceptionController extends Controller implements HasMiddleware
 {
     
     use ApiResponse;
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:receptions.index', only: ['index']),
+            new Middleware('permission:receptions.store', only: ['store']),
+            new Middleware('permission:receptions.show', only: ['show']),
+            new Middleware('permission:receptions.update', only: ['update']),
+            new Middleware('permission:receptions.destroy', only: ['destroy']),
+        ];
+    }
 
     public function index(Request $request)
     {

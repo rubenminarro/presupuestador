@@ -12,11 +12,23 @@ use App\Http\Resources\ReceptionPhotoResource;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\DB;
 use Exception;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class ReceptionPhotoController extends Controller
+class ReceptionPhotoController extends Controller implements HasMiddleware
 {
     
     use ApiResponse;
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:receptions.photos.index', only: ['index']),
+            new Middleware('permission:receptions.photos.store', only: ['store']),
+            new Middleware('permission:receptions.photos.update', only: ['update']),
+            new Middleware('permission:receptions.photos.destroy', only: ['destroy']),
+        ];
+    }
     
     public function index(Reception $reception)
     {
