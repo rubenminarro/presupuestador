@@ -89,14 +89,14 @@ class RolesAndPermissionsSeeder extends Seeder
             'receptions.destroy',
 
             /* reception checklist permissions */
-            'reception_checklists.show',
-            'reception_checklists.update',
+            'reception-check-lists.show',
+            'reception-check-lists.update',
 
             /* reception photo permissions */
-            'reception_photos.index',
-            'reception_photos.store',
-            'reception_photos.update',
-            'reception_photos.destroy',
+            'receptions-photos.index',
+            'receptions-photos.store',
+            'receptions-photos.update',
+            'receptions-photos.destroy',
 
             /* diagnostic permissions */
             'diagnostics.index',
@@ -106,17 +106,17 @@ class RolesAndPermissionsSeeder extends Seeder
             'diagnostics.destroy',
 
             /* diagnostic item permissions */
-            'diagnostic_items.index',
-            'diagnostic_items.store',
-            'diagnostic_items.show',
-            'diagnostic_items.update',
-            'diagnostic_items.destroy',
+            'diagnostic-items.index',
+            'diagnostic-items.store',
+            'diagnostic-items.show',
+            'diagnostic-items.update',
+            'diagnostic-items.destroy',
 
             /* diagnostic item photo permissions */
-            'diagnostic_item_photo.index',
-            'diagnostic_item_photo.store',
-            'diagnostic_item_photo.update',
-            'diagnostic_item_photo.destroy',
+            'diagnostic-item-photos.index',
+            'diagnostic-item-photos.store',
+            'diagnostic-item-photos.update',
+            'diagnostic-item-photos.destroy',
 
             /* budget permissions */
             'budgets.index',
@@ -131,11 +131,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'budgets.reopen',
 
             /* budget item permissions */
-            'budget_items.index',
-            'budget_items.store',
-            'budget_items.show',
-            'budget_items.update',
-            'budget_items.destroy',
+            'budget-items.index',
+            'budget-items.store',
+            'budget-items.show',
+            'budget-items.update',
+            'budget-items.destroy',
 
             /* mechanic permissions */
             'mechanics.index',
@@ -145,20 +145,20 @@ class RolesAndPermissionsSeeder extends Seeder
             'mechanics.destroy',
 
             /* work order permissions */
-            'work_orders.index',
-            'work_orders.store',
-            'work_orders.show',
-            'work_orders.update',
-            'work_orders.start',
-            'work_orders.pause',
-            'work_orders.resume',
-            'work_orders.complete',
-            'work_orders.cancel',
+            'work-orders.index',
+            'work-orders.store',
+            'work-orders.show',
+            'work-orders.update',
+            'work-orders.start',
+            'work-orders.pause',
+            'work-orders.resume',
+            'work-orders.complete',
+            'work-orders.cancel',
 
             /* work order item permissions */
-            'work_order_items.start',
-            'work_order_items.complete',
-            'work_order_items.cancel',
+            'work-order-items.start',
+            'work-order-items.complete',
+            'work-order-items.cancel',
         ];
 
         foreach ($permissions as $permission) {
@@ -179,38 +179,38 @@ class RolesAndPermissionsSeeder extends Seeder
             'receptions.show', 
             'receptions.update',
             
-            'reception_checklists.show', 
-            'reception_checklists.update',
+            'reception-check-lists.show', 
+            'reception-check-lists.update',
             
-            'reception_photos.index', 
-            'reception_photos.store', 
-            'reception_photos.destroy',
+            'receptions-photos.index', 
+            'receptions-photos.store', 
+            'receptions-photos.destroy',
 
             'diagnostics.index', 
             'diagnostics.store', 
             'diagnostics.show', 
             'diagnostics.update',
             
-            'diagnostic_items.index', 
-            'diagnostic_items.store', 
-            'diagnostic_items.show', 
-            'diagnostic_items.update', 
-            'diagnostic_items.destroy',
+            'diagnostic-items.index', 
+            'diagnostic-items.store', 
+            'diagnostic-items.show', 
+            'diagnostic-items.update', 
+            'diagnostic-items.destroy',
 
-            'diagnostic_item_photos.index', 
-            'diagnostic_item_photos.store', 
-            'diagnostic_item_photos.update', 
-            'diagnostic_item_photos.destroy',
+            'diagnostic-item-photos.index', 
+            'diagnostic-item-photos.store', 
+            'diagnostic-item-photos.update', 
+            'diagnostic-item-photos.destroy',
 
-            'work_orders.index', 
-            'work_orders.show', 
-            'work_orders.start', 
-            'work_orders.pause', 
-            'work_orders.resume', 
-            'work_orders.complete',
+            'work-orders.index', 
+            'work-orders.show', 
+            'work-orders.start', 
+            'work-orders.pause', 
+            'work-orders.resume', 
+            'work-orders.complete',
             
-            'work_order_items.start', 
-            'work_order_items.complete',
+            'work-order-items.start', 
+            'work-order-items.complete',
 
         ];
 

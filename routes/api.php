@@ -29,7 +29,7 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
     Route::apiResource('roles', RoleController::class);
     
-    Route::get('/roles/permissions-grouped-by-module', [RoleController::class, 'permissionsGroupedByModule']);
+    Route::get('/roles/permissions-grouped-by-module', [RoleController::class, 'permissionsGroupedByModule']); /* hay que revisar*/
 
     Route::apiResource('clients', ClientController::class);
 
@@ -53,40 +53,13 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
     Route::apiResource('diagnostic-items', DiagnosticItemController::class);
 
+    Route::apiResource('diagnostic-items.photos', DiagnosticItemPhotoController::class)->except(['show']);
+
+
 });
 
 
 /*Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () { 
-
-    Route::get('/diagnostic-items', [DiagnosticItemController::class, 'index']);
-    Route::post('/diagnostic-items', [DiagnosticItemController::class, 'store']);
-    Route::get('/diagnostic-item/{diagnosticItem}', [DiagnosticItemController::class, 'show']);
-    Route::patch('/diagnostic-item/{diagnosticItem}', [DiagnosticItemController::class, 'update']);
-    Route::delete('/diagnostic-item/{diagnosticItem}', [DiagnosticItemController::class, 'destroy']);
-
-    Route::scopeBindings()->group(function () {
-
-        Route::get(
-            '/diagnostic-item/{diagnosticItem}/photos',
-            [DiagnosticItemPhotoController::class, 'index']
-        );
-
-        Route::post(
-            '/diagnostic-item/{diagnosticItem}/photos',
-            [DiagnosticItemPhotoController::class, 'store']
-        );
-
-        Route::patch(
-            '/diagnostic-item/{diagnosticItem}/photos/{photo}',
-            [DiagnosticItemPhotoController::class, 'update']
-        );
-
-        Route::delete(
-            '/diagnostic-item/{diagnosticItem}/photos/{photo}',
-            [DiagnosticItemPhotoController::class, 'destroy']
-        );
-
-    });
 
     Route::scopeBindings()->group(function () {
 

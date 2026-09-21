@@ -23,10 +23,10 @@ class ReceptionPhotoController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:receptions.photos.index', only: ['index']),
-            new Middleware('permission:receptions.photos.store', only: ['store']),
-            new Middleware('permission:receptions.photos.update', only: ['update']),
-            new Middleware('permission:receptions.photos.destroy', only: ['destroy']),
+            new Middleware('permission:receptions-photos.index', only: ['index']),
+            new Middleware('permission:receptions-photos.store', only: ['store']),
+            new Middleware('permission:receptions-photos.update', only: ['update']),
+            new Middleware('permission:receptions-photos.destroy', only: ['destroy']),
         ];
     }
     
