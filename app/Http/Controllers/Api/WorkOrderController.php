@@ -9,14 +9,15 @@ use App\Http\Resources\ShowWorkOrderResource;
 use App\Http\Requests\StoreWorkOrderRequest;
 use App\Http\Requests\UpdateWorkOrderRequest;
 use App\Models\WorkOrder;
-use App\Models\WorkOrderItem;
 use App\Models\Mechanic;
 use App\Models\Budget;
 use App\Services\WorkOrderService;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class WorkOrderController extends Controller
+class WorkOrderController extends Controller implements HasMiddleware
 {
     
     use ApiResponse;
@@ -24,6 +25,21 @@ class WorkOrderController extends Controller
     public function __construct(
         protected WorkOrderService $workOrderService
     ) {
+    }
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:work-orders.index', only: ['index']),
+            new Middleware('permission:work-orders.store', only: ['store']),
+            new Middleware('permission:work-orders.show', only: ['show']),
+            new Middleware('permission:work-orders.update', only: ['update']),
+            new Middleware('permission:work-orders.start', only: ['start']),
+            new Middleware('permission:work-orders.pause', only: ['pause']),
+            new Middleware('permission:work-orders.resume', only: ['resume']),
+            new Middleware('permission:work-orders.complete', only: ['complete']),
+            new Middleware('permission:work-orders.cancel', only: ['cancel']),
+        ];
     }
     
     public function index(Request $request)

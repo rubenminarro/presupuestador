@@ -24,7 +24,7 @@ class AdminUserSeeder extends Seeder
 
         $usersData = [
             [
-                'email' => 'rminarro@mail.com.py',
+                'email' => 'admin@mail.com.py',
                 'name' => 'rminarro',
                 'first_name' => 'Ruben',
                 'last_name' => 'Minarro',

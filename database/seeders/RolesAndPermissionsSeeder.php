@@ -165,12 +165,10 @@ class RolesAndPermissionsSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'api']);
         }
 
-        // Asignar absolutamente todos los permisos al administrador
         $admin->syncPermissions(
             Permission::where('guard_name', 'api')->get()
         );
 
-        // Permisos operativos asignados al mecánico
         $mechanicPermissions = [
             'vehicles.index', 
             'vehicles.show',
@@ -204,6 +202,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'work-orders.index', 
             'work-orders.show', 
+            
             'work-orders.start', 
             'work-orders.pause', 
             'work-orders.resume', 

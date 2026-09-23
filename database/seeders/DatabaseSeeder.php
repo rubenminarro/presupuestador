@@ -26,6 +26,8 @@ class DatabaseSeeder extends Seeder
             DiagnosticSeeder::class,
             DiagnosticItemSeeder::class,
             DiagnosticItemPhotoSeeder::class,
+            BudgetSeeder::class,
+            BudgetItemSeeder::class,
         ]);
     }
 }

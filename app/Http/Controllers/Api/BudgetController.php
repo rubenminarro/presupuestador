@@ -12,14 +12,32 @@ use App\Models\Budget;
 use App\Services\BudgetService;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class BudgetController extends Controller
+class BudgetController extends Controller implements HasMiddleware
 {
     use ApiResponse;
 
     public function __construct(
         protected BudgetService $budgetService
     ) {
+    }
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:budgets.index', only: ['index']),
+            new Middleware('permission:budgets.store', only: ['store']),
+            new Middleware('permission:budgets.show', only: ['show']),
+            new Middleware('permission:budgets.update', only: ['update']),
+            new Middleware('permission:budgets.destroy', only: ['destroy']),
+            new Middleware('permission:budgets.send', only: ['send']),
+            new Middleware('permission:budgets.approve', only: ['approve']),
+            new Middleware('permission:budgets.reject', only: ['reject']),
+            new Middleware('permission:budgets.cancel', only: ['cancel']),
+            new Middleware('permission:budgets.reopen', only: ['reopen']),
+        ];
     }
 
     public function index(Request $request)

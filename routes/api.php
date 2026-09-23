@@ -31,6 +31,8 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     
     Route::get('/roles/permissions-grouped-by-module', [RoleController::class, 'permissionsGroupedByModule']); /* hay que revisar*/
 
+    Route::apiResource('mechanics', MechanicController::class);
+
     Route::apiResource('clients', ClientController::class);
 
     Route::apiResource('brands', BrandController::class);
@@ -43,9 +45,9 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
     Route::apiResource('receptions', ReceptionController::class);
 
-    Route::get('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'show']);
-    
-    Route::patch('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'update']);
+    Route::get('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'show'])->name('reception-check-lists.show');
+        
+    Route::patch('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'update'])->name('reception-check-lists.update');
 
     Route::apiResource('receptions.photos', ReceptionPhotoController::class)->except(['show']);
 
@@ -55,112 +57,36 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
     Route::apiResource('diagnostic-items.photos', DiagnosticItemPhotoController::class)->except(['show']);
 
+    Route::apiResource('budgets', BudgetController::class);
+
+    Route::post('budgets/{budget}/send', [BudgetController::class, 'send'])->name('budgets.send');
+
+    Route::post('budgets/{budget}/approve', [BudgetController::class, 'approve'])->name('budgets.approve');
+
+    Route::post('budgets/{budget}/reject', [BudgetController::class, 'reject'])->name('budgets.reject');
+
+    Route::post('budgets/{budget}/cancel', [BudgetController::class, 'cancel'])->name('budgets.cancel');
+
+    Route::post('budgets/{budget}/reopen', [BudgetController::class, 'reopen'])->name('budgets.reopen');
+
+    Route::apiResource('budgets.items', BudgetItemController::class);
+
+    Route::apiResource('work-orders', WorkOrderController::class)->except(['delete']);
+
+    Route::post('work-orders/{workOrder}/start', [WorkOrderController::class, 'start'])->name('work-orders.start');
+
+    Route::post('work-orders/{workOrder}/pause', [WorkOrderController::class, 'pause'])->name('work-orders.pause');
+
+    Route::post('work-orders/{workOrder}/resume', [WorkOrderController::class, 'resume'])->name('work-orders.resume');
+
+    Route::post('work-orders/{workOrder}/complete', [WorkOrderController::class, 'complete'])->name('work-orders.complete');
+
+    Route::post('work-orders/{workOrder}/cancel', [WorkOrderController::class, 'cancel'])->name('work-orders.cancel');
+
+    Route::post('work-orders/{workOrder}/items/{item}/start', [WorkOrderItemController::class, 'start'])->name('work-orders.items.start');
+
+    Route::post('work-orders/{workOrder}/items/{item}/complete', [WorkOrderItemController::class, 'complete'])->name('work-orders.items.complete');
+
+    Route::post('work-orders/{workOrder}/items/{item}/cancel', [WorkOrderItemController::class, 'cancel'])->name('work-orders.items.cancel');
 
 });
-
-
-/*Route::middleware(['auth:sanctum', 'role:administrador'])->group(function () { 
-
-    Route::scopeBindings()->group(function () {
-
-        Route::apiResource('budgets', BudgetController::class);
-
-        Route::post(
-            'budgets/{budget}/send',
-            [BudgetController::class, 'send']
-        )->name('budgets.send');
-
-        Route::post(
-            'budgets/{budget}/approve',
-            [BudgetController::class, 'approve']
-        )->name('budgets.approve');
-
-        Route::post(
-            'budgets/{budget}/reject',
-            [BudgetController::class, 'reject']
-        )->name('budgets.reject');
-
-        Route::post(
-            'budgets/{budget}/cancel',
-            [BudgetController::class, 'cancel']
-        )->name('budgets.cancel');
-
-        Route::post(
-            'budgets/{budget}/reopen',
-            [BudgetController::class, 'reopen']
-        )->name('budgets.reopen');
-
-        Route::apiResource('budgets.items', BudgetItemController::class);
-
-    });
-    
-    Route::scopeBindings()->group(function () {
-        Route::apiResource('mechanics', MechanicController::class);
-    });
-    
-    Route::scopeBindings()->group(function () {
-
-        Route::get(
-            'work-orders',
-            [WorkOrderController::class, 'index']
-        )->name('work-orders.index');
-
-        Route::post(
-            'work-orders',
-            [WorkOrderController::class, 'store']
-        )->name('work-orders.store');
-
-        Route::get(
-            'work-orders/{workOrder}',
-            [WorkOrderController::class, 'show']
-        )->name('work-orders.show');
-
-        Route::patch(
-            'work-orders/{workOrder}',
-            [WorkOrderController::class, 'update']
-        )->name('work-orders.update');
-
-
-        Route::post(
-            'work-orders/{workOrder}/start',
-            [WorkOrderController::class, 'start']
-        )->name('work-orders.start');
-
-        Route::post(
-            'work-orders/{workOrder}/pause',
-            [WorkOrderController::class, 'pause']
-        )->name('work-orders.pause');
-
-        Route::post(
-            'work-orders/{workOrder}/resume',
-            [WorkOrderController::class, 'resume']
-        )->name('work-orders.resume');
-
-        Route::post(
-            'work-orders/{workOrder}/complete',
-            [WorkOrderController::class, 'complete']
-        )->name('work-orders.complete');
-
-        Route::post(
-            'work-orders/{workOrder}/cancel',
-            [WorkOrderController::class, 'cancel']
-        )->name('work-orders.cancel');
-
-        Route::post(
-            'work-orders/{workOrder}/items/{item}/start',
-            [WorkOrderItemController::class, 'start']
-        )->name('work-orders.items.start');
-
-        Route::post(
-            'work-orders/{workOrder}/items/{item}/complete',
-            [WorkOrderItemController::class, 'complete']
-        )->name('work-orders.items.complete');
-
-        Route::post(
-            'work-orders/{workOrder}/items/{item}/cancel',
-            [WorkOrderItemController::class, 'cancel']
-        )->name('work-orders.items.cancel');
-
-    });
-
-});*/

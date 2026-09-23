@@ -8,8 +8,10 @@ use App\Models\WorkOrderItem;
 use App\Http\Resources\ShowWorkOrderResource;
 use App\Services\WorkOrderService;
 use App\Traits\ApiResponse;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class WorkOrderItemController extends Controller
+class WorkOrderItemController extends Controller implements HasMiddleware
 {
     
     use ApiResponse;
@@ -17,6 +19,15 @@ class WorkOrderItemController extends Controller
     public function __construct(
         protected WorkOrderService $workOrderService
     ) {
+    }
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:work-orders.start', only: ['start']),
+            new Middleware('permission:work-orders.complete', only: ['complete']),
+            new Middleware('permission:work-orders.cancel', only: ['cancel']),
+        ];
     }
 
     public function start( WorkOrder $workOrder, WorkOrderItem $item ) {

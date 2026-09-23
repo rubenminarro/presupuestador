@@ -11,10 +11,23 @@ use App\Models\Mechanic;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class MechanicController extends Controller
+class MechanicController extends Controller implements HasMiddleware
 {
     use ApiResponse;
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:mechanics.index', only: ['index']),
+            new Middleware('permission:mechanics.store', only: ['store']),
+            new Middleware('permission:mechanics.show', only: ['show']),
+            new Middleware('permission:mechanics.update', only: ['update']),
+            new Middleware('permission:mechanics.destroy', only: ['destroy']),
+        ];
+    }
 
     public function index(Request $request)
     {
