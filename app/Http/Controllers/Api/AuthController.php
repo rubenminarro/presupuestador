@@ -17,8 +17,7 @@ class AuthController extends Controller
     
     public function login(LoginRequest $request)
     {
-        
-         if (!Auth::attempt($request->validated())) {
+        if (!Auth::attempt($request->validated())) {
             return $this->errorResponse('Credenciales inválidas.', [
                 'email' => ['Email incorrecto.'],
                 'password' => ['Contraseña incorrecta.']
@@ -26,6 +25,7 @@ class AuthController extends Controller
         }
 
         $user  = Auth::user();
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return $this->successResponse(
@@ -39,13 +39,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->tokens()->delete();
-
-        auth()->guard('web')->logout();
-
-        $request->session()->invalidate();
-
-        $request->session()->regenerateToken();
+        $request->user()->currentAccessToken()->delete();
 
         return $this->successResponse('Sesión cerrada correctamente.');
     }

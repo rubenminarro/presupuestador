@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserRoleController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RoleController;
@@ -21,7 +22,11 @@ use App\Http\Controllers\Api\MechanicController;
 use App\Http\Controllers\Api\WorkOrderController;
 use App\Http\Controllers\Api\WorkOrderItemController;
 
+Route::post('/login', [AuthController::class, 'login']);
+
 Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
+
+    Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::apiResource('users', UserRoleController::class);
 
@@ -71,7 +76,7 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
     Route::apiResource('budgets.items', BudgetItemController::class);
 
-    Route::apiResource('work-orders', WorkOrderController::class)->except(['delete']);
+    Route::apiResource('work-orders', WorkOrderController::class)->except(['destroy']);
 
     Route::post('work-orders/{workOrder}/start', [WorkOrderController::class, 'start'])->name('work-orders.start');
 
