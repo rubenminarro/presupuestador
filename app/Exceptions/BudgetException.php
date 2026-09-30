@@ -2,14 +2,6 @@
 
 namespace App\Exceptions;
 
-use Exception;
-
-class BudgetException extends Exception
+class BudgetException extends AppException
 {
-    protected int $status = 422;
-
-    public function status(): int
-    {
-        return $this->status;
-    }
 }

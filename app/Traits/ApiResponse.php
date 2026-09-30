@@ -2,10 +2,16 @@
 
 namespace App\Traits;
 
+use Illuminate\Http\JsonResponse;
+
 trait ApiResponse
 {
-    protected function successResponse($message = 'OK', $data = null, $status = 200, $meta = null)
-    {
+    protected function successResponse(
+        string $message = 'OK',
+        mixed $data = null,
+        int $status = 200,
+        mixed $meta = null
+    ): JsonResponse {
         return response()->json([
             'success'   => true,
             'status'    => $status,
@@ -17,15 +23,19 @@ trait ApiResponse
         ], $status);
     }
 
-    protected function errorResponse($message = 'Error', $errors = null, $status = 400)
-    {
+    protected function errorResponse(
+        string $message = 'Error',
+        mixed $errors = null,
+        int $status = 400,
+        mixed $meta = null
+    ): JsonResponse {
         return response()->json([
             'success'   => false,
             'status'    => $status,
             'message'   => $message,
             'data'      => null,
             'errors'    => $errors,
-            'meta'      => null,
+            'meta'      => $meta,
             'timestamp' => now()->toISOString(),
         ], $status);
     }
