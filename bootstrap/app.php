@@ -9,6 +9,13 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Exceptions\AppException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\AuthenticationException;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Spatie\Permission\Exceptions\UnauthorizedException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\UnsupportedMediaTypeHttpException;
+use Symfony\Component\HttpKernel\Exception\NotAcceptableHttpException;
+use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
+use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -91,6 +98,117 @@ return Application::configure(basePath: dirname(__DIR__))
                     'errors' => null,
                     'error_code' => 'RESOURCE_NOT_FOUND',
                 ], 404);
+            }
+        });
+
+        $exceptions->render(function (MethodNotAllowedHttpException $e, Request $request) 
+        {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 405,
+                    'message' => 'Método HTTP no permitido.',
+                    'data' => null,
+                    'errors' => null,
+                    'error_code' => 'METHOD_NOT_ALLOWED',
+                ], 405);
+            }
+        });
+
+        $exceptions->render(function (UnauthorizedException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 403,
+                    'message' => 'No tienes permisos para realizar esta acción.',
+                    'data' => null,
+                    'errors' => null,
+                    'error_code' => 'FORBIDDEN',
+                ], 403);
+            }
+        });
+
+        $exceptions->render(function (BadRequestHttpException $e, Request $request) 
+        {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 400,
+                    'message' => 'Solicitud incorrecta.',
+                    'data' => null,
+                    'errors' => null,
+                    'error_code' => 'BAD_REQUEST',
+                ], 400);
+            }
+        });
+
+        $exceptions->render(function (UnsupportedMediaTypeHttpException $e, Request $request) 
+        {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 415,
+                    'message' => 'Tipo de contenido no soportado.',
+                    'data' => null,
+                    'errors' => null,
+                    'error_code' => 'UNSUPPORTED_MEDIA_TYPE',
+                ], 415);
+            }
+        });
+
+        $exceptions->render(function (NotAcceptableHttpException $e, Request $request) 
+        {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 406,
+                    'message' => 'Formato de respuesta no aceptable.',
+                    'data' => null,
+                    'errors' => null,
+                    'error_code' => 'NOT_ACCEPTABLE',
+                ], 406);
+            }
+        });
+
+        $exceptions->render(function (TooManyRequestsHttpException $e, Request $request) 
+        {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 429,
+                    'message' => 'Demasiadas solicitudes.',
+                    'data' => null,
+                    'errors' => null,
+                    'error_code' => 'TOO_MANY_REQUESTS',
+                ], 429);
+            }
+        });
+
+        $exceptions->render(function (ServiceUnavailableHttpException $e, Request $request) 
+        {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 503,
+                    'message' => 'Servicio no disponible.',
+                    'data' => null,
+                    'errors' => null,
+                    'error_code' => 'SERVICE_UNAVAILABLE',
+                ], 503);
+            }
+        });
+
+        $exceptions->render(function (Throwable $e, Request $request) 
+        {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 500,
+                    'message' => 'Error interno del servidor.',
+                    'data' => null,
+                    'errors' => null,
+                    'error_code' => 'INTERNAL_SERVER_ERROR',
+                ], 500);
             }
         });
 

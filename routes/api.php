@@ -76,7 +76,9 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
     Route::apiResource('budgets.items', BudgetItemController::class);
 
-    Route::apiResource('work-orders', WorkOrderController::class)->except(['destroy']);
+    Route::apiResource('work-orders', WorkOrderController::class)->except(['update', 'destroy']);
+
+    Route::patch('work-orders/{work_order}', [WorkOrderController::class, 'update'])->name('work-orders.update');
 
     Route::post('work-orders/{workOrder}/start', [WorkOrderController::class, 'start'])->name('work-orders.start');
 

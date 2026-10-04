@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services;
+
 use App\Models\Budget;
 use App\Enums\BudgetStatus;
 use App\Exceptions\BudgetException;
@@ -30,7 +31,9 @@ class BudgetService
     {
         if ($budget->status !== BudgetStatus::DRAFT) {
             throw new BudgetException(
-                'Solo se pueden enviar presupuestos en estado borrador.'
+                'Solo se pueden enviar presupuestos en estado borrador.',
+                422,
+                'BUDGET_NOT_SENDABLE'
             );
         }
 
@@ -45,13 +48,17 @@ class BudgetService
     {
         if ($budget->status !== BudgetStatus::SENT) {
             throw new BudgetException(
-                'Solo se pueden aprobar presupuestos enviados.'
+                'Solo se pueden aprobar presupuestos enviados.',
+                422,
+                'BUDGET_NOT_APPROVABLE'
             );
         }
 
         if (! $budget->items()->exists()) {
             throw new BudgetException(
-                'No se puede aprobar un presupuesto sin items.'
+                'No se puede aprobar un presupuesto sin items.',
+                422,
+                'BUDGET_WITHOUT_ITEMS'
             );
         }
 
@@ -69,7 +76,9 @@ class BudgetService
     {
         if ($budget->status !== BudgetStatus::SENT) {
             throw new BudgetException(
-                'Solo se pueden rechazar presupuestos enviados.'
+                'Solo se pueden rechazar presupuestos enviados.',
+                422,
+                'BUDGET_NOT_REJECTABLE'
             );
         }
 
@@ -87,7 +96,9 @@ class BudgetService
             BudgetStatus::SENT,
         ], true)) {
             throw new BudgetException(
-                'El presupuesto no puede ser cancelado en su estado actual.'
+                'El presupuesto no puede ser cancelado en su estado actual.',
+                422,
+                'BUDGET_NOT_CANCELLABLE'
             );
         }
 
@@ -102,7 +113,9 @@ class BudgetService
     {
         if ($budget->status !== BudgetStatus::REJECTED) {
             throw new BudgetException(
-                'Solo se pueden reabrir presupuestos rechazados.'
+                'Solo se pueden reabrir presupuestos rechazados.',
+                422,
+                'BUDGET_NOT_REOPENABLE'
             );
         }
 
@@ -118,10 +131,11 @@ class BudgetService
     {
         if ($budget->status !== BudgetStatus::DRAFT) {
             throw new BudgetException(
-                'El presupuesto no puede modificarse en su estado actual.'
+                'El presupuesto no puede modificarse en su estado actual.',
+                422,
+                'BUDGET_NOT_EDITABLE'
             );
         }
-
     }
 
     public function create(array $data, int $userId): Budget
@@ -149,5 +163,4 @@ class BudgetService
             STR_PAD_LEFT
         );
     }
-    
 }

@@ -27,25 +27,33 @@ class WorkOrderService
 
             if ($budget->status !== BudgetStatus::APPROVED) {
                 throw new WorkOrderException(
-                    'El presupuesto debe estar aprobado para crear una orden de trabajo.'
+                    'El presupuesto debe estar aprobado para crear una orden de trabajo.',
+                    422,
+                    'WORK_ORDER_BUDGET_NOT_APPROVED'
                 );
             }
 
             if ($budget->items->isEmpty()) {
                 throw new WorkOrderException(
-                    'El presupuesto debe tener al menos un item para crear una orden de trabajo.'
+                    'El presupuesto debe tener al menos un item para crear una orden de trabajo.',
+                    422,
+                    'WORK_ORDER_BUDGET_WITHOUT_ITEMS'
                 );
             }
 
             if ($budget->workOrder()->exists()) {
                 throw new WorkOrderException(
-                    'El presupuesto ya tiene una orden de trabajo.'
+                    'El presupuesto ya tiene una orden de trabajo.',
+                    422,
+                    'WORK_ORDER_ALREADY_EXISTS'
                 );
             }
 
             if (!$mechanic->exists) {
                 throw new WorkOrderException(
-                    'El mecánico seleccionado no existe.'
+                    'El mecánico seleccionado no existe.',
+                    422,
+                    'WORK_ORDER_MECHANIC_NOT_FOUND'
                 );
             }
 
@@ -92,7 +100,9 @@ class WorkOrderService
 
             if ($workOrder->status !== WorkOrderStatus::PENDING) {
                 throw new WorkOrderException(
-                    'La orden de trabajo solo puede iniciarse cuando está pendiente.'
+                    'La orden de trabajo solo puede iniciarse cuando está pendiente.',
+                    409,
+                    'WORK_ORDER_NOT_STARTABLE'
                 );
             }
 
@@ -119,7 +129,9 @@ class WorkOrderService
 
             if ($workOrder->status !== WorkOrderStatus::IN_PROGRESS) {
                 throw new WorkOrderException(
-                    'La orden de trabajo solo puede pausarse cuando está en progreso.'
+                    'La orden de trabajo solo puede pausarse cuando está en progreso.',
+                    422,
+                    'WORK_ORDER_NOT_PAUSABLE'
                 );
             }
 
@@ -145,7 +157,9 @@ class WorkOrderService
 
             if ($workOrder->status !== WorkOrderStatus::PAUSED) {
                 throw new WorkOrderException(
-                    'La orden de trabajo solo puede reanudarse cuando está pausada.'
+                    'La orden de trabajo solo puede reanudarse cuando está pausada.',
+                    422,
+                    'WORK_ORDER_NOT_RESUMABLE'
                 );
             }
 
@@ -171,7 +185,9 @@ class WorkOrderService
 
             if ($workOrder->status !== WorkOrderStatus::IN_PROGRESS) {
                 throw new WorkOrderException(
-                    'La orden de trabajo solo puede completarse cuando está en progreso.'
+                    'La orden de trabajo solo puede completarse cuando está en progreso.',
+                    422,
+                    'WORK_ORDER_NOT_COMPLETABLE'
                 );
             }
 
@@ -179,7 +195,9 @@ class WorkOrderService
 
             if ($items->isEmpty()) {
                 throw new WorkOrderException(
-                    'La orden de trabajo debe tener al menos un item para poder completarse.'
+                    'La orden de trabajo debe tener al menos un item para poder completarse.',
+                    422,
+                    'WORK_ORDER_WITHOUT_ITEMS'
                 );
             }
 
@@ -192,7 +210,9 @@ class WorkOrderService
 
             if ($hasPendingItems) {
                 throw new WorkOrderException(
-                    'La orden de trabajo no puede completarse porque tiene items pendientes.'
+                    'La orden de trabajo no puede completarse porque tiene items pendientes.',
+                    422,
+                    'WORK_ORDER_HAS_PENDING_ITEMS'
                 );
             }
 
@@ -219,7 +239,9 @@ class WorkOrderService
 
             if ($workOrder->status !== WorkOrderStatus::PENDING) {
                 throw new WorkOrderException(
-                    'La orden de trabajo solo puede cancelarse cuando está pendiente.'
+                    'La orden de trabajo solo puede cancelarse cuando está pendiente.',
+                    422,
+                    'WORK_ORDER_NOT_CANCELLABLE'
                 );
             }
 
@@ -262,13 +284,17 @@ class WorkOrderService
 
             if ($workOrder->status !== WorkOrderStatus::IN_PROGRESS) {
                 throw new WorkOrderException(
-                    'No se puede iniciar un item si la orden de trabajo no está en progreso.'
+                    'No se puede iniciar un item si la orden de trabajo no está en progreso.',
+                    422,
+                    'WORK_ORDER_NOT_IN_PROGRESS'
                 );
             }
 
             if ($item->status !== WorkOrderItemStatus::PENDING) {
                 throw new WorkOrderException(
-                    'El item solo puede iniciarse cuando está pendiente.'
+                    'El item solo puede iniciarse cuando está pendiente.',
+                    422,
+                    'WORK_ORDER_ITEM_NOT_STARTABLE'
                 );
             }
 
@@ -293,13 +319,17 @@ class WorkOrderService
 
             if ($workOrder->status !== WorkOrderStatus::IN_PROGRESS) {
                 throw new WorkOrderException(
-                    'No se puede completar un item si la orden de trabajo no está en progreso.'
+                    'No se puede completar un item si la orden de trabajo no está en progreso.',
+                    422,
+                    'WORK_ORDER_NOT_IN_PROGRESS'
                 );
             }
 
             if ($item->status !== WorkOrderItemStatus::IN_PROGRESS) {
                 throw new WorkOrderException(
-                    'El item solo puede completarse cuando está en progreso.'
+                    'El item solo puede completarse cuando está en progreso.',
+                    422,
+                    'WORK_ORDER_ITEM_NOT_COMPLETABLE'
                 );
             }
 
@@ -324,13 +354,17 @@ class WorkOrderService
 
             if ($workOrder->status !== WorkOrderStatus::IN_PROGRESS) {
                 throw new WorkOrderException(
-                    'No se puede cancelar un item si la orden de trabajo no está en progreso.'
+                    'No se puede cancelar un item si la orden de trabajo no está en progreso.',
+                    422,
+                    'WORK_ORDER_NOT_IN_PROGRESS'
                 );
             }
 
             if ($item->status !== WorkOrderItemStatus::PENDING) {
                 throw new WorkOrderException(
-                    'El item solo puede cancelarse cuando está pendiente.'
+                    'El item solo puede cancelarse cuando está pendiente.',
+                    422,
+                    'WORK_ORDER_ITEM_NOT_CANCELLABLE'
                 );
             }
 
@@ -349,7 +383,9 @@ class WorkOrderService
 
         if ((int) $item->work_order_id !== (int) $workOrder->id) {
             throw new WorkOrderException(
-                'El item no pertenece a la orden de trabajo indicada.'
+                'El item no pertenece a la orden de trabajo indicada.',
+                422,
+                'WORK_ORDER_ITEM_NOT_BELONGING'
             );
         }
     }
@@ -370,7 +406,9 @@ class WorkOrderService
     {
         if ($workOrder->status !== WorkOrderStatus::PENDING) {
             throw new WorkOrderException(
-                'La orden de trabajo solo puede editarse cuando está pendiente.'
+                'La orden de trabajo solo puede editarse cuando está pendiente.',
+                422,
+                'WORK_ORDER_NOT_EDITABLE'
             );
         }
     }
@@ -391,7 +429,9 @@ class WorkOrderService
     {
         if ($item->status !== WorkOrderItemStatus::PENDING) {
             throw new WorkOrderException(
-                'El item de la orden de trabajo solo puede editarse cuando está pendiente.'
+                'El item de la orden de trabajo solo puede editarse cuando está pendiente.',
+                422,
+                'WORK_ORDER_ITEM_NOT_EDITABLE'
             );
         }
     }
