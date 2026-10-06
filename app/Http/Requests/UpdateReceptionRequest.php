@@ -21,12 +21,12 @@ class UpdateReceptionRequest extends FormRequest
     {
         return [
             'client_id' => [
-                'required',
+                'sometimes',
                 'integer',
                 Rule::exists('clients', 'id'),
             ],
             'vehicle_id' => [
-                'required',
+                'sometimes',
                 'integer',
                 Rule::exists('vehicles', 'id'),
             ],
@@ -43,31 +43,36 @@ class UpdateReceptionRequest extends FormRequest
                 ),
             ],
             'reception_date' => [
-                'required',
+                'sometimes',
                 'date',
             ],
             'estimated_delivery_date' => [
+                'sometimes',
                 'nullable',
                 'date',
                 'after_or_equal:reception_date',
             ],
             'mileage' => [
+                'sometimes',
                 'nullable',
                 'integer',
                 'min:0',
             ],
             'fuel_level' => [
+                'sometimes',
                 'nullable',
                 'string',
                 Rule::enum(FuelLevel::class),
             ],
             'problem_description' => [
+                'sometimes',
                 'nullable',
                 'string',
                 'max:500',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u',
             ],
             'observations' => [
+                'sometimes',
                 'nullable',
                 'string',
                 'max:500',
@@ -80,12 +85,10 @@ class UpdateReceptionRequest extends FormRequest
     {
         return [
             'client_id' => [
-                'required' => 'El cliente es obligatorio.',
                 'integer' => 'El ID del cliente debe ser un número entero.',
                 'exists' => 'El cliente seleccionado no existe.'
             ],
             'vehicle_id' => [
-                'required' => 'El vehículo es obligatorio.',
                 'integer' => 'El ID del vehículo debe ser un número entero.',
                 'exists' => 'El vehículo seleccionado no existe.'
             ],
@@ -98,7 +101,6 @@ class UpdateReceptionRequest extends FormRequest
                 'exists' => 'Una o más categorías seleccionadas no existen en el sistema.',
             ],
             'reception_date' => [
-                'required' => 'La fecha de recepción es obligatoria.',
                 'date' => 'La fecha de recepción debe ser una fecha válida.',
             ],
             'estimated_delivery_date' => [
@@ -130,26 +132,26 @@ class UpdateReceptionRequest extends FormRequest
     {
         $validator->after(function ($validator) {
 
-            $clientId = $this->client_id;
-            $vehicleId = $this->vehicle_id;
+            $reception = $this->route('reception');
 
-            if (!$clientId || !$vehicleId) {
+            if (!$reception) {
                 return;
             }
+
+            $clientId = $this->input('client_id', $reception->client_id);
+            $vehicleId = $this->input('vehicle_id', $reception->vehicle_id);
 
             $vehicleBelongsToClient = Vehicle::query()
                 ->where('id', $vehicleId)
                 ->where('client_id', $clientId)
                 ->exists();
 
-            if (! $vehicleBelongsToClient) {
+            if (!$vehicleBelongsToClient) {
                 $validator->errors()->add(
                     'vehicle_id',
                     'El vehículo seleccionado no pertenece al cliente indicado.'
                 );
             }
-
-            $reception = $this->route('reception');
 
             $hasOpenReception = Reception::query()
                 ->where('vehicle_id', $vehicleId)
@@ -171,4 +173,5 @@ class UpdateReceptionRequest extends FormRequest
             }
         });
     }
+
 }

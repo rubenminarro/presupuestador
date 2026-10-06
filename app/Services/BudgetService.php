@@ -152,6 +152,22 @@ class BudgetService
         ]);
     }
 
+    public function update(Budget $budget, array $data): Budget
+    {
+        $this->ensureEditable($budget);
+
+        $budget->update($data);
+
+        return $budget->refresh();
+    }
+
+    public function delete(Budget $budget): void
+    {
+        $this->ensureEditable($budget);
+
+        $budget->delete();
+    }
+
     private function generateCode(): string
     {
         $nextId = (Budget::withTrashed()->max('id') ?? 0) + 1;

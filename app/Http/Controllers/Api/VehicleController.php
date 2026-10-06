@@ -161,10 +161,10 @@ class VehicleController extends Controller implements HasMiddleware
             'vehicleModel',
         ]);
 
-        return $this->successResponse(
+                return $this->successResponse(
             'Vehículo encontrado.',
             new ShowVehicleResource($vehicle),
-            201
+            200
         );
     }
     
@@ -181,7 +181,7 @@ class VehicleController extends Controller implements HasMiddleware
         return $this->successResponse(
             'Vehículo actualizado correctamente.',
             new VehicleResource($vehicle),
-            201
+            200
         );
     }
 

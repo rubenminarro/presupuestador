@@ -11,7 +11,6 @@ use App\Http\Requests\UpdateReceptionPhotoRequest;
 use App\Http\Resources\ReceptionPhotoResource;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\DB;
-use Exception;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -72,14 +71,14 @@ class ReceptionPhotoController extends Controller implements HasMiddleware
                 201
             );
 
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
-            
+
             foreach ($uploadedFiles as $path) {
                 Storage::disk('public')->delete($path);
             }
 
-            return $this->errorResponse('Error al cargar las fotos.', 500); 
+            throw $e;
         }
     }
 

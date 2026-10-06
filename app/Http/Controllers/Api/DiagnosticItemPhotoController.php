@@ -91,7 +91,6 @@ class DiagnosticItemPhotoController extends Controller
         ) {
             return $this->errorResponse(
                 'No se proporcionaron datos para actualizar.',
-                null,
                 422
             );
         }

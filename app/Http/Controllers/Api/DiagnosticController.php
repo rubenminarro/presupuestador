@@ -12,7 +12,6 @@ use App\Models\Diagnostic;
 use App\Traits\ApiResponse;
 use App\Enums\DiagnosticStatus;
 use Illuminate\Support\Facades\DB;
-use Exception;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -220,7 +219,6 @@ class DiagnosticController extends Controller implements HasMiddleware
 
     public function store(StoreDiagnosticRequest $request)
     {
-        
         $data = $request->validated();
 
         $data['status'] = DiagnosticStatus::PENDING;
@@ -244,9 +242,10 @@ class DiagnosticController extends Controller implements HasMiddleware
                 201
             );
 
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
-            return $this->errorResponse('Error al crear el diagnóstico: ' . $e->getMessage(), 500);
+
+            throw $e;
         }
     }
 
@@ -261,8 +260,8 @@ class DiagnosticController extends Controller implements HasMiddleware
         ]);
 
         return $this->successResponse(
-            new ShowDiagnosticResource($diagnostic),
-            'Diagnóstico obtenido correctamente'
+            'Diagnóstico obtenido correctamente.',
+            new ShowDiagnosticResource($diagnostic)
         );
     }
 
@@ -278,8 +277,8 @@ class DiagnosticController extends Controller implements HasMiddleware
         ]);
 
         return $this->successResponse(
-            new ShowDiagnosticResource($diagnostic),
-            'Diagnóstico actualizado correctamente'
+            'Diagnóstico actualizado correctamente.',
+            new ShowDiagnosticResource($diagnostic)
         );
     }
 
@@ -288,8 +287,8 @@ class DiagnosticController extends Controller implements HasMiddleware
         $diagnostic->delete();
 
         return $this->successResponse(
-            null,
-            'Diagnóstico eliminado correctamente'
+            'Diagnóstico eliminado correctamente.',
+            null
         );
     }
 

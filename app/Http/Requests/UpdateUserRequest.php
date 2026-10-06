@@ -37,7 +37,7 @@ class UpdateUserRequest extends FormRequest
             'password' => [
                 'sometimes', 
                 'confirmed',
-                Password::min(5)
+                Password::min(12)
                     ->letters()
                     ->mixedCase()
                     ->numbers()

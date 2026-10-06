@@ -111,8 +111,8 @@ class DiagnosticItemController extends Controller implements HasMiddleware
         ]);
 
         return $this->successResponse(
-            new DiagnosticItemResource($diagnosticItem),
             'Item de diagnóstico creado correctamente.',
+            new DiagnosticItemResource($diagnosticItem),
             201
         );
     }
@@ -125,8 +125,8 @@ class DiagnosticItemController extends Controller implements HasMiddleware
         ]);
 
         return $this->successResponse(
-            new ShowDiagnosticItemResource($diagnosticItem),
-            'Item de diagnóstico obtenido correctamente'
+            'Item de diagnóstico obtenido correctamente.',
+            new ShowDiagnosticItemResource($diagnosticItem)
         );
     }
 
@@ -141,8 +141,8 @@ class DiagnosticItemController extends Controller implements HasMiddleware
         ]);
 
         return $this->successResponse(
-            new DiagnosticItemResource($diagnosticItem),
-            'Item de diagnóstico actualizado correctamente'
+            'Item de diagnóstico actualizado correctamente.',
+            new DiagnosticItemResource($diagnosticItem)
         );
     }
 
@@ -162,8 +162,8 @@ class DiagnosticItemController extends Controller implements HasMiddleware
         $diagnosticItem->delete();
 
         return $this->successResponse(
-            null,
-            'Item de diagnóstico eliminado correctamente.'
+            'Item de diagnóstico eliminado correctamente.',
+            null
         );
     }
     

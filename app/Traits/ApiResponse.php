@@ -25,9 +25,9 @@ trait ApiResponse
 
     protected function errorResponse(
         string $message = 'Error',
-        mixed $errors = null,
-        int $status = 400,
-        mixed $meta = null
+        int $status = 422,
+        ?string $errorCode = null,
+        ?array $errors = null
     ): JsonResponse {
         return response()->json([
             'success'   => false,
@@ -35,8 +35,7 @@ trait ApiResponse
             'message'   => $message,
             'data'      => null,
             'errors'    => $errors,
-            'meta'      => $meta,
-            'timestamp' => now()->toISOString(),
+            'error_code' => $errorCode,
         ], $status);
     }
 }

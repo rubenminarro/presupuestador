@@ -174,13 +174,12 @@ class BudgetController extends Controller implements HasMiddleware
         );
     }
     
-    public function update(UpdateBudgetRequest $request, Budget $budget) 
+    public function update(UpdateBudgetRequest $request, Budget $budget)
     {
-        $this->budgetService->ensureEditable($budget);
-
-        $data = $request->validated();
-
-        $budget->update($data);
+        $budget = $this->budgetService->update(
+            $budget,
+            $request->validated()
+        );
 
         $this->loadShowRelations($budget);
 
@@ -189,11 +188,10 @@ class BudgetController extends Controller implements HasMiddleware
             new ShowBudgetResource($budget)
         );
     }
+
     public function destroy(Budget $budget)
     {
-        $this->budgetService->ensureEditable($budget);
-
-        $budget->delete();
+        $this->budgetService->delete($budget);
 
         return $this->successResponse(
             'Presupuesto eliminado exitosamente.',

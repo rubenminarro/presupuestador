@@ -92,7 +92,7 @@ class UserRoleController extends Controller implements HasMiddleware
 
     }
 
-    public function store(StoreUserRequest $request, User $user)
+    public function store(StoreUserRequest $request)
     {
         $data = $request->validated();
         $data['password'] = bcrypt($request->password);
@@ -119,8 +119,7 @@ class UserRoleController extends Controller implements HasMiddleware
     }
 
     public function update(UpdateUserRequest $request, User $user)
-    {   
-        
+    {
         $data = $request->validated();
 
         if ($request->filled('password')) {
@@ -131,14 +130,15 @@ class UserRoleController extends Controller implements HasMiddleware
 
         $user->update($data);
 
-        $user->syncRoles([$request->role]);
+        if (array_key_exists('role', $data)) {
+            $user->syncRoles([$data['role']]);
+        }
 
         return $this->successResponse(
             'Usuario actualizado correctamente.',
             new ShowUserResource($user),
             200
         );
-
     }
 
     public function destroy(User $user)

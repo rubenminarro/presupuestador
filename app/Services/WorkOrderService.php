@@ -425,33 +425,4 @@ class WorkOrderService
         return $workOrder->fresh();
     }
 
-    private function ensureItemEditable(WorkOrderItem $item): void
-    {
-        if ($item->status !== WorkOrderItemStatus::PENDING) {
-            throw new WorkOrderException(
-                'El item de la orden de trabajo solo puede editarse cuando está pendiente.',
-                422,
-                'WORK_ORDER_ITEM_NOT_EDITABLE'
-            );
-        }
-    }
-
-    public function updateItem(
-        WorkOrder $workOrder,
-        WorkOrderItem $item,
-        array $data
-    ): WorkOrderItem {
-        $this->ensureItemBelongsToWorkOrder($workOrder, $item);
-
-        $this->ensureItemEditable($item);
-
-        $item->update([
-            'description' => $data['description'] ?? $item->description,
-            'quantity' => $data['quantity'] ?? $item->quantity,
-            'notes' => $data['notes'] ?? $item->notes,
-        ]);
-
-        return $item->fresh();
-    }
-    
 }

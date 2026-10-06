@@ -32,19 +32,17 @@ class StoreUserRequest extends FormRequest
                 Rule::unique('users', 'email'),
             ],
             'password' => [
-                'required', 
-                'nullable', 
+                'required',
                 'confirmed',
-                Password::min(5)
+                Password::min(12)
                     ->letters()
                     ->mixedCase()
                     ->numbers()
                     ->symbols()
-                    ->uncompromised()
-                ,
+                    ->uncompromised(),
             ],
             'password_confirmation' => [
-                'required:password',
+                'required',
                 'same:password'
             ],
             'role' => [

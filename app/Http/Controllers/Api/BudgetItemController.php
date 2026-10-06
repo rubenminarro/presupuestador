@@ -25,8 +25,8 @@ class BudgetItemController extends Controller
         $items = $budget->items()->latest()->get();
 
         return $this->successResponse(
-            BudgetItemResource::collection($items),
-            'Items del presupuesto obtenidos exitosamente.'
+            'Items del presupuesto obtenidos exitosamente.',
+            BudgetItemResource::collection($items)
         );
     }
 
@@ -44,8 +44,8 @@ class BudgetItemController extends Controller
         $this->budgetService->recalculateBudget($budget);
 
         return $this->successResponse(
-            new BudgetItemResource($item),
             'El item del presupuesto creado exitosamente.',
+            new BudgetItemResource($item),
             201
         );
     }
@@ -54,8 +54,8 @@ class BudgetItemController extends Controller
     {
         
         return $this->successResponse(
-            new BudgetItemResource($item),
-            'El item del presupuesto recuperado exitosamente.'
+            'El item del presupuesto recuperado exitosamente.',
+            new BudgetItemResource($item)
         );
     }
 
@@ -76,8 +76,8 @@ class BudgetItemController extends Controller
         $this->budgetService->recalculateBudget($budget);
 
         return $this->successResponse(
-            new BudgetItemResource($item->refresh()),
-            'El item del presupuesto actualizado exitosamente.'
+            'El item del presupuesto actualizado exitosamente.',
+            new BudgetItemResource($item->refresh())
         );
     }
 
@@ -90,8 +90,8 @@ class BudgetItemController extends Controller
         $this->budgetService->recalculateBudget($budget);
 
         return $this->successResponse(
-            null,
-            'El item del presupuesto eliminado exitosamente.'
+            'El item del presupuesto eliminado exitosamente.',
+            null
         );
     }
 
