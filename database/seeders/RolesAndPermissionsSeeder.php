@@ -159,6 +159,29 @@ class RolesAndPermissionsSeeder extends Seeder
             'work-order-items.start',
             'work-order-items.complete',
             'work-order-items.cancel',
+
+            /* part category permissions */
+            'part-categories.index',
+            'part-categories.store',
+            'part-categories.show',
+            'part-categories.update',
+            'part-categories.destroy',
+
+            /* supplier permissions */
+            'suppliers.index',
+            'suppliers.store',
+            'suppliers.show',
+            'suppliers.update',
+            'suppliers.destroy',
+
+            /* part permissions */
+            'parts.index',
+            'parts.store',
+            'parts.show',
+            'parts.update',
+            'parts.destroy',
+            'parts.change-status',
+            'parts.manage-suppliers',
         ];
 
         foreach ($permissions as $permission) {
@@ -210,6 +233,11 @@ class RolesAndPermissionsSeeder extends Seeder
             
             'work-order-items.start', 
             'work-order-items.complete',
+
+            'parts.index',
+            'parts.show',
+
+            'part-categories.index',
 
         ];
 

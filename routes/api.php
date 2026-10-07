@@ -21,6 +21,10 @@ use App\Http\Controllers\Api\BudgetItemController;
 use App\Http\Controllers\Api\MechanicController;
 use App\Http\Controllers\Api\WorkOrderController;
 use App\Http\Controllers\Api\WorkOrderItemController;
+use App\Http\Controllers\Api\PartCategoryController;
+use App\Http\Controllers\Api\SupplierController;
+use App\Http\Controllers\Api\PartController;
+use App\Http\Controllers\Api\PartSupplierController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -95,5 +99,25 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::post('work-orders/{workOrder}/items/{item}/complete', [WorkOrderItemController::class, 'complete'])->name('work-orders.items.complete');
 
     Route::post('work-orders/{workOrder}/items/{item}/cancel', [WorkOrderItemController::class, 'cancel'])->name('work-orders.items.cancel');
+
+    Route::apiResource('part-categories', PartCategoryController::class)->except(['update']);
+
+    Route::patch('part-categories/{part_category}', [PartCategoryController::class, 'update'])->name('part-categories.update');
+
+    Route::apiResource('suppliers', SupplierController::class)->except(['update']);
+
+    Route::patch('suppliers/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update');
+
+    Route::apiResource('parts', PartController::class)->except(['update']);
+
+    Route::patch('parts/{part}', [PartController::class, 'update'])->name('parts.update');
+
+    Route::post('parts/{part}/status', [PartController::class, 'changeStatus'])->name('parts.change-status');
+
+    Route::post('parts/{part}/suppliers', [PartSupplierController::class, 'store'])->name('parts.suppliers.store');
+
+    Route::patch('parts/{part}/suppliers/{supplier}', [PartSupplierController::class, 'update'])->name('parts.suppliers.update');
+
+    Route::delete('parts/{part}/suppliers/{supplier}', [PartSupplierController::class, 'destroy'])->name('parts.suppliers.destroy');
 
 });
