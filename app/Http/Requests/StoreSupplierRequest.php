@@ -20,18 +20,19 @@ class StoreSupplierRequest extends FormRequest
                 'string',
                 'min:2',
                 'max:150',
+                'regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚ]+$/u',
             ],
             'tax_id' => [
                 'nullable',
                 'string',
                 'max:30',
-                'regex:/^[0-9A-Za-z\-]+$/',
                 Rule::unique('suppliers', 'tax_id'),
             ],
             'contact_name' => [
                 'nullable',
                 'string',
                 'max:150',
+                'regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚ]+$/u',
             ],
             'phone' => [
                 'nullable',
@@ -53,6 +54,7 @@ class StoreSupplierRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:500',
+                'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u',
             ],
             'is_active' => [
                 'sometimes',
@@ -69,6 +71,7 @@ class StoreSupplierRequest extends FormRequest
                 'string' => 'El nombre del proveedor debe ser un texto válido.',
                 'min' => 'El nombre del proveedor debe tener al menos 2 caracteres.',
                 'max' => 'El nombre del proveedor no debe superar los 150 caracteres.',
+                'regex' => 'El nombre del proveedor solo puede contener letras y espacios.',
             ],
             'tax_id' => [
                 'string' => 'El RUC debe ser un texto válido.',
@@ -79,6 +82,7 @@ class StoreSupplierRequest extends FormRequest
             'contact_name' => [
                 'string' => 'El nombre de contacto debe ser un texto válido.',
                 'max' => 'El nombre de contacto no debe superar los 150 caracteres.',
+                'regex' => 'El nombre de contacto solo puede contener letras y espacios.',
             ],
             'phone' => [
                 'string' => 'El teléfono debe ser un texto válido.',
@@ -96,6 +100,7 @@ class StoreSupplierRequest extends FormRequest
             'notes' => [
                 'string' => 'Las notas deben ser un texto válido.',
                 'max' => 'Las notas no deben superar los 500 caracteres.',
+                'regex' => 'Las notas solo pueden contener letras, números, espacios y los siguientes caracteres: . , ; : ( ) - # @ ! ? %',
             ],
             'is_active' => [
                 'boolean' => 'El campo activo debe ser verdadero o falso.',

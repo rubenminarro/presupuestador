@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Enums\PartUnit;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
 class StorePartRequest extends FormRequest
 {
@@ -34,16 +35,19 @@ class StorePartRequest extends FormRequest
                 'string',
                 'min:2',
                 'max:150',
+                'regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚ]+$/u',
             ],
             'description' => [
                 'nullable',
                 'string',
                 'max:1000',
+                'regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚ]+$/u',
             ],
             'brand' => [
                 'nullable',
                 'string',
                 'max:100',
+                'regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚ]+$/u',
             ],
             'part_category_id' => [
                 'required',
@@ -94,14 +98,17 @@ class StorePartRequest extends FormRequest
                 'string' => 'El nombre del repuesto debe ser un texto válido.',
                 'min' => 'El nombre del repuesto debe tener al menos 2 caracteres.',
                 'max' => 'El nombre del repuesto no debe superar los 150 caracteres.',
+                'regex' => 'El nombre del repuesto solo puede contener letras y espacios.',
             ],
             'description' => [
                 'string' => 'La descripción debe ser un texto válido.',
                 'max' => 'La descripción no debe superar los 1000 caracteres.',
+                'regex' => 'La descripción solo puede contener letras y espacios.',
             ],
             'brand' => [
                 'string' => 'La marca debe ser un texto válido.',
                 'max' => 'La marca no debe superar los 100 caracteres.',
+                'regex' => 'La marca solo puede contener letras y espacios.',
             ],
             'part_category_id' => [
                 'required' => 'La categoría es obligatoria.',
@@ -110,7 +117,7 @@ class StorePartRequest extends FormRequest
             ],
             'unit' => [
                 'required' => 'La unidad de medida es obligatoria.',
-                'enum' => 'La unidad de medida seleccionada no es válida.',
+                Enum::class => 'La unidad de medida seleccionada no es válida.',
             ],
             'cost_price' => [
                 'required' => 'El precio de costo es obligatorio.',

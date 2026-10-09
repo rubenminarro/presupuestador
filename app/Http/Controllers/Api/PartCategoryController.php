@@ -46,7 +46,7 @@ class PartCategoryController extends Controller implements HasMiddleware
                 $query->where('is_active', $request->boolean('is_active'));
             })
             ->orderBy('name')
-            ->paginate($request->input('per_page', 10));
+            ->paginate($request->per_page ?? 10);
 
         return $this->successResponse(
             'Categorías de repuestos obtenidas correctamente.',

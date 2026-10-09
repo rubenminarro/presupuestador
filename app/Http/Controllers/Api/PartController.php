@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\PartStatus;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\ChangePartStatusRequest;
 use App\Http\Requests\StorePartRequest;
 use App\Http\Requests\UpdatePartRequest;
 use App\Http\Resources\PartResource;
@@ -33,7 +31,10 @@ class PartController extends Controller implements HasMiddleware
             new Middleware('permission:parts.show', only: ['show']),
             new Middleware('permission:parts.update', only: ['update']),
             new Middleware('permission:parts.destroy', only: ['destroy']),
-            new Middleware('permission:parts.change-status', only: ['changeStatus']),
+            new Middleware(
+                'permission:parts.change-status',
+                only: ['activate', 'deactivate', 'discontinue']
+            ),
         ];
     }
 
@@ -73,7 +74,7 @@ class PartController extends Controller implements HasMiddleware
 
         $parts = $query
             ->orderBy('name')
-            ->paginate($request->input('per_page', 10));
+            ->paginate($request->per_page ?? 10);
 
         return $this->successResponse(
             'Repuestos obtenidos correctamente.',
@@ -123,15 +124,34 @@ class PartController extends Controller implements HasMiddleware
         );
     }
 
-    public function changeStatus(ChangePartStatusRequest $request, Part $part)
+    public function activate(Part $part)
     {
-        $part = $this->partService->changeStatus(
-            $part,
-            PartStatus::from($request->validated('status'))
-        );
+        $part = $this->partService->activate($part);
 
         return $this->successResponse(
-            'Estado del repuesto actualizado correctamente.',
+            'Repuesto activado correctamente.',
+            new ShowPartResource($part),
+            200
+        );
+    }
+
+    public function deactivate(Part $part)
+    {
+        $part = $this->partService->deactivate($part);
+
+        return $this->successResponse(
+            'Repuesto desactivado correctamente.',
+            new ShowPartResource($part),
+            200
+        );
+    }
+
+    public function discontinue(Part $part)
+    {
+        $part = $this->partService->discontinue($part);
+
+        return $this->successResponse(
+            'Repuesto descontinuado correctamente.',
             new ShowPartResource($part),
             200
         );

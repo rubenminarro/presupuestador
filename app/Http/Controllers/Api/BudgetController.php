@@ -128,7 +128,7 @@ class BudgetController extends Controller implements HasMiddleware
 
         $budgets = $query
             ->latest()
-            ->paginate($request->input('per_page', 10));
+            ->paginate($request->per_page ?? 10);
 
         return $this->successResponse(
             'Presupuestos obtenidos correctamente.',

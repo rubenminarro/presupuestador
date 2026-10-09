@@ -200,7 +200,7 @@ class DiagnosticController extends Controller implements HasMiddleware
 
         $diagnostics = $query
             ->latest()
-            ->paginate($request->input('per_page', 10));
+            ->paginate($request->per_page ?? 10);
 
         return $this->successResponse(
             'Diagnósticos obtenidos correctamente.',

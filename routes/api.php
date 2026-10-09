@@ -112,7 +112,11 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
     Route::patch('parts/{part}', [PartController::class, 'update'])->name('parts.update');
 
-    Route::post('parts/{part}/status', [PartController::class, 'changeStatus'])->name('parts.change-status');
+    Route::post('parts/{part}/activate', [PartController::class, 'activate'])->name('parts.activate');
+
+    Route::post('parts/{part}/deactivate', [PartController::class, 'deactivate'])->name('parts.deactivate');
+
+    Route::post('parts/{part}/discontinue', [PartController::class, 'discontinue'])->name('parts.discontinue');
 
     Route::post('parts/{part}/suppliers', [PartSupplierController::class, 'store'])->name('parts.suppliers.store');
 

@@ -136,7 +136,7 @@ class WorkOrderController extends Controller implements HasMiddleware
 
         $workOrders = $query
             ->latest()
-            ->paginate($request->input('per_page', 10));
+            ->paginate($request->per_page ?? 10);
 
         return $this->successResponse(
             'Órdenes de trabajo obtenidas correctamente.',

@@ -49,28 +49,19 @@ class PartService
         });
     }
 
-    public function changeStatus(Part $part, PartStatus $status): Part
+    public function activate(Part $part): Part
     {
-        return DB::transaction(function () use ($part, $status) {
+        return $this->transitionStatus($part, PartStatus::ACTIVE);
+    }
 
-            $part->refresh();
+    public function deactivate(Part $part): Part
+    {
+        return $this->transitionStatus($part, PartStatus::INACTIVE);
+    }
 
-            $this->ensureNotDiscontinued($part);
-
-            if (!$part->status->canTransitionTo($status)) {
-                throw new PartException(
-                    "El repuesto no puede pasar de {$part->status->label()} a {$status->label()}.",
-                    422,
-                    'PART_INVALID_STATUS_TRANSITION'
-                );
-            }
-
-            $part->update([
-                'status' => $status,
-            ]);
-
-            return $part->load(['category', 'suppliers']);
-        });
+    public function discontinue(Part $part): Part
+    {
+        return $this->transitionStatus($part, PartStatus::DISCONTINUED);
     }
 
     public function delete(Part $part): void
@@ -159,6 +150,30 @@ class PartService
             }
 
             $category->delete();
+        });
+    }
+
+    private function transitionStatus(Part $part, PartStatus $status): Part
+    {
+        return DB::transaction(function () use ($part, $status) {
+
+            $part->refresh();
+
+            $this->ensureNotDiscontinued($part);
+
+            if (!$part->status->canTransitionTo($status)) {
+                throw new PartException(
+                    "El repuesto no puede pasar de {$part->status->label()} a {$status->label()}.",
+                    422,
+                    'PART_INVALID_STATUS_TRANSITION'
+                );
+            }
+
+            $part->update([
+                'status' => $status,
+            ]);
+
+            return $part->load(['category', 'suppliers']);
         });
     }
 

@@ -8,7 +8,6 @@ use App\Http\Requests\UpdateSupplierRequest;
 use App\Http\Resources\ShowSupplierResource;
 use App\Http\Resources\SupplierResource;
 use App\Models\Supplier;
-use App\Services\SupplierService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -17,11 +16,6 @@ use Illuminate\Routing\Controllers\Middleware;
 class SupplierController extends Controller implements HasMiddleware
 {
     use ApiResponse;
-
-    public function __construct(
-        protected SupplierService $supplierService
-    ) {
-    }
 
     public static function middleware(): array
     {
@@ -53,7 +47,7 @@ class SupplierController extends Controller implements HasMiddleware
                 $query->where('is_active', $request->boolean('is_active'));
             })
             ->orderBy('name')
-            ->paginate($request->input('per_page', 10));
+            ->paginate($request->per_page ?? 10);
 
         return $this->successResponse(
             'Proveedores obtenidos correctamente.',
@@ -65,7 +59,7 @@ class SupplierController extends Controller implements HasMiddleware
                     'perPage'     => $suppliers->perPage(),
                     'currentPage' => $suppliers->currentPage(),
                     'lastPage'    => $suppliers->lastPage(),
-                ]
+                ],
             ]
         );
     }
@@ -105,7 +99,15 @@ class SupplierController extends Controller implements HasMiddleware
 
     public function destroy(Supplier $supplier)
     {
-        $this->supplierService->delete($supplier);
+        if ($supplier->parts()->exists()) {
+            return $this->errorResponse(
+                'No se puede eliminar el proveedor porque tiene repuestos vinculados. Desvincúlelos o márquelo como inactivo.',
+                409,
+                'SUPPLIER_HAS_PARTS'
+            );
+        }
+
+        $supplier->delete();
 
         return $this->successResponse(
             'Proveedor eliminado correctamente.',

@@ -24,6 +24,7 @@ class AttachPartSupplierRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:100',
+                'regex:/^[a-zA-Z0-9\-_]+$/',
             ],
             'last_cost' => [
                 'nullable',
@@ -49,6 +50,7 @@ class AttachPartSupplierRequest extends FormRequest
             'supplier_part_code' => [
                 'string' => 'El código del proveedor debe ser un texto válido.',
                 'max' => 'El código del proveedor no debe superar los 100 caracteres.',
+                'regex' => 'El código del proveedor solo puede contener letras, números, guiones y guiones bajos.',
             ],
             'last_cost' => [
                 'numeric' => 'El último costo debe ser un número.',
