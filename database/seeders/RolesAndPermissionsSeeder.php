@@ -182,6 +182,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'parts.destroy',
             'parts.change-status',
             'parts.manage-suppliers',
+
+            /* inventory permissions */
+            'inventory.index',
+            'inventory.show',
+            'inventory.entry',
+            'inventory.exit',
+            'inventory.adjust',
         ];
 
         foreach ($permissions as $permission) {
@@ -238,6 +245,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'parts.show',
 
             'part-categories.index',
+
+            'inventory.index',
+            'inventory.show',
 
         ];
 

@@ -7,6 +7,8 @@ use App\Enums\PartUnit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Part extends Model
@@ -49,5 +51,18 @@ class Part extends Model
         return $this->belongsToMany(Supplier::class)
             ->withPivot(['supplier_part_code', 'last_cost', 'is_preferred'])
             ->withTimestamps();
+    }
+
+    /**
+     * MVP con un único depósito: un saldo por repuesto.
+     */
+    public function stock(): HasOne
+    {
+        return $this->hasOne(PartStock::class);
+    }
+
+    public function movements(): HasMany
+    {
+        return $this->hasMany(InventoryMovement::class);
     }
 }

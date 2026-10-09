@@ -360,6 +360,53 @@ Las siguientes áreas ya fueron desarrolladas y validadas durante el proyecto:
 
 La **FASE 9.14 — Auditoría de excepciones y Controllers** fue cerrada.
 
+También se completaron:
+
+* **FASE 10 — Catálogo de repuestos:** `Part`, `PartCategory`, `Supplier`, pivote `part_supplier`.
+* **FASE 11 — Inventario:** ver sección 2.24.
+
+---
+
+# 2.24 Inventario (FASE 11)
+
+Componentes:
+
+```text
+Warehouse              (un único depósito "DEP-01 Principal", creado por migración, sin API)
+PartStock              (saldo por repuesto/depósito: on_hand, reserved, average_cost)
+InventoryMovement      (historial inmutable, fuente de verdad del stock)
+InventoryMovementType  (initial, purchase, adjustment_in/out, supplier_return, loss,
+                        work_order_out, work_order_return)
+InventoryService       (registerEntry, registerExit, adjust, reserve, release)
+InventoryException
+App\Support\Decimal    (redondeo BCMath)
+```
+
+Reglas:
+
+* Todo cambio de stock pasa por `InventoryService::applyMovement()` bajo `lockForUpdate()` sobre `part_stocks`.
+* `quantity` del movimiento tiene signo (+ entrada / − salida); `balance_after` = saldo acumulado.
+* Los movimientos no se editan ni eliminan (`INVENTORY_MOVEMENT_IMMUTABLE`); se corrigen con ajustes.
+* Costo promedio ponderado (4 decimales), recalculado solo en entradas. `parts.cost_price` es solo referencia.
+* Cálculos con BCMath (strings), nunca con float.
+* Sin stock negativo: salidas contra disponible (`on_hand − reserved`) → `INSUFFICIENT_STOCK`.
+* Ajuste = conteo físico (`counted_quantity`); el sistema genera la diferencia.
+* Descontinuado: no admite entradas (`PART_DISCONTINUED_NO_ENTRY`); sí salidas y ajustes.
+* Unidades `unit`/`set`/`kit` no admiten fracciones (`INVENTORY_FRACTIONAL_QUANTITY_NOT_ALLOWED`).
+* Un repuesto con stock ≠ 0 no puede eliminarse (`PART_HAS_STOCK`).
+* `reserve()`/`release()` existen sin endpoint; los usará la FASE 12.
+* Cantidades de inventario en `decimal(12,3)`; `budget_items`/`work_order_items` siguen en `(10,2)`.
+
+Endpoints: `GET inventory/stocks`, `GET inventory/movements[/{id}]`, `GET parts/{part}/movements`,
+`POST inventory/entries|exits|adjustments`. Permisos: `inventory.index|show|entry|exit|adjust`
+(mecánico: solo `index` y `show`).
+
+Tests: los tests usan SQLite en memoria; en Laragon `pdo_sqlite` está deshabilitado en php.ini, ejecutar con:
+
+```bash
+php -d extension=pdo_sqlite -d extension=sqlite3 vendor/bin/phpunit
+```
+
 ---
 
 # 2.2 Autenticación
@@ -2610,14 +2657,16 @@ La arquitectura objetivo es:
 El proyecto actualmente se encuentra en:
 
 ```text
-FASE 9.14 — CERRADA
+FASE 11 — INVENTARIO — CERRADA
 ```
 
 El siguiente gran paso recomendado es:
 
 ```text
-FASE 10 — MÓDULO DE REPUESTOS
+FASE 12 — REPUESTOS EN WORKORDER (WorkOrderPart + reserve/consume/release vía InventoryService)
 ```
+
+El orden de trabajo de abajo se usó para las FASES 10 y 11 y sigue siendo la referencia.
 
 Pero la implementación debe comenzar primero por el **diseño funcional y de datos**, no directamente por el CRUD.
 
@@ -2706,16 +2755,16 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 [✓] HTTP status standardization
 [✓] Auditoría de Controllers
 [✓] FASE 9.14
+[✓] Catálogo de repuestos (FASE 10)
+[✓] Categorías de repuestos (FASE 10)
+[✓] Proveedores (FASE 10)
+[✓] Inventario (FASE 11)
+[✓] Movimientos de inventario (FASE 11)
 ```
 
 ## Próximo
 
 ```text
-[ ] Catálogo de repuestos
-[ ] Categorías de repuestos
-[ ] Proveedores
-[ ] Inventario
-[ ] Movimientos de inventario
 [ ] Repuestos utilizados en WorkOrder
 [ ] Compras
 [ ] Servicios

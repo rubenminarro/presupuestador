@@ -35,6 +35,14 @@ class ShowPartResource extends JsonResource
             'suppliers' => SupplierResource::collection(
                 $this->whenLoaded('suppliers')
             ),
+            'stock' => $this->whenLoaded('stock', fn () => $this->stock ? [
+                'on_hand' => $this->stock->quantity_on_hand,
+                'reserved' => $this->stock->quantity_reserved,
+                'available' => $this->stock->availableQuantity(),
+                'average_cost' => $this->stock->average_cost,
+                'is_below_minimum' => $this->stock->isBelowMinimum($this->minimum_stock),
+                'last_movement_at' => $this->stock->last_movement_at,
+            ] : null),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

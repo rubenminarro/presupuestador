@@ -22,6 +22,11 @@ enum PartUnit: string
         };
     }
 
+    public function allowsFractions(): bool
+    {
+        return in_array($this, [self::LITER, self::KILOGRAM, self::METER], true);
+    }
+
     public static function values(): array
     {
         return array_column(self::cases(), 'value');

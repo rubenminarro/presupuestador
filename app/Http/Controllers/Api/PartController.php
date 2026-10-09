@@ -93,7 +93,7 @@ class PartController extends Controller implements HasMiddleware
 
     public function show(Part $part)
     {
-        $part->load(['category', 'suppliers']);
+        $part->load(['category', 'suppliers', 'stock']);
 
         return $this->successResponse(
             'Repuesto obtenido correctamente.',

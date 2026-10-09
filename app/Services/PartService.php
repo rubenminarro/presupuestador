@@ -7,7 +7,9 @@ use App\Exceptions\PartException;
 use App\Exceptions\SupplierException;
 use App\Models\Part;
 use App\Models\PartCategory;
+use App\Models\PartStock;
 use App\Models\Supplier;
+use App\Models\Warehouse;
 use Illuminate\Support\Facades\DB;
 
 class PartService
@@ -24,7 +26,12 @@ class PartService
                 'status' => PartStatus::ACTIVE,
             ]);
 
-            return $part->load(['category', 'suppliers']);
+            PartStock::create([
+                'part_id' => $part->id,
+                'warehouse_id' => Warehouse::getDefault()->id,
+            ]);
+
+            return $part->load(['category', 'suppliers', 'stock']);
         });
     }
 
@@ -45,7 +52,7 @@ class PartService
 
             $part->update($data);
 
-            return $part->load(['category', 'suppliers']);
+            return $part->load(['category', 'suppliers', 'stock']);
         });
     }
 
@@ -67,6 +74,17 @@ class PartService
     public function delete(Part $part): void
     {
         DB::transaction(function () use ($part) {
+
+            $stock = $part->stock()->lockForUpdate()->first();
+
+            if ($stock && bccomp($stock->quantity_on_hand, '0', 3) !== 0) {
+                throw new PartException(
+                    'No se puede eliminar el repuesto porque tiene stock.',
+                    409,
+                    'PART_HAS_STOCK'
+                );
+            }
+
             $part->delete();
         });
     }
@@ -105,7 +123,7 @@ class PartService
                 'is_preferred' => $data['is_preferred'] ?? false,
             ]);
 
-            return $part->load(['category', 'suppliers']);
+            return $part->load(['category', 'suppliers', 'stock']);
         });
     }
 
@@ -123,7 +141,7 @@ class PartService
 
             $part->suppliers()->updateExistingPivot($supplier->id, $data);
 
-            return $part->load(['category', 'suppliers']);
+            return $part->load(['category', 'suppliers', 'stock']);
         });
     }
 
@@ -133,7 +151,7 @@ class PartService
 
             $part->suppliers()->detach($supplier->id);
 
-            return $part->load(['category', 'suppliers']);
+            return $part->load(['category', 'suppliers', 'stock']);
         });
     }
 
@@ -173,7 +191,7 @@ class PartService
                 'status' => $status,
             ]);
 
-            return $part->load(['category', 'suppliers']);
+            return $part->load(['category', 'suppliers', 'stock']);
         });
     }
 

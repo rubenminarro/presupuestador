@@ -25,6 +25,9 @@ use App\Http\Controllers\Api\PartCategoryController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\PartController;
 use App\Http\Controllers\Api\PartSupplierController;
+use App\Http\Controllers\Api\InventoryStockController;
+use App\Http\Controllers\Api\InventoryMovementController;
+use App\Http\Controllers\Api\InventoryOperationController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -123,5 +126,19 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::patch('parts/{part}/suppliers/{supplier}', [PartSupplierController::class, 'update'])->name('parts.suppliers.update');
 
     Route::delete('parts/{part}/suppliers/{supplier}', [PartSupplierController::class, 'destroy'])->name('parts.suppliers.destroy');
+
+    Route::get('parts/{part}/movements', [InventoryMovementController::class, 'partMovements'])->name('parts.movements.index');
+
+    Route::get('inventory/stocks', [InventoryStockController::class, 'index'])->name('inventory.stocks.index');
+
+    Route::get('inventory/movements', [InventoryMovementController::class, 'index'])->name('inventory.movements.index');
+
+    Route::get('inventory/movements/{movement}', [InventoryMovementController::class, 'show'])->name('inventory.movements.show');
+
+    Route::post('inventory/entries', [InventoryOperationController::class, 'storeEntry'])->name('inventory.entries.store');
+
+    Route::post('inventory/exits', [InventoryOperationController::class, 'storeExit'])->name('inventory.exits.store');
+
+    Route::post('inventory/adjustments', [InventoryOperationController::class, 'storeAdjustment'])->name('inventory.adjustments.store');
 
 });
