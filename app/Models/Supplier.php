@@ -31,6 +31,7 @@ class Supplier extends Model
     public function parts(): BelongsToMany
     {
         return $this->belongsToMany(Part::class)
+            ->using(PartSupplier::class)
             ->withPivot(['supplier_part_code', 'last_cost', 'is_preferred'])
             ->withTimestamps();
     }

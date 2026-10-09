@@ -34,7 +34,7 @@ class UpdatePartRequest extends FormRequest
                 'regex:/^[0-9A-Za-z\-_.\/\s]+$/',
             ],
             'name' => [
-                'required',
+                'sometimes',
                 'string',
                 'min:2',
                 'max:150',
@@ -53,22 +53,22 @@ class UpdatePartRequest extends FormRequest
                 'regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚ]+$/u',
             ],
             'part_category_id' => [
-                'required',
+                'sometimes',
                 'integer',
                 Rule::exists('part_categories', 'id'),
             ],
             'unit' => [
-                'required',
+                'sometimes',
                 Rule::enum(PartUnit::class),
             ],
             'cost_price' => [
-                'required',
+                'sometimes',
                 'numeric',
                 'min:0',
                 'max:99999999.99',
             ],
             'sale_price' => [
-                'required',
+                'sometimes',
                 'numeric',
                 'min:0',
                 'max:99999999.99',

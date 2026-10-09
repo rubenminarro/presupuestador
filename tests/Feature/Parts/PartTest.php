@@ -114,18 +114,23 @@ class PartTest extends PartsTestCase
 
         $part = $this->createPartViaApi();
 
-        $this->postJson("/api/parts/{$part['id']}/status", ['status' => 'inactive'])
+        $this->postJson("/api/parts/{$part['id']}/deactivate")
             ->assertOk()
             ->assertJsonPath('data.status.value', 'inactive');
 
-        $this->postJson("/api/parts/{$part['id']}/status", ['status' => 'inactive'])
+        $this->postJson("/api/parts/{$part['id']}/deactivate")
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'PART_INVALID_STATUS_TRANSITION');
 
-        $this->postJson("/api/parts/{$part['id']}/status", ['status' => 'discontinued'])
-            ->assertOk();
+        $this->postJson("/api/parts/{$part['id']}/activate")
+            ->assertOk()
+            ->assertJsonPath('data.status.value', 'active');
 
-        $this->postJson("/api/parts/{$part['id']}/status", ['status' => 'active'])
+        $this->postJson("/api/parts/{$part['id']}/discontinue")
+            ->assertOk()
+            ->assertJsonPath('data.status.value', 'discontinued');
+
+        $this->postJson("/api/parts/{$part['id']}/activate")
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'PART_DISCONTINUED');
 
@@ -151,7 +156,9 @@ class PartTest extends PartsTestCase
 
         $this->patchJson("/api/parts/{$part['id']}", ['name' => 'X'])->assertForbidden();
         $this->deleteJson("/api/parts/{$part['id']}")->assertForbidden();
-        $this->postJson("/api/parts/{$part['id']}/status", ['status' => 'inactive'])->assertForbidden();
+        $this->postJson("/api/parts/{$part['id']}/activate")->assertForbidden();
+        $this->postJson("/api/parts/{$part['id']}/deactivate")->assertForbidden();
+        $this->postJson("/api/parts/{$part['id']}/discontinue")->assertForbidden();
     }
 
     public function test_unauthenticated_requests_are_rejected(): void
