@@ -8,6 +8,7 @@ use App\Http\Resources\ShowVehicleResource;
 use App\Http\Resources\VehicleResource;
 use App\Models\Client;
 use App\Models\Vehicle;
+use App\Services\VehicleService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -20,6 +21,11 @@ use Illuminate\Routing\Controllers\Middleware;
 class ClientVehicleController extends Controller implements HasMiddleware
 {
     use ApiResponse;
+
+    public function __construct(
+        protected VehicleService $vehicleService
+    ) {
+    }
 
     public static function middleware(): array
     {
@@ -69,9 +75,8 @@ class ClientVehicleController extends Controller implements HasMiddleware
 
     public function store(StoreClientVehicleRequest $request, Client $client)
     {
-        $vehicle = $client->vehicles()->create($request->validated());
-
-        $vehicle->load(['client', 'brand', 'vehicleModel']);
+        // El client_id validado proviene de la URL (StoreClientVehicleRequest).
+        $vehicle = $this->vehicleService->create($request->validated());
 
         return $this->successResponse(
             'Vehículo creado correctamente.',

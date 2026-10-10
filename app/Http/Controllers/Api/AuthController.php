@@ -21,7 +21,7 @@ class AuthController extends Controller
             return $this->errorResponse(
                 'Credenciales inválidas.',
                 401,
-                null,
+                'UNAUTHENTICATED',
                 [
                     'email' => ['Email incorrecto.'],
                 ]

@@ -9,6 +9,7 @@ use App\Http\Requests\StoreVehicleRequest;
 use App\Http\Requests\UpdateVehicleRequest;
 use App\Http\Resources\VehicleResource;
 use App\Http\Resources\ShowVehicleResource;
+use App\Services\VehicleService;
 use App\Traits\ApiResponse;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -16,6 +17,11 @@ use Illuminate\Routing\Controllers\Middleware;
 class VehicleController extends Controller implements HasMiddleware
 {
     use ApiResponse;
+
+    public function __construct(
+        protected VehicleService $vehicleService
+    ) {
+    }
 
     public static function middleware(): array
     {
@@ -138,13 +144,7 @@ class VehicleController extends Controller implements HasMiddleware
 
     public function store(StoreVehicleRequest $request)
     {
-        $vehicle = Vehicle::create($request->validated());
-
-        $vehicle->load([
-            'client',
-            'brand',
-            'vehicleModel',
-        ]);
+        $vehicle = $this->vehicleService->create($request->validated());
 
         return $this->successResponse(
             'Vehículo creado correctamente.',
