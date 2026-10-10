@@ -10,14 +10,27 @@ use App\Models\Budget;
 use App\Models\BudgetItem;
 use App\Services\BudgetService;
 use App\Traits\ApiResponse;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class BudgetItemController extends Controller
+class BudgetItemController extends Controller implements HasMiddleware
 {
     use ApiResponse;
 
     public function __construct(
         protected BudgetService $budgetService
     ) {
+    }
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:budget-items.index', only: ['index']),
+            new Middleware('permission:budget-items.store', only: ['store']),
+            new Middleware('permission:budget-items.show', only: ['show']),
+            new Middleware('permission:budget-items.update', only: ['update']),
+            new Middleware('permission:budget-items.destroy', only: ['destroy']),
+        ];
     }
 
     public function index(Budget $budget)
