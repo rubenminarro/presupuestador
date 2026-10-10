@@ -29,6 +29,12 @@ class UpdateBudgetItemRequest extends FormRequest
                 'sometimes',
                 Rule::enum(BudgetItemType::class)
             ],
+            'part_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('parts', 'id')->whereNull('deleted_at'),
+            ],
             'description' => [
                 'sometimes',
                 'string',
@@ -59,6 +65,10 @@ class UpdateBudgetItemRequest extends FormRequest
         return [
             'type' => [
                 'enum' => 'El tipo debe ser un valor válido.',
+            ],
+            'part_id' => [
+                'integer' => 'El ID del repuesto debe ser un número entero.',
+                'exists' => 'El repuesto seleccionado no existe.',
             ],
             'description' => [
                 'string' => 'La descripción debe ser una cadena de texto.',

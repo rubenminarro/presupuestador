@@ -3,8 +3,13 @@
 namespace App\Services;
 
 use App\Models\Budget;
+use App\Models\BudgetItem;
+use App\Models\Part;
+use App\Enums\BudgetItemType;
 use App\Enums\BudgetStatus;
 use App\Exceptions\BudgetException;
+use App\Exceptions\PartException;
+use App\Support\Decimal;
 
 class BudgetService
 {
@@ -125,6 +130,51 @@ class BudgetService
         ]);
 
         return $budget->refresh();
+    }
+
+    /**
+     * Normaliza el vínculo con el catálogo de un ítem: solo los ítems de
+     * tipo repuesto llevan part_id, y el repuesto debe poder utilizarse.
+     */
+    public function preparePartItem(array $data, ?BudgetItem $item = null): array
+    {
+        $type = isset($data['type'])
+            ? BudgetItemType::from($data['type'])
+            : $item?->type;
+
+        if ($type !== BudgetItemType::PART) {
+            $data['part_id'] = null;
+
+            return $data;
+        }
+
+        $partId = array_key_exists('part_id', $data) ? $data['part_id'] : $item?->part_id;
+
+        if (!$partId) {
+            return $data;
+        }
+
+        $part = Part::findOrFail($partId);
+
+        if (!$part->isUsable()) {
+            throw new PartException(
+                'El repuesto está inactivo y no puede presupuestarse.',
+                422,
+                'PART_NOT_USABLE'
+            );
+        }
+
+        $quantity = (string) ($data['quantity'] ?? $item?->quantity);
+
+        if (!$part->unit->allowsFractions() && Decimal::hasFraction(Decimal::of($quantity, 3))) {
+            throw new BudgetException(
+                "El repuesto se mide en {$part->unit->label()} y no admite cantidades fraccionadas.",
+                422,
+                'INVENTORY_FRACTIONAL_QUANTITY_NOT_ALLOWED'
+            );
+        }
+
+        return $data;
     }
 
     public function ensureEditable(Budget $budget): void

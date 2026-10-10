@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\BudgetItemController;
 use App\Http\Controllers\Api\MechanicController;
 use App\Http\Controllers\Api\WorkOrderController;
 use App\Http\Controllers\Api\WorkOrderItemController;
+use App\Http\Controllers\Api\WorkOrderPartController;
 use App\Http\Controllers\Api\PartCategoryController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\PartController;
@@ -102,6 +103,20 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::post('work-orders/{workOrder}/items/{item}/complete', [WorkOrderItemController::class, 'complete'])->name('work-orders.items.complete');
 
     Route::post('work-orders/{workOrder}/items/{item}/cancel', [WorkOrderItemController::class, 'cancel'])->name('work-orders.items.cancel');
+
+    Route::get('work-orders/{workOrder}/parts', [WorkOrderPartController::class, 'index'])->name('work-orders.parts.index');
+
+    Route::post('work-orders/{workOrder}/parts', [WorkOrderPartController::class, 'store'])->name('work-orders.parts.store');
+
+    Route::patch('work-orders/{workOrder}/parts/{part}', [WorkOrderPartController::class, 'update'])->name('work-orders.parts.update');
+
+    Route::post('work-orders/{workOrder}/parts/{part}/reserve', [WorkOrderPartController::class, 'reserve'])->name('work-orders.parts.reserve');
+
+    Route::post('work-orders/{workOrder}/parts/{part}/consume', [WorkOrderPartController::class, 'consume'])->name('work-orders.parts.consume');
+
+    Route::post('work-orders/{workOrder}/parts/{part}/return', [WorkOrderPartController::class, 'returnToStock'])->name('work-orders.parts.return');
+
+    Route::post('work-orders/{workOrder}/parts/{part}/cancel', [WorkOrderPartController::class, 'cancel'])->name('work-orders.parts.cancel');
 
     Route::apiResource('part-categories', PartCategoryController::class)->except(['update']);
 

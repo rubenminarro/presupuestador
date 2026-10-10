@@ -13,6 +13,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Support\Decimal;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 class InventoryService
@@ -41,7 +42,7 @@ class InventoryService
                 );
             }
 
-            $quantity = $this->quantity($part, $data['quantity']);
+            $quantity = $this->normalizeQuantity($part, $data['quantity']);
             $unitCost = Decimal::of($data['unit_cost'], self::COST_SCALE);
             $supplier = $this->activeSupplier($data['supplier_id'] ?? null);
 
@@ -87,7 +88,7 @@ class InventoryService
 
             $part = Part::findOrFail($data['part_id']);
 
-            $quantity = $this->quantity($part, $data['quantity']);
+            $quantity = $this->normalizeQuantity($part, $data['quantity']);
             $supplier = $this->activeSupplier($data['supplier_id'] ?? null);
 
             $stock = $this->lockStock($part);
@@ -114,7 +115,7 @@ class InventoryService
 
             $part = Part::findOrFail($data['part_id']);
 
-            $counted = $this->quantity($part, $data['counted_quantity'], allowZero: true);
+            $counted = $this->normalizeQuantity($part, $data['counted_quantity'], allowZero: true);
 
             $stock = $this->lockStock($part);
 
@@ -167,7 +168,7 @@ class InventoryService
     {
         return DB::transaction(function () use ($part, $quantity) {
 
-            $quantity = $this->quantity($part, $quantity);
+            $quantity = $this->normalizeQuantity($part, $quantity);
 
             $stock = $this->lockStock($part);
 
@@ -188,7 +189,7 @@ class InventoryService
     {
         return DB::transaction(function () use ($part, $quantity) {
 
-            $quantity = $this->quantity($part, $quantity);
+            $quantity = $this->normalizeQuantity($part, $quantity);
 
             $stock = $this->lockStock($part);
 
@@ -205,6 +206,79 @@ class InventoryService
             ]);
 
             return $stock;
+        });
+    }
+
+    /**
+     * Consumo desde una OT: libera lo reservado y registra la salida de lo
+     * realmente usado bajo el mismo bloqueo. Lo usado puede diferir de lo
+     * reservado; el excedente se toma del disponible.
+     */
+    public function consumeReservation(
+        Part $part,
+        int|float|string $reserved,
+        int|float|string $used,
+        User $user,
+        Model $reference,
+        ?string $reason = null
+    ): InventoryMovement {
+        return DB::transaction(function () use ($part, $reserved, $used, $user, $reference, $reason) {
+
+            $reserved = Decimal::of($reserved, self::QUANTITY_SCALE);
+            $used = $this->normalizeQuantity($part, $used);
+
+            $stock = $this->lockStock($part);
+
+            if (bccomp($reserved, $stock->quantity_reserved, self::QUANTITY_SCALE) > 0) {
+                throw new InventoryException(
+                    "No se puede liberar {$reserved}; el stock reservado es {$stock->quantity_reserved}.",
+                    422,
+                    'INVENTORY_RELEASE_EXCEEDS_RESERVED'
+                );
+            }
+
+            $stock->quantity_reserved = bcsub($stock->quantity_reserved, $reserved, self::QUANTITY_SCALE);
+
+            $this->ensureAvailable($stock, $used);
+
+            return $this->applyMovement($stock, InventoryMovementType::WORK_ORDER_OUT, $used, null, $user, [
+                'reference_type' => $reference->getMorphClass(),
+                'reference_id' => $reference->getKey(),
+                'reason' => $reason,
+            ]);
+        });
+    }
+
+    /**
+     * Devolución desde una OT, valuada al costo con que se consumió.
+     * Se acepta aunque el repuesto esté descontinuado: es stock propio que vuelve.
+     */
+    public function returnToStock(
+        Part $part,
+        int|float|string $quantity,
+        string $unitCost,
+        User $user,
+        Model $reference,
+        string $reason
+    ): InventoryMovement {
+        return DB::transaction(function () use ($part, $quantity, $unitCost, $user, $reference, $reason) {
+
+            $quantity = $this->normalizeQuantity($part, $quantity);
+
+            $stock = $this->lockStock($part);
+
+            return $this->applyMovement(
+                $stock,
+                InventoryMovementType::WORK_ORDER_RETURN,
+                $quantity,
+                Decimal::of($unitCost, self::COST_SCALE),
+                $user,
+                [
+                    'reference_type' => $reference->getMorphClass(),
+                    'reference_id' => $reference->getKey(),
+                    'reason' => $reason,
+                ]
+            );
         });
     }
 
@@ -294,7 +368,7 @@ class InventoryService
             ->firstOrFail();
     }
 
-    private function quantity(Part $part, int|float|string $value, bool $allowZero = false): string
+    public function normalizeQuantity(Part $part, int|float|string $value, bool $allowZero = false): string
     {
         $quantity = Decimal::of($value, self::QUANTITY_SCALE);
 

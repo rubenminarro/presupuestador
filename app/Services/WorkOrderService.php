@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\BudgetItemType;
 use App\Enums\BudgetStatus;
 use App\Enums\WorkOrderItemStatus;
 use App\Enums\WorkOrderItemType;
@@ -15,6 +16,11 @@ use Illuminate\Support\Facades\DB;
 
 class WorkOrderService
 {
+    public function __construct(
+        protected WorkOrderPartService $workOrderPartService
+    ) {
+    }
+
     public function createFromBudget(
         Budget $budget,
         Mechanic $mechanic,
@@ -70,7 +76,7 @@ class WorkOrderService
             ]);
 
             foreach ($budget->items as $budgetItem) {
-                $workOrder->items()->create([
+                $workOrderItem = $workOrder->items()->create([
                     'budget_item_id' => $budgetItem->id,
                     'type' => WorkOrderItemType::from(
                         $budgetItem->type->value
@@ -80,6 +86,16 @@ class WorkOrderService
                     'status' => WorkOrderItemStatus::PENDING,
                     'notes' => null,
                 ]);
+
+                // Repuesto presupuestado con vínculo al catálogo: se reserva stock.
+                if ($budgetItem->type === BudgetItemType::PART && $budgetItem->part_id) {
+                    $this->workOrderPartService->createFromBudgetItem(
+                        $workOrder,
+                        $workOrderItem,
+                        $budgetItem,
+                        $createdBy
+                    );
+                }
             }
 
             return $workOrder->load([
@@ -88,6 +104,7 @@ class WorkOrderService
                 'mechanic',
                 'creator',
                 'items',
+                'parts.part',
             ]);
         });
     }
@@ -117,6 +134,7 @@ class WorkOrderService
                 'mechanic',
                 'creator',
                 'items',
+                'parts.part',
             ]);
         });
     }
@@ -145,6 +163,7 @@ class WorkOrderService
                 'mechanic',
                 'creator',
                 'items',
+                'parts.part',
             ]);
         });
     }
@@ -173,6 +192,7 @@ class WorkOrderService
                 'mechanic',
                 'creator',
                 'items',
+                'parts.part',
             ]);
         });
     }
@@ -216,6 +236,8 @@ class WorkOrderService
                 );
             }
 
+            $this->workOrderPartService->ensureResolved($workOrder);
+
             $workOrder->update([
                 'status' => WorkOrderStatus::COMPLETED,
                 'completed_at' => now(),
@@ -227,6 +249,7 @@ class WorkOrderService
                 'mechanic',
                 'creator',
                 'items',
+                'parts.part',
             ]);
         });
     }
@@ -260,12 +283,17 @@ class WorkOrderService
                     'status' => WorkOrderItemStatus::CANCELLED,
                 ]);
 
+            $this->workOrderPartService->cancelOpenLines(
+                $workOrder->parts()->open()->get()
+            );
+
             return $workOrder->load([
                 'reception',
                 'budget',
                 'mechanic',
                 'creator',
                 'items',
+                'parts.part',
             ]);
         });
     }
@@ -371,6 +399,10 @@ class WorkOrderService
             $item->update([
                 'status' => WorkOrderItemStatus::CANCELLED,
             ]);
+
+            $this->workOrderPartService->cancelOpenLines(
+                $item->parts()->open()->get()
+            );
 
             return $item->refresh();
         });

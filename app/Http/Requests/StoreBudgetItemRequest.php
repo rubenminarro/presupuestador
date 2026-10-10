@@ -29,6 +29,12 @@ class StoreBudgetItemRequest extends FormRequest
                 'required',
                 Rule::enum(BudgetItemType::class)
             ],
+            'part_id' => [
+                Rule::prohibitedIf(fn () => $this->input('type') !== BudgetItemType::PART->value),
+                'nullable',
+                'integer',
+                Rule::exists('parts', 'id')->whereNull('deleted_at'),
+            ],
             'description' => [
                 'required',
                 'string',
@@ -61,6 +67,11 @@ class StoreBudgetItemRequest extends FormRequest
             'type' => [
                 'required' => 'El tipo de ítem es obligatorio.',
                 'enum' => 'El tipo de ítem debe ser un valor válido.',
+            ],
+            'part_id' => [
+                'prohibited' => 'Solo los ítems de tipo repuesto pueden vincularse a un repuesto del catálogo.',
+                'integer' => 'El ID del repuesto debe ser un número entero.',
+                'exists' => 'El repuesto seleccionado no existe.',
             ],
             'description' => [
                 'required' => 'La descripción es obligatoria.',

@@ -160,6 +160,15 @@ class RolesAndPermissionsSeeder extends Seeder
             'work-order-items.complete',
             'work-order-items.cancel',
 
+            /* work order part permissions */
+            'work-order-parts.index',
+            'work-order-parts.store',
+            'work-order-parts.update',
+            'work-order-parts.reserve',
+            'work-order-parts.consume',
+            'work-order-parts.return',
+            'work-order-parts.cancel',
+
             /* part category permissions */
             'part-categories.index',
             'part-categories.store',
@@ -238,8 +247,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'work-orders.resume', 
             'work-orders.complete',
             
-            'work-order-items.start', 
+            'work-order-items.start',
             'work-order-items.complete',
+
+            'work-order-parts.index',
+            'work-order-parts.consume',
+            'work-order-parts.return',
 
             'parts.index',
             'parts.show',

@@ -41,6 +41,15 @@ class Part extends Model
         ];
     }
 
+    /**
+     * Puede presupuestarse o agregarse a una OT. Los descontinuados sí,
+     * para poder usar el stock remanente.
+     */
+    public function isUsable(): bool
+    {
+        return $this->status !== PartStatus::INACTIVE;
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(PartCategory::class, 'part_category_id');

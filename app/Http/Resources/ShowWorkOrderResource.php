@@ -38,6 +38,22 @@ class ShowWorkOrderResource extends JsonResource
             'items' => WorkOrderItemResource::collection(
                 $this->whenLoaded('items')
             ),
+            'parts' => WorkOrderPartResource::collection(
+                $this->whenLoaded('parts')
+            ),
+            'parts_summary' => $this->whenLoaded('parts', fn () => [
+                'total_cost' => $this->parts->reduce(
+                    fn (string $sum, $line) => bcadd($sum, $line->totalCost() ?? '0', 2),
+                    '0.00'
+                ),
+                'total_price' => $this->parts->reduce(
+                    fn (string $sum, $line) => bcadd($sum, $line->totalPrice(), 2),
+                    '0.00'
+                ),
+                'unresolved_count' => $this->parts->filter(
+                    fn ($line) => $line->status->isOpen()
+                )->count(),
+            ]),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

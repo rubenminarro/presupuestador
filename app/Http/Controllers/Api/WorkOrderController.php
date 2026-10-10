@@ -165,6 +165,7 @@ class WorkOrderController extends Controller implements HasMiddleware
             'creator',
             'items',
             'items.budgetItem',
+            'parts.part',
         ]);
 
         return $this->successResponse(
@@ -214,6 +215,7 @@ class WorkOrderController extends Controller implements HasMiddleware
             'creator',
             'items',
             'items.budgetItem',
+            'parts.part',
         ]);
 
         return $this->successResponse(

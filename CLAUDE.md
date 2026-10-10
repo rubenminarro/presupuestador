@@ -364,6 +364,7 @@ También se completaron:
 
 * **FASE 10 — Catálogo de repuestos:** `Part`, `PartCategory`, `Supplier`, pivote `part_supplier`.
 * **FASE 11 — Inventario:** ver sección 2.24.
+* **FASE 12 — Repuestos en WorkOrder:** ver sección 2.25.
 
 ---
 
@@ -406,6 +407,52 @@ Tests: los tests usan SQLite en memoria; en Laragon `pdo_sqlite` está deshabili
 ```bash
 php -d extension=pdo_sqlite -d extension=sqlite3 vendor/bin/phpunit
 ```
+
+---
+
+# 2.25 Repuestos en WorkOrder (FASE 12)
+
+Componentes:
+
+```text
+budget_items.part_id    (nullable; solo type = part; vínculo con el catálogo)
+WorkOrderPart           (repuesto realmente usado en la OT; work_order_item_id nullable = extra no presupuestado)
+WorkOrderPartStatus     (pending, reserved, consumed, returned, cancelled)
+WorkOrderPartService    (createFromBudgetItem, add, update, reserve, consume, returnToStock, cancel,
+                         cancelOpenLines, ensureResolved)
+WorkOrderPartException
+InventoryService        (+ consumeReservation, returnToStock, normalizeQuantity pública)
+```
+
+Ciclo de una línea:
+
+```text
+creación con stock        → reserved   (reserve)
+creación sin stock        → pending
+pending   --reserve-->      reserved
+pending/reserved --consume--> consumed  (libera reserva + salida work_order_out por lo usado)
+pending/reserved --cancel-->  cancelled (libera reserva)
+consumed  --return-->       consumed / returned si neto = 0 (entrada work_order_return al unit_cost de la línea)
+```
+
+Reglas:
+
+* `createFromBudget` crea una línea por cada BudgetItem `part` con `part_id` e intenta reservar; si falta stock la OT se crea igual y la línea queda `pending`.
+* Agregar/editar/reservar/cancelar: OT `pending|in_progress|paused`. Consumir/devolver: solo `in_progress`.
+* OT `completed`/`cancelled`: líneas congeladas (`WORK_ORDER_PARTS_NOT_EDITABLE`).
+* Cancelar la OT o un WorkOrderItem cancela sus líneas abiertas y libera reservas.
+* Completar la OT exige que no haya líneas `pending|reserved` (`WORK_ORDER_HAS_UNRESOLVED_PARTS`).
+* Un consumo por línea; lo usado puede diferir de lo reservado (excedente contra disponible).
+* `unit_cost` se copia del movimiento de consumo; `unit_price` del BudgetItem o del `sale_price` del catálogo.
+* Totales (`total_cost`, `total_price`) se calculan sobre la cantidad neta (consumida − devuelta); no se persisten.
+* Repuestos `inactive` no se presupuestan ni se agregan (`PART_NOT_USABLE`); descontinuados sí.
+* `InventoryMovement.reference_type = 'work_order_part'` (morphMap sin enforce en AppServiceProvider).
+* Orden de bloqueo: OT → línea → `part_stocks`.
+
+Endpoints: `GET|POST work-orders/{workOrder}/parts`, `PATCH work-orders/{workOrder}/parts/{part}`,
+`POST work-orders/{workOrder}/parts/{part}/reserve|consume|return|cancel`.
+Permisos: `work-order-parts.index|store|update|reserve|consume|return|cancel`
+(mecánico: `index`, `consume`, `return`).
 
 ---
 
@@ -2657,16 +2704,16 @@ La arquitectura objetivo es:
 El proyecto actualmente se encuentra en:
 
 ```text
-FASE 11 — INVENTARIO — CERRADA
+FASE 12 — REPUESTOS EN WORKORDER — CERRADA
 ```
 
 El siguiente gran paso recomendado es:
 
 ```text
-FASE 12 — REPUESTOS EN WORKORDER (WorkOrderPart + reserve/consume/release vía InventoryService)
+FASE 13 — CATÁLOGO DE SERVICIOS Y MANO DE OBRA
 ```
 
-El orden de trabajo de abajo se usó para las FASES 10 y 11 y sigue siendo la referencia.
+El orden de trabajo de abajo se usó para las FASES 10 a 12 y sigue siendo la referencia.
 
 Pero la implementación debe comenzar primero por el **diseño funcional y de datos**, no directamente por el CRUD.
 
@@ -2760,12 +2807,12 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 [✓] Proveedores (FASE 10)
 [✓] Inventario (FASE 11)
 [✓] Movimientos de inventario (FASE 11)
+[✓] Repuestos utilizados en WorkOrder (FASE 12)
 ```
 
 ## Próximo
 
 ```text
-[ ] Repuestos utilizados en WorkOrder
 [ ] Compras
 [ ] Servicios
 [ ] Mano de obra avanzada

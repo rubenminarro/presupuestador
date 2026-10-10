@@ -39,4 +39,9 @@ class WorkOrderItem extends Model
     {
         return $this->belongsTo(BudgetItem::class);
     }
+
+    public function parts()
+    {
+        return $this->hasMany(WorkOrderPart::class);
+    }
 }

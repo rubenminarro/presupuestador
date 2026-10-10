@@ -14,6 +14,7 @@ class BudgetItem extends Model
     protected $fillable = [
         'budget_id',
         'type',
+        'part_id',
         'description',
         'quantity',
         'unit_price',
@@ -31,6 +32,11 @@ class BudgetItem extends Model
     public function budget(): BelongsTo
     {
         return $this->belongsTo(Budget::class);
+    }
+
+    public function part(): BelongsTo
+    {
+        return $this->belongsTo(Part::class)->withTrashed();
     }
 
     public function workOrderItems(): HasMany

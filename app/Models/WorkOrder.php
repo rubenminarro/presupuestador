@@ -57,4 +57,9 @@ class WorkOrder extends Model
     {
         return $this->hasMany(WorkOrderItem::class);
     }
+
+    public function parts(): HasMany
+    {
+        return $this->hasMany(WorkOrderPart::class);
+    }
 }

@@ -22,7 +22,7 @@ class BudgetItemController extends Controller
 
     public function index(Budget $budget)
     {
-        $items = $budget->items()->latest()->get();
+        $items = $budget->items()->with('part')->latest()->get();
 
         return $this->successResponse(
             'Items del presupuesto obtenidos exitosamente.',
@@ -35,7 +35,7 @@ class BudgetItemController extends Controller
 
         $this->budgetService->ensureEditable($budget);
 
-        $data = $request->validated();
+        $data = $this->budgetService->preparePartItem($request->validated());
 
         $data['total'] = $data['quantity'] * $data['unit_price'];
 
@@ -45,7 +45,7 @@ class BudgetItemController extends Controller
 
         return $this->successResponse(
             'El item del presupuesto creado exitosamente.',
-            new BudgetItemResource($item),
+            new BudgetItemResource($item->load('part')),
             201
         );
     }
@@ -55,7 +55,7 @@ class BudgetItemController extends Controller
         
         return $this->successResponse(
             'El item del presupuesto recuperado exitosamente.',
-            new BudgetItemResource($item)
+            new BudgetItemResource($item->load('part'))
         );
     }
 
@@ -64,7 +64,7 @@ class BudgetItemController extends Controller
         
         $this->budgetService->ensureEditable($budget);
 
-        $data = $request->validated();
+        $data = $this->budgetService->preparePartItem($request->validated(), $item);
 
         $quantity = $data['quantity'] ?? $item->quantity;
         $unitPrice = $data['unit_price'] ?? $item->unit_price;
@@ -77,7 +77,7 @@ class BudgetItemController extends Controller
 
         return $this->successResponse(
             'El item del presupuesto actualizado exitosamente.',
-            new BudgetItemResource($item->refresh())
+            new BudgetItemResource($item->refresh()->load('part'))
         );
     }
 
