@@ -587,6 +587,23 @@ VehicleModel
 
 para separar correctamente marca/modelo de la instancia concreta del vehículo.
 
+Rutas anidadas por cliente propietario (complementan a `/api/vehicles`, que se mantiene):
+
+```text
+GET  /api/clients/{client}/vehicles             (vehicles.index)
+POST /api/clients/{client}/vehicles             (vehicles.store)
+GET  /api/clients/{client}/vehicles/{vehicle}   (vehicles.show)
+```
+
+Componentes: `ClientVehicleController` y `StoreClientVehicleRequest` (extiende `StoreVehicleRequest`;
+el `client_id` se toma de la URL e ignora el del body). `scopeBindings()` devuelve 404 si el vehículo
+pertenece a otro cliente. Editar y eliminar siguen solo en `/api/vehicles/{vehicle}`.
+
+Decisión: la tabla se mantiene como `vehicles` (no `clients_vehicles`). El vehículo es una entidad propia
+—eje de recepciones, presupuestos, OT e historial— y su dueño puede cambiar; un nombre compuesto
+sugeriría una tabla pivote. Si en el futuro se necesita historial de propietarios, modelarlo aparte
+(por ejemplo `vehicle_ownerships`).
+
 ---
 
 # 2.6 Recepción

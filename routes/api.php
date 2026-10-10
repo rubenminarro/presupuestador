@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\UserRoleController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\ClientController;
+use App\Http\Controllers\Api\ClientVehicleController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\VehicleModelController;
 use App\Http\Controllers\Api\VehicleController;
@@ -47,6 +48,8 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::apiResource('mechanics', MechanicController::class);
 
     Route::apiResource('clients', ClientController::class);
+
+    Route::apiResource('clients.vehicles', ClientVehicleController::class)->only(['index', 'store', 'show']);
 
     Route::apiResource('brands', BrandController::class);
 
