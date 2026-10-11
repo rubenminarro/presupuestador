@@ -2,26 +2,18 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Enums\BudgetItemType;
+use Illuminate\Validation\Rules\Enum;
 
 class StoreBudgetItemRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
@@ -66,7 +58,7 @@ class StoreBudgetItemRequest extends FormRequest
         return [
             'type' => [
                 'required' => 'El tipo de ítem es obligatorio.',
-                'enum' => 'El tipo de ítem debe ser un valor válido.',
+                Enum::class => 'El tipo de ítem debe ser un valor válido.',
             ],
             'part_id' => [
                 'prohibited' => 'Solo los ítems de tipo repuesto pueden vincularse a un repuesto del catálogo.',

@@ -2,26 +2,18 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Enums\BudgetItemType;
+use Illuminate\Validation\Rules\Enum;
 
 class UpdateBudgetItemRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
@@ -64,7 +56,7 @@ class UpdateBudgetItemRequest extends FormRequest
     {        
         return [
             'type' => [
-                'enum' => 'El tipo debe ser un valor válido.',
+                Enum::class => 'El tipo debe ser un valor válido.',
             ],
             'part_id' => [
                 'integer' => 'El ID del repuesto debe ser un número entero.',

@@ -38,7 +38,7 @@ class UpdatePartRequest extends FormRequest
                 'string',
                 'min:2',
                 'max:150',
-                'regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚ]+$/u',
+                'regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\.,\-\/()"\'+%]+$/u',
             ],
             'description' => [
                 'sometimes',
@@ -100,7 +100,7 @@ class UpdatePartRequest extends FormRequest
                 'string' => 'El nombre del repuesto debe ser un texto válido.',
                 'min' => 'El nombre del repuesto debe tener al menos 2 caracteres.',
                 'max' => 'El nombre del repuesto no debe superar los 150 caracteres.',
-                'regex' => 'El nombre del repuesto solo puede contener letras y espacios.',
+                'regex' => 'El nombre del repuesto solo puede contener letras, números, espacios y los siguientes caracteres: . , - / ( ) " \' + %',
             ],
             'description' => [
                 'string' => 'La descripción debe ser un texto válido.',

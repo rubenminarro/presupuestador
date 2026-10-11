@@ -6,6 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Enums\Priority;
 use App\Enums\DiagnosticStatus;
+use Illuminate\Validation\Rules\Enum;
 
 class UpdateDiagnosticRequest extends FormRequest
 {
@@ -85,10 +86,10 @@ class UpdateDiagnosticRequest extends FormRequest
                 'regex' => 'La recomendación contiene caracteres no permitidos.',
             ],
             'priority' => [
-                'enum' => 'La prioridad debe ser uno de los siguientes: low, medium, high.',
+                Enum::class => 'La prioridad debe ser uno de los siguientes: low, medium, high.',
             ],
             'status' => [
-                'enum' => 'El estado debe ser uno de los siguientes: pending, in_progress, completed, approved, rejected.',
+                Enum::class => 'El estado debe ser uno de los siguientes: pending, in_progress, completed, approved, rejected.',
             ],
             'requires_parts' => [
                 'boolean' => 'El campo requiere piezas debe ser un valor booleano.',

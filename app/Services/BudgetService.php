@@ -42,6 +42,14 @@ class BudgetService
             );
         }
 
+        if (!$budget->items()->exists()) {
+            throw new BudgetException(
+                'No se puede enviar un presupuesto sin ítems.',
+                422,
+                'BUDGET_WITHOUT_ITEMS'
+            );
+        }
+
         $budget->update([
             'status' => BudgetStatus::SENT,
         ]);
