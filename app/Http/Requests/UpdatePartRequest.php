@@ -44,13 +44,13 @@ class UpdatePartRequest extends FormRequest
                 'sometimes',
                 'string',
                 'max:1000',
-                'regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚ]+$/u',
+                'regex:/^[\pL\pN\s.,;:()\-\/#%+&"\'°º]+$/u',
             ],
             'brand' => [
                 'sometimes',
                 'string',
                 'max:100',
-                'regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚ]+$/u',
+                'regex:/^[\pL\pN\s&.\-\/]+$/u',
             ],
             'part_category_id' => [
                 'sometimes',
@@ -105,12 +105,12 @@ class UpdatePartRequest extends FormRequest
             'description' => [
                 'string' => 'La descripción debe ser un texto válido.',
                 'max' => 'La descripción no debe superar los 1000 caracteres.',
-                'regex' => 'La descripción solo puede contener letras y espacios.',
+                'regex' => 'La descripción solo puede contener letras, números, espacios y los siguientes caracteres: . , ; : ( ) - / # % + & " \' ° º',
             ],
             'brand' => [
                 'string' => 'La marca debe ser un texto válido.',
                 'max' => 'La marca no debe superar los 100 caracteres.',
-                'regex' => 'La marca solo puede contener letras y espacios.',
+                'regex' => 'La marca solo puede contener letras, números, espacios y los siguientes caracteres: & . - /',
             ],
             'part_category_id' => [
                 'integer' => 'El ID de la categoría debe ser un número entero.',

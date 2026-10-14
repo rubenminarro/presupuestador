@@ -20,7 +20,7 @@ class StoreSupplierRequest extends FormRequest
                 'string',
                 'min:2',
                 'max:150',
-                'regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\.,#\-\/°º]+$/u',
+                'regex:/^[\pL\pN\s.,#\-\/°º&()\']+$/u',
             ],
             'tax_id' => [
                 'nullable',
@@ -32,7 +32,7 @@ class StoreSupplierRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:150',
-                'regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\.,#\-\/°º]+$/u',
+                'regex:/^[\pL\s.\'\-]+$/u',
             ],
             'phone' => [
                 'nullable',
@@ -49,7 +49,7 @@ class StoreSupplierRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:255',
-                'regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\.,#\-\/°º]+$/u',
+                'regex:/^[\pL\pN\s.,#\-\/°º&()\']+$/u',
             ],
             'notes' => [
                 'nullable',
@@ -72,7 +72,7 @@ class StoreSupplierRequest extends FormRequest
                 'string' => 'El nombre del proveedor debe ser un texto válido.',
                 'min' => 'El nombre del proveedor debe tener al menos 2 caracteres.',
                 'max' => 'El nombre del proveedor no debe superar los 150 caracteres.',
-                'regex' => 'El nombre del proveedor solo puede contener letras, números, espacios y los siguientes caracteres: . , # - / ° º',
+                'regex' => 'El nombre del proveedor solo puede contener letras, números, espacios y los siguientes caracteres: . , # - / ° º & ( ) \'',
             ],
             'tax_id' => [
                 'string' => 'El RUC debe ser un texto válido.',
@@ -83,7 +83,7 @@ class StoreSupplierRequest extends FormRequest
             'contact_name' => [
                 'string' => 'El nombre de contacto debe ser un texto válido.',
                 'max' => 'El nombre de contacto no debe superar los 150 caracteres.',
-                'regex' => 'El nombre de contacto solo puede contener letras, números, espacios y los siguientes caracteres: . , # - / ° º',
+                'regex' => 'El nombre de contacto solo puede contener letras, espacios y los siguientes caracteres: . \' -',
             ],
             'phone' => [
                 'string' => 'El teléfono debe ser un texto válido.',
@@ -97,7 +97,7 @@ class StoreSupplierRequest extends FormRequest
             'address' => [
                 'string' => 'La dirección debe ser un texto válido.',
                 'max' => 'La dirección no debe superar los 255 caracteres.',
-                'regex' => 'La dirección solo puede contener letras, números, espacios y los siguientes caracteres: . , # - / ° º', 
+                'regex' => 'La dirección solo puede contener letras, números, espacios y los siguientes caracteres: . , # - / ° º & ( ) \'',
             ],
             'notes' => [
                 'string' => 'Las notas deben ser un texto válido.',

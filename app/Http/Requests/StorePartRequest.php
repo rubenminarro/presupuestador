@@ -37,17 +37,17 @@ class StorePartRequest extends FormRequest
                 'max:150',
                 'regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\.,\-\/()"\'+%]+$/u',
             ],
-             'description' => [
+            'description' => [
                 'nullable',
                 'string',
                 'max:1000',
-                'regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚ]+$/u',
+                'regex:/^[\pL\pN\s.,;:()\-\/#%+&"\'°º]+$/u',
             ],
             'brand' => [
                 'nullable',
                 'string',
                 'max:100',
-                'regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚ]+$/u',
+                'regex:/^[\pL\pN\s&.\-\/]+$/u',
             ],
             'part_category_id' => [
                 'required',
@@ -103,12 +103,12 @@ class StorePartRequest extends FormRequest
             'description' => [
                 'string' => 'La descripción debe ser un texto válido.',
                 'max' => 'La descripción no debe superar los 1000 caracteres.',
-                'regex' => 'La descripción solo puede contener letras y espacios.',
+                'regex' => 'La descripción solo puede contener letras, números, espacios y los siguientes caracteres: . , ; : ( ) - / # % + & " \' ° º',
             ],
             'brand' => [
                 'string' => 'La marca debe ser un texto válido.',
                 'max' => 'La marca no debe superar los 100 caracteres.',
-                'regex' => 'La marca solo puede contener letras y espacios.',
+                'regex' => 'La marca solo puede contener letras, números, espacios y los siguientes caracteres: & . - /',
             ],
             'part_category_id' => [
                 'required' => 'La categoría es obligatoria.',

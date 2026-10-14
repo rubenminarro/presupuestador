@@ -353,7 +353,7 @@ Permisos del mecánico (token = `{{token_mec}}`):
 | Aprobar | `POST {{base_url}}/budgets/{{budget_id}}/approve` | — | 200 | `approved`, `approved_at` informado |
 | Cancelar aprobado | `POST {{base_url}}/budgets/{{budget_id}}/cancel` | — | 422 | `BUDGET_NOT_CANCELLABLE` |
 
-Caso adicional (presupuesto nuevo y vacío): crear con P.1, enviar, aprobar → `422 BUDGET_WITHOUT_ITEMS`.
+Caso adicional (presupuesto nuevo y vacío): crear con P.1 y enviar sin ítems → `422 BUDGET_WITHOUT_ITEMS`; el presupuesto sigue en `draft`.
 
 Ciclo de rechazo (presupuesto nuevo con un ítem): enviar → `reject` (200, `rejected`) → `reopen` (200, `draft`).
 
@@ -475,11 +475,29 @@ Esperado: `201` → `supplier_id`.
 | Caso | Body | HTTP | error_code |
 |---|---|---|---|
 | `tax_id` duplicado | mismo body | 422 | `VALIDATION_ERROR` |
-| Nombre con números | `{ "name": "Proveedor 123" }` | 422 | `VALIDATION_ERROR` |
+| Nombre con carácter no permitido | `{ "name": "Proveedor @QA" }` | 422 | `VALIDATION_ERROR` (`errors.name`) |
+| Dirección con carácter no permitido | `{ "name": "Proveedor Dir", "address": "Calle <falsa> 123" }` | 422 | `VALIDATION_ERROR` (`errors.address`) |
+| Contacto con números | `{ "name": "Proveedor Contacto", "contact_name": "Juan 123" }` | 422 | `VALIDATION_ERROR` (`errors.contact_name`) |
+
+Caracteres admitidos (además de letras, números y espacios): nombre y dirección `. , # - / ° º & ( ) '`; nombre de contacto solo letras, espacios y `. ' -`.
+
+Caso válido:
+
+```json
+{
+  "name": "Garcia & Hijos (Repuestos) N° 2",
+  "tax_id": "80099998-8",
+  "contact_name": "Maria-Jose O'Neill",
+  "address": "Av. Mcal. Lopez 1234 (frente al banco) - Km 5"
+}
+```
+
+Esperado: `201`.
 
 ### 10.3 Crear repuesto (litros)
 
-> El nombre del repuesto solo admite letras y espacios.
+> Caracteres admitidos (además de letras, números y espacios):
+> nombre `. , - / ( ) " ' + %` · marca `& . - /` · descripción `. , ; : ( ) - / # % + & " ' ° º`.
 
 `POST {{base_url}}/parts`
 
@@ -523,7 +541,11 @@ Casos de error de creación:
 |---|---|---|---|
 | SKU duplicado | body de 10.3 | 422 | `VALIDATION_ERROR` (`errors.sku`) |
 | Unidad inválida | `{ ..., "sku": "QA-X-1", "unit": "barrel" }` | 422 | `VALIDATION_ERROR` (`errors.unit`) |
-| Nombre con números | `{ ..., "sku": "QA-X-2", "name": "Aceite 5W30" }` | 422 | `VALIDATION_ERROR` (`errors.name`) |
+| Nombre con carácter no permitido | `{ ..., "sku": "QA-X-2", "name": "Aceite @oferta" }` | 422 | `VALIDATION_ERROR` (`errors.name`) |
+| Marca con carácter no permitido | `{ ..., "sku": "QA-X-4", "brand": "Bosch!" }` | 422 | `VALIDATION_ERROR` (`errors.brand`) |
+| Descripción con carácter no permitido | `{ ..., "sku": "QA-X-6", "description": "<script>" }` | 422 | `VALIDATION_ERROR` (`errors.description`) |
+| Nombre con números y símbolos (válido) | `{ ..., "sku": "QA-X-5", "name": "Aceite 5W-30 (sintetico) 100%" }` | 201 | — |
+| Marca y descripción reales (válido) | `{ ..., "sku": "QA-X-7", "brand": "K&N", "description": "Para motor 1.6 (2015-2020), 4 cil." }` | 201 | — |
 | Precio negativo | `{ ..., "sku": "QA-X-3", "cost_price": -1 }` | 422 | `VALIDATION_ERROR` |
 | Categoría inactiva | `part_category_id` de una categoría con `is_active: false` | 422 | `PART_CATEGORY_INACTIVE` |
 | Body vacío | `{}` | 422 | `VALIDATION_ERROR` |
