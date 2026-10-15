@@ -8,6 +8,7 @@ use App\Enums\WorkOrderStatus;
 use App\Exceptions\WorkOrderException;
 use App\Models\Mechanic;
 use App\Models\WorkOrder;
+use App\Models\WorkOrderCommission;
 use App\Models\WorkOrderItem;
 use App\Models\WorkOrderItemMechanic;
 use Carbon\CarbonInterface;
@@ -16,7 +17,8 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Asignación de mecánicos a los trabajos de la OT y cálculo de comisiones.
- * La comisión no se persiste: se calcula sobre el total del ítem (sin IVA).
+ * Con la OT abierta la comisión se calcula sobre el total del ítem (sin IVA);
+ * al completarla se congela en work_order_commissions (FASE 14).
  */
 class WorkOrderCommissionService
 {
@@ -269,37 +271,112 @@ class WorkOrderCommissionService
     }
 
     /**
-     * Comisiones liquidables de un mecánico: trabajos completados de OT
-     * completadas dentro del período (por fecha de cierre de la OT).
-     *
-     * @return array{lines: Collection, total: string}
+     * Congela las comisiones al completar la OT: una fila por mecánico en cada
+     * trabajo completado. Se ejecuta dentro de la transacción de complete().
      */
-    public function mechanicCommissions(Mechanic $mechanic, CarbonInterface $from, CarbonInterface $to): array
+    public function freeze(WorkOrder $workOrder): void
     {
-        $lines = WorkOrderItemMechanic::query()
-            ->where('mechanic_id', $mechanic->id)
-            ->whereHas('workOrderItem', function ($item) use ($from, $to) {
-                $item->where('status', WorkOrderItemStatus::COMPLETED)
-                    ->whereHas('workOrder', function ($workOrder) use ($from, $to) {
-                        $workOrder->where('status', WorkOrderStatus::COMPLETED)
-                            ->whereBetween('completed_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()]);
-                    });
-            })
-            ->with(['workOrderItem.budgetItem', 'workOrderItem.workOrder'])
-            ->get()
-            ->sortBy(fn ($line) => $line->workOrderItem->workOrder->completed_at)
-            ->values();
+        $workOrder->loadMissing(['items.budgetItem', 'items.mechanicAssignments']);
 
-        $total = $lines->reduce(
-            fn (string $sum, WorkOrderItemMechanic $line) => bcadd(
-                $sum,
-                $line->commissionAmount((string) ($line->workOrderItem->budgetItem?->total ?? '0')),
-                2
-            ),
+        $earnedAt = $workOrder->completed_at ?? now();
+
+        foreach ($workOrder->items as $item) {
+            if (!$item->isCommissionable() || $item->status !== WorkOrderItemStatus::COMPLETED) {
+                continue;
+            }
+
+            $base = (string) ($item->budgetItem?->total ?? '0');
+
+            foreach ($item->mechanicAssignments as $assignment) {
+                WorkOrderCommission::create([
+                    'work_order_id' => $workOrder->id,
+                    'work_order_item_id' => $item->id,
+                    'mechanic_id' => $assignment->mechanic_id,
+                    'base_amount' => $base,
+                    'share_percentage' => $assignment->share_percentage,
+                    'commission_percentage' => $assignment->commission_percentage,
+                    'amount' => $assignment->commissionAmount($base),
+                    'earned_at' => $earnedAt,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Comisiones congeladas de un mecánico dentro del período (por fecha de
+     * cierre de la OT). $status: null (todas), 'pending' o 'settled'.
+     *
+     * @return array{lines: Collection, total: string, total_pending: string, total_settled: string}
+     */
+    public function mechanicCommissions(
+        Mechanic $mechanic,
+        CarbonInterface $from,
+        CarbonInterface $to,
+        ?string $status = null
+    ): array {
+        $lines = WorkOrderCommission::query()
+            ->where('mechanic_id', $mechanic->id)
+            ->whereBetween('earned_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])
+            ->when($status === 'pending', fn ($query) => $query->pending())
+            ->when($status === 'settled', fn ($query) => $query->settled())
+            ->with(['workOrder', 'workOrderItem'])
+            ->orderBy('earned_at')
+            ->orderBy('id')
+            ->get();
+
+        $sum = fn ($lines) => $lines->reduce(
+            fn (string $total, WorkOrderCommission $line) => bcadd($total, $line->amount, 2),
             '0.00'
         );
 
-        return ['lines' => $lines, 'total' => $total];
+        return [
+            'lines' => $lines,
+            'total' => $sum($lines),
+            'total_pending' => $sum($lines->whereNull('settled_at')),
+            'total_settled' => $sum($lines->whereNotNull('settled_at')),
+        ];
+    }
+
+    /**
+     * Marca como liquidadas las comisiones pendientes del mecánico en el período.
+     *
+     * @return array{count: int, total: string, settled_at: CarbonInterface}
+     */
+    public function settle(Mechanic $mechanic, CarbonInterface $from, CarbonInterface $to, int $userId): array
+    {
+        return DB::transaction(function () use ($mechanic, $from, $to, $userId) {
+
+            $lines = WorkOrderCommission::query()
+                ->where('mechanic_id', $mechanic->id)
+                ->pending()
+                ->whereBetween('earned_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])
+                ->lockForUpdate()
+                ->get();
+
+            if ($lines->isEmpty()) {
+                throw new WorkOrderException(
+                    'No hay comisiones pendientes de liquidar en el período indicado.',
+                    422,
+                    'MECHANIC_COMMISSIONS_NOTHING_TO_SETTLE'
+                );
+            }
+
+            $settledAt = now();
+
+            WorkOrderCommission::whereKey($lines->modelKeys())->update([
+                'settled_at' => $settledAt,
+                'settled_by' => $userId,
+            ]);
+
+            return [
+                'count' => $lines->count(),
+                'total' => $lines->reduce(
+                    fn (string $total, WorkOrderCommission $line) => bcadd($total, $line->amount, 2),
+                    '0.00'
+                ),
+                'settled_at' => $settledAt,
+            ];
+        });
     }
 
     private function ensureEditable(WorkOrder $workOrder, WorkOrderItem $item): void

@@ -18,7 +18,8 @@ class WorkOrderService
 {
     public function __construct(
         protected WorkOrderPartService $workOrderPartService,
-        protected WorkOrderCommissionService $commissionService
+        protected WorkOrderCommissionService $commissionService,
+        protected WorkOrderClosingService $closingService
     ) {
     }
 
@@ -209,9 +210,9 @@ class WorkOrderService
         });
     }
 
-    public function complete(WorkOrder $workOrder): WorkOrder
+    public function complete(WorkOrder $workOrder, ?int $closedBy = null): WorkOrder
     {
-        return DB::transaction(function () use ($workOrder) {
+        return DB::transaction(function () use ($workOrder, $closedBy) {
 
             $workOrder->refresh();
 
@@ -254,6 +255,9 @@ class WorkOrderService
                 'status' => WorkOrderStatus::COMPLETED,
                 'completed_at' => now(),
             ]);
+
+            // Cierre económico: congela venta, costos, margen y comisiones.
+            $this->closingService->close($workOrder, $closedBy);
 
             return $workOrder->load([
                 'reception',

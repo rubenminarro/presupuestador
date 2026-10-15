@@ -26,7 +26,7 @@ class RoleController extends Controller implements HasMiddleware
             new Middleware('permission:roles.show', only: ['show']),
             new Middleware('permission:roles.update', only: ['update']),
             new Middleware('permission:roles.destroy', only: ['destroy']),
-            new Middleware('permission:roles.permissionsGroupedByModule', only: ['permissionsGroupedByModule']),
+            new Middleware('permission:roles.permissions-grouped-by-module', only: ['permissionsGroupedByModule']),
         ];
     }
 

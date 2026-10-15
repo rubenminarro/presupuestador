@@ -45,9 +45,10 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
     Route::apiResource('permissions', PermissionController::class);
 
+    // Antes del apiResource: si no, roles/{role} captura la URL.
+    Route::get('/roles/permissions-grouped-by-module', [RoleController::class, 'permissionsGroupedByModule'])->name('roles.permissions-grouped-by-module');
+
     Route::apiResource('roles', RoleController::class);
-    
-    Route::get('/roles/permissions-grouped-by-module', [RoleController::class, 'permissionsGroupedByModule']); /* hay que revisar*/
 
     Route::apiResource('mechanics', MechanicController::class);
 
@@ -118,6 +119,8 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::patch('work-orders/{workOrder}/items/{item}/mechanics/{mechanic}/hours', [WorkOrderItemMechanicController::class, 'logHours'])->name('work-orders.items.mechanics.hours');
 
     Route::get('mechanics/{mechanic}/commissions', [MechanicCommissionController::class, 'index'])->name('mechanics.commissions.index');
+
+    Route::post('mechanics/{mechanic}/commissions/settle', [MechanicCommissionController::class, 'settle'])->name('mechanics.commissions.settle');
 
     Route::get('service-categories', [ServiceCategoryController::class, 'index'])->name('service-categories.index');
 

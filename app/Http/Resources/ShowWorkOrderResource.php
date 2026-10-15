@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\WorkOrderClosingService;
 use App\Services\WorkOrderCommissionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -63,6 +64,13 @@ class ShowWorkOrderResource extends JsonResource
                     fn ($line) => $line->status->isOpen()
                 )->count(),
             ]),
+            // Costos y margen: solo con permiso (no visibles para el mecánico).
+            'economic_summary' => $this->when(
+                $this->relationLoaded('items') &&
+                $this->relationLoaded('parts') &&
+                (bool) $request->user()?->can('work-orders.view-economics'),
+                fn () => app(WorkOrderClosingService::class)->summary($this->resource)
+            ),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

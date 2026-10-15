@@ -262,7 +262,7 @@ class WorkOrderController extends Controller implements HasMiddleware
 
     public function complete(WorkOrder $workOrder)
     {
-        $workOrder = $this->workOrderService->complete($workOrder);
+        $workOrder = $this->workOrderService->complete($workOrder, Auth::id());
 
         return $this->successResponse(
             'Orden de trabajo completada correctamente.',

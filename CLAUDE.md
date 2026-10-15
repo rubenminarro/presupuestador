@@ -366,6 +366,7 @@ También se completaron:
 * **FASE 11 — Inventario:** ver sección 2.24.
 * **FASE 12 — Repuestos en WorkOrder:** ver sección 2.25.
 * **FASE 13 — Servicios y mano de obra (comisiones):** ver sección 2.26.
+* **FASE 14 — Cierre económico de WorkOrder:** ver sección 2.27.
 
 ---
 
@@ -521,6 +522,40 @@ Permisos: `service-categories.index`, `services.index|store|show|update|destroy|
 `work-order-item-mechanics.index|sync|log-hours|log-hours-any`, `mechanic-commissions.index|view-all`
 (mecánico: `service-categories.index`, `services.index|show`, `work-order-item-mechanics.index|log-hours`,
 `mechanic-commissions.index`).
+
+---
+
+# 2.27 Cierre económico de WorkOrder (FASE 14)
+
+Componentes:
+
+```text
+WorkOrderClosing        (work_order_closings: 1 por OT; presupuestado, venta, costos, margen, is_cost_complete)
+WorkOrderCommission     (work_order_commissions: comisión congelada por mecánico y trabajo;
+                         earned_at = completed_at de la OT; settled_at/settled_by = liquidación)
+WorkOrderClosingService (close, summary)
+WorkOrderCommissionService (+ freeze, settle; mechanicCommissions lee las comisiones congeladas)
+```
+
+Reglas (importes sin IVA):
+
+* `WorkOrderService::complete()` cierra la OT en la misma transacción: congela el cierre y las comisiones.
+* Venta = mano de obra/servicios no cancelados (total del BudgetItem) + repuestos **usados** (neto × `unit_price`,
+  incluidos los extras no presupuestados) + repuestos fuera de catálogo no cancelados (total presupuestado).
+* Costo = repuestos (neto × `unit_cost`) + mano de obra conocida (horas × `hour_cost`) + comisiones.
+* Si falta algún costo (horas sin cargar, mecánico sin `hour_cost`, repuesto fuera de catálogo) el margen se calcula
+  con los costos conocidos y `is_cost_complete = false`. `cost.labor` es `null` si no hay ninguna hora cargada.
+* `variance` = venta real − presupuestado. `margin_percentage` = margen / venta × 100 (`null` si la venta es 0).
+* OT abierta: `economic_summary` se calcula a la fecha (`is_final = false`). OT completada: se lee del cierre congelado.
+* `economic_summary` solo se incluye con `work-orders.view-economics` (el mecánico no ve costos ni margen).
+* Comisiones: el reporte lee `work_order_commissions` (`?status=pending|settled`, `total_pending`, `total_settled`).
+  `POST mechanics/{mechanic}/commissions/settle` (`date_from`, `date_to` obligatorios) liquida las pendientes del
+  período; sin pendientes → `MECHANIC_COMMISSIONS_NOTHING_TO_SETTLE`.
+* La migración 000037 cierra las OT ya completadas con sus datos actuales (`closed_by = null`).
+
+Endpoints: `GET work-orders/{workOrder}` (`economic_summary`), `GET mechanics/{mechanic}/commissions`,
+`POST mechanics/{mechanic}/commissions/settle`.
+Permisos: `work-orders.view-economics`, `mechanic-commissions.settle` (solo administrador).
 
 ---
 
@@ -2789,13 +2824,13 @@ La arquitectura objetivo es:
 El proyecto actualmente se encuentra en:
 
 ```text
-FASE 13 — SERVICIOS Y MANO DE OBRA (COMISIONES) — CERRADA
+FASE 14 — CIERRE ECONÓMICO DE WORKORDER — CERRADA
 ```
 
 El siguiente gran paso recomendado es:
 
 ```text
-FASE 14 — CIERRE ECONÓMICO DE WORKORDER (congelar costos de repuestos y comisiones; margen)
+FASE 15 — FACTURACIÓN (Invoice a partir del cierre congelado de la OT)
 ```
 
 El orden de trabajo de abajo se usó para las FASES 10 a 13 y sigue siendo la referencia.
@@ -2896,13 +2931,13 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 [✓] Catálogo de servicios (FASE 13)
 [✓] Asignación de mecánicos y comisiones (FASE 13)
 [✓] Tiempo estimado, horas reales y costo del mecánico — opcionales (FASE 13)
+[✓] Cierre económico, margen y liquidación de comisiones (FASE 14)
 ```
 
 ## Próximo
 
 ```text
 [ ] Compras
-[ ] Cierre económico
 [ ] Facturación
 [ ] Pagos
 [ ] Entrega

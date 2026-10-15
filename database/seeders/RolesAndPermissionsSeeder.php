@@ -154,6 +154,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'work-orders.resume',
             'work-orders.complete',
             'work-orders.cancel',
+            'work-orders.view-economics',
 
             /* work order item permissions */
             'work-order-items.start',
@@ -208,6 +209,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'work-order-item-mechanics.log-hours-any',
             'mechanic-commissions.index',
             'mechanic-commissions.view-all',
+            'mechanic-commissions.settle',
 
             /* inventory permissions */
             'inventory.index',

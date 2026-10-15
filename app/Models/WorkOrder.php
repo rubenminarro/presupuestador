@@ -6,6 +6,7 @@ use App\Enums\WorkOrderStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class WorkOrder extends Model
@@ -61,5 +62,15 @@ class WorkOrder extends Model
     public function parts(): HasMany
     {
         return $this->hasMany(WorkOrderPart::class);
+    }
+
+    public function closing(): HasOne
+    {
+        return $this->hasOne(WorkOrderClosing::class);
+    }
+
+    public function commissions(): HasMany
+    {
+        return $this->hasMany(WorkOrderCommission::class);
     }
 }

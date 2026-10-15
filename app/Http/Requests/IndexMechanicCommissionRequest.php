@@ -16,6 +16,7 @@ class IndexMechanicCommissionRequest extends FormRequest
         return [
             'date_from' => ['nullable', 'date_format:Y-m-d'],
             'date_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+            'status' => ['nullable', 'in:pending,settled'],
         ];
     }
 
@@ -28,6 +29,9 @@ class IndexMechanicCommissionRequest extends FormRequest
             'date_to' => [
                 'date_format' => 'La fecha hasta debe tener el formato AAAA-MM-DD.',
                 'after_or_equal' => 'La fecha hasta debe ser igual o posterior a la fecha desde.',
+            ],
+            'status' => [
+                'in' => 'El estado debe ser pending o settled.',
             ],
         ];
     }
