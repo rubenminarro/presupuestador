@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\DB;
 class WorkOrderService
 {
     public function __construct(
-        protected WorkOrderPartService $workOrderPartService
+        protected WorkOrderPartService $workOrderPartService,
+        protected WorkOrderCommissionService $commissionService
     ) {
     }
 
@@ -87,6 +88,9 @@ class WorkOrderService
                     'notes' => null,
                 ]);
 
+                // Mano de obra / servicio: asignado al responsable (100%).
+                $this->commissionService->assignResponsible($workOrder, $workOrderItem);
+
                 // Repuesto presupuestado con vínculo al catálogo: se reserva stock.
                 if ($budgetItem->type === BudgetItemType::PART && $budgetItem->part_id) {
                     $this->workOrderPartService->createFromBudgetItem(
@@ -104,6 +108,8 @@ class WorkOrderService
                 'mechanic',
                 'creator',
                 'items',
+                'items.budgetItem',
+                'items.mechanicAssignments.mechanic.user',
                 'parts.part',
             ]);
         });
@@ -134,6 +140,8 @@ class WorkOrderService
                 'mechanic',
                 'creator',
                 'items',
+                'items.budgetItem',
+                'items.mechanicAssignments.mechanic.user',
                 'parts.part',
             ]);
         });
@@ -163,6 +171,8 @@ class WorkOrderService
                 'mechanic',
                 'creator',
                 'items',
+                'items.budgetItem',
+                'items.mechanicAssignments.mechanic.user',
                 'parts.part',
             ]);
         });
@@ -192,6 +202,8 @@ class WorkOrderService
                 'mechanic',
                 'creator',
                 'items',
+                'items.budgetItem',
+                'items.mechanicAssignments.mechanic.user',
                 'parts.part',
             ]);
         });
@@ -249,6 +261,8 @@ class WorkOrderService
                 'mechanic',
                 'creator',
                 'items',
+                'items.budgetItem',
+                'items.mechanicAssignments.mechanic.user',
                 'parts.part',
             ]);
         });
@@ -293,6 +307,8 @@ class WorkOrderService
                 'mechanic',
                 'creator',
                 'items',
+                'items.budgetItem',
+                'items.mechanicAssignments.mechanic.user',
                 'parts.part',
             ]);
         });
@@ -449,12 +465,19 @@ class WorkOrderService
     {
         $this->ensureEditable($workOrder);
 
-        $workOrder->update([
-            'mechanic_id' => $data['mechanic_id'] ?? $workOrder->mechanic_id,
-            'notes' => $data['notes'] ?? $workOrder->notes,
-        ]);
+        return DB::transaction(function () use ($workOrder, $data) {
 
-        return $workOrder->fresh();
+            $previousMechanicId = (int) $workOrder->mechanic_id;
+
+            $workOrder->update([
+                'mechanic_id' => $data['mechanic_id'] ?? $workOrder->mechanic_id,
+                'notes' => $data['notes'] ?? $workOrder->notes,
+            ]);
+
+            $this->commissionService->reassignResponsible($workOrder, $previousMechanicId);
+
+            return $workOrder->fresh();
+        });
     }
 
 }

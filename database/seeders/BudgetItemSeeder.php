@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Budget;
 use App\Models\BudgetItem;
+use App\Models\Service;
 use App\Enums\BudgetItemType;
 use App\Services\BudgetService;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,7 @@ class BudgetItemSeeder extends Seeder
                 'target_status' => 'DRAFT',
                 'items' => [
                     [
-                        'type' => BudgetItemType::SERVICE,
+                        'type' => BudgetItemType::LABOR,
                         'description' => 'Mano de obra - Cambio de bujes y amortiguadores',
                         'quantity' => 1,
                         'unit_price' => 350000,
@@ -84,9 +85,15 @@ class BudgetItemSeeder extends Seeder
                 }
 
                 foreach ($payload['items'] as $item) {
+                    // Los servicios de ejemplo se vinculan al catálogo por nombre.
+                    $serviceId = $item['type'] === BudgetItemType::SERVICE
+                        ? Service::where('name', $item['description'])->value('id')
+                        : null;
+
                     BudgetItem::create([
                         'budget_id' => $budget->id,
                         'type' => $item['type'],
+                        'service_id' => $serviceId,
                         'description' => $item['description'],
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['unit_price'],

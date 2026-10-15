@@ -5,10 +5,12 @@ namespace App\Services;
 use App\Models\Budget;
 use App\Models\BudgetItem;
 use App\Models\Part;
+use App\Models\Service;
 use App\Enums\BudgetItemType;
 use App\Enums\BudgetStatus;
 use App\Exceptions\BudgetException;
 use App\Exceptions\PartException;
+use App\Exceptions\ServiceException;
 use App\Support\Decimal;
 
 class BudgetService
@@ -141,10 +143,10 @@ class BudgetService
     }
 
     /**
-     * Normaliza el vínculo con el catálogo de un ítem: solo los ítems de
-     * tipo repuesto llevan part_id, y el repuesto debe poder utilizarse.
+     * Normaliza el vínculo con los catálogos de un ítem: solo los repuestos
+     * llevan part_id y solo los servicios llevan service_id.
      */
-    public function preparePartItem(array $data, ?BudgetItem $item = null): array
+    public function prepareCatalogItem(array $data, ?BudgetItem $item = null): array
     {
         $type = isset($data['type'])
             ? BudgetItemType::from($data['type'])
@@ -152,10 +154,72 @@ class BudgetService
 
         if ($type !== BudgetItemType::PART) {
             $data['part_id'] = null;
+        }
 
+        if ($type !== BudgetItemType::SERVICE) {
+            $data['service_id'] = null;
+        }
+
+        // Los repuestos no llevan tiempo estimado.
+        if ($type === BudgetItemType::PART) {
+            $data['estimated_hours'] = null;
+        }
+
+        return match ($type) {
+            BudgetItemType::PART => $this->preparePartItem($data, $item),
+            BudgetItemType::SERVICE => $this->prepareServiceItem($data, $item),
+            default => $data,
+        };
+    }
+
+    /**
+     * El servicio debe estar activo; sin precio informado se usa el
+     * precio estándar del catálogo.
+     */
+    private function prepareServiceItem(array $data, ?BudgetItem $item): array
+    {
+        $serviceId = array_key_exists('service_id', $data) ? $data['service_id'] : $item?->service_id;
+
+        if (!$serviceId) {
             return $data;
         }
 
+        $service = Service::findOrFail($serviceId);
+
+        if (!$service->isUsable()) {
+            throw new ServiceException(
+                'El servicio está inactivo y no puede presupuestarse.',
+                422,
+                'SERVICE_NOT_USABLE'
+            );
+        }
+
+        $serviceChanged = $item === null || (int) $item->service_id !== (int) $serviceId;
+
+        if (!isset($data['unit_price']) && $serviceChanged) {
+            $data['unit_price'] = $service->standard_price;
+        }
+
+        // Tiempo estimado: el informado, o el del catálogo × cantidad cuando
+        // cambia el servicio o la cantidad.
+        $quantityChanged = isset($data['quantity'])
+            && ($item === null || bccomp((string) $data['quantity'], (string) $item->quantity, 2) !== 0);
+
+        if (
+            !array_key_exists('estimated_hours', $data) &&
+            ($serviceChanged || $quantityChanged) &&
+            $service->estimated_hours !== null
+        ) {
+            $quantity = (string) ($data['quantity'] ?? $item?->quantity);
+
+            $data['estimated_hours'] = Decimal::round(bcmul($service->estimated_hours, $quantity, 8), 2);
+        }
+
+        return $data;
+    }
+
+    private function preparePartItem(array $data, ?BudgetItem $item): array
+    {
         $partId = array_key_exists('part_id', $data) ? $data['part_id'] : $item?->part_id;
 
         if (!$partId) {

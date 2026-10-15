@@ -82,6 +82,8 @@ class WorkOrderItemController extends Controller implements HasMiddleware
             'creator',
             'items',
             'items.budgetItem',
+            'items.mechanicAssignments.mechanic.user',
+            'parts.part',
         ]);
     }
 }

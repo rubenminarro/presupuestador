@@ -19,11 +19,15 @@ class WorkOrderItemResource extends JsonResource
             ],
             'description' => $this->description,
             'quantity' => $this->quantity,
+            'estimated_hours' => $this->whenLoaded('budgetItem', fn () => $this->budgetItem?->estimated_hours),
             'status' => [
                 'value' => $this->status?->value,
                 'label' => $this->status?->label(),
             ],
             'notes' => $this->notes,
+            'mechanics' => WorkOrderItemMechanicResource::collection(
+                $this->whenLoaded('mechanicAssignments')
+            ),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

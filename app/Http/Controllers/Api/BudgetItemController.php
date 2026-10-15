@@ -35,7 +35,7 @@ class BudgetItemController extends Controller implements HasMiddleware
 
     public function index(Budget $budget)
     {
-        $items = $budget->items()->with('part')->latest()->get();
+        $items = $budget->items()->with(['part', 'service'])->latest()->get();
 
         return $this->successResponse(
             'Items del presupuesto obtenidos exitosamente.',
@@ -48,7 +48,7 @@ class BudgetItemController extends Controller implements HasMiddleware
 
         $this->budgetService->ensureEditable($budget);
 
-        $data = $this->budgetService->preparePartItem($request->validated());
+        $data = $this->budgetService->prepareCatalogItem($request->validated());
 
         $data['total'] = $data['quantity'] * $data['unit_price'];
 
@@ -58,7 +58,7 @@ class BudgetItemController extends Controller implements HasMiddleware
 
         return $this->successResponse(
             'El item del presupuesto creado exitosamente.',
-            new BudgetItemResource($item->load('part')),
+            new BudgetItemResource($item->load(['part', 'service'])),
             201
         );
     }
@@ -68,7 +68,7 @@ class BudgetItemController extends Controller implements HasMiddleware
         
         return $this->successResponse(
             'El item del presupuesto recuperado exitosamente.',
-            new BudgetItemResource($item->load('part'))
+            new BudgetItemResource($item->load(['part', 'service']))
         );
     }
 
@@ -77,7 +77,7 @@ class BudgetItemController extends Controller implements HasMiddleware
         
         $this->budgetService->ensureEditable($budget);
 
-        $data = $this->budgetService->preparePartItem($request->validated(), $item);
+        $data = $this->budgetService->prepareCatalogItem($request->validated(), $item);
 
         $quantity = $data['quantity'] ?? $item->quantity;
         $unitPrice = $data['unit_price'] ?? $item->unit_price;
@@ -90,7 +90,7 @@ class BudgetItemController extends Controller implements HasMiddleware
 
         return $this->successResponse(
             'El item del presupuesto actualizado exitosamente.',
-            new BudgetItemResource($item->refresh()->load('part'))
+            new BudgetItemResource($item->refresh()->load(['part', 'service']))
         );
     }
 

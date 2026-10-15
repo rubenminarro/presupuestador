@@ -23,6 +23,10 @@ use App\Http\Controllers\Api\MechanicController;
 use App\Http\Controllers\Api\WorkOrderController;
 use App\Http\Controllers\Api\WorkOrderItemController;
 use App\Http\Controllers\Api\WorkOrderPartController;
+use App\Http\Controllers\Api\WorkOrderItemMechanicController;
+use App\Http\Controllers\Api\MechanicCommissionController;
+use App\Http\Controllers\Api\ServiceCategoryController;
+use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\PartCategoryController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\PartController;
@@ -106,6 +110,24 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::post('work-orders/{workOrder}/items/{item}/complete', [WorkOrderItemController::class, 'complete'])->name('work-orders.items.complete');
 
     Route::post('work-orders/{workOrder}/items/{item}/cancel', [WorkOrderItemController::class, 'cancel'])->name('work-orders.items.cancel');
+
+    Route::get('work-orders/{workOrder}/items/{item}/mechanics', [WorkOrderItemMechanicController::class, 'index'])->name('work-orders.items.mechanics.index');
+
+    Route::put('work-orders/{workOrder}/items/{item}/mechanics', [WorkOrderItemMechanicController::class, 'sync'])->name('work-orders.items.mechanics.sync');
+
+    Route::patch('work-orders/{workOrder}/items/{item}/mechanics/{mechanic}/hours', [WorkOrderItemMechanicController::class, 'logHours'])->name('work-orders.items.mechanics.hours');
+
+    Route::get('mechanics/{mechanic}/commissions', [MechanicCommissionController::class, 'index'])->name('mechanics.commissions.index');
+
+    Route::get('service-categories', [ServiceCategoryController::class, 'index'])->name('service-categories.index');
+
+    Route::apiResource('services', ServiceController::class)->except(['update']);
+
+    Route::patch('services/{service}', [ServiceController::class, 'update'])->name('services.update');
+
+    Route::post('services/{service}/activate', [ServiceController::class, 'activate'])->name('services.activate');
+
+    Route::post('services/{service}/deactivate', [ServiceController::class, 'deactivate'])->name('services.deactivate');
 
     Route::get('work-orders/{workOrder}/parts', [WorkOrderPartController::class, 'index'])->name('work-orders.parts.index');
 

@@ -1,6 +1,6 @@
 # Guía de pruebas con Postman — Presupuestador
 
-**Alcance:** API al cierre de la FASE 12, más los ajustes posteriores (rutas de vehículos por cliente, permisos de ítems de presupuesto y `error_code` del login).
+**Alcance:** API al cierre de la FASE 13 (servicios y comisiones), incluidos los ajustes posteriores a la FASE 12 (rutas de vehículos por cliente, permisos de ítems de presupuesto, `error_code` del login y validaciones de texto).
 **Uso:** ejecutar los requests en el orden indicado; cada sección parte de los datos creados en las anteriores.
 
 ---
@@ -19,7 +19,7 @@
 | `token_admin` | (vacío) |
 | `token_mec` | (vacío) |
 
-Variables de IDs que se irán completando con las respuestas: `client_id`, `client2_id`, `brand_id`, `model_id`, `vehicle_id`, `vehicle2_id`, `reception_id`, `budget_id`, `budget_item_id`, `mechanic_id`, `work_order_id`, `work_order_item_id`, `category_id`, `supplier_id`, `part_id`, `part_unit_id`, `part_status_id`, `movement_id`, `budget2_id`, `work_order2_id`, `work_order3_id`, `work_order4_id`, `line_id`, `extra_line_id`, `pending_line_id`.
+Variables de IDs que se irán completando con las respuestas: `client_id`, `client2_id`, `brand_id`, `model_id`, `vehicle_id`, `vehicle2_id`, `reception_id`, `budget_id`, `budget_item_id`, `mechanic_id`, `work_order_id`, `work_order_item_id`, `category_id`, `supplier_id`, `part_id`, `part_unit_id`, `part_status_id`, `movement_id`, `budget2_id`, `work_order2_id`, `work_order3_id`, `work_order4_id`, `line_id`, `extra_line_id`, `pending_line_id`, `mec1_id`, `mec2_id`, `service_category_id`, `service_id`, `service_unused_id`, `budget5_id`, `work_order5_id`, `labor_item_id`, `service_item_id`, `work_order6_id`.
 
 ### 0.2 Headers comunes
 
@@ -1115,6 +1115,272 @@ Verificar en la respuesta de completar: `parts_summary.total_cost` `"165.00"`, `
 
 1. Sobre una OT en progreso con una línea consumida, descontinuar el repuesto: `POST {{base_url}}/parts/{id}/discontinue`.
 2. `POST .../parts/{línea}/return` con `{ "quantity": 1, "reason": "Sobrante" }` → `200` (permitido).
+
+---
+
+## FASE 13 — Servicios y mano de obra (comisiones)
+
+Token: administrador salvo indicación.
+
+> Comisión de cada mecánico = **total del ítem (sin IVA) × % del trabajo × % de comisión del mecánico**. Solo los ítems `labor` y `service` generan comisión.
+> Tiempo estimado, horas reales y costo del mecánico son **opcionales**: sin horas cargadas, el costo de mano de obra es `null` (desconocido), nunca cero.
+> Costo por hora del seeder: `MEC-001` **45.000**, `MEC-002` **35.000**.
+
+Mecánicos del seeder: `MEC-001` (usuario `jperez`, comisión **10%**) y `MEC-002` (usuario `cgomez`, comisión **8.5%**). En `GET {{base_url}}/mechanics` guardar sus IDs en `mec1_id` y `mec2_id`.
+
+### 13.1 Categorías de servicio
+
+`GET {{base_url}}/service-categories`
+
+Esperado: `200`, lista con `id`, `code`, `name`, `services_count` (General, Mecánica, Chapería, Electricidad, Neumáticos). Guardar el ID de "Mecánica" → `service_category_id`.
+
+### 13.2 Crear servicio
+
+`POST {{base_url}}/services`
+
+```json
+{
+  "service_category_id": {{service_category_id}},
+  "name": "Alineacion QA",
+  "description": "Incluye 4 ruedas (hasta R17).",
+  "standard_price": 120000,
+  "estimated_hours": 1.5
+}
+```
+
+Esperado: `201`, `code` `SRV-XXXXXX`, `status.value` `active`, `standard_price` `"120000.00"`, `estimated_hours` `"1.50"` → `service_id`.
+
+| Caso | Body | HTTP | error_code |
+|---|---|---|---|
+| Body vacío | `{}` | 422 | `VALIDATION_ERROR` (`service_category_id`, `name`, `standard_price`) |
+| Nombre con carácter no permitido | `{ "service_category_id": {{service_category_id}}, "name": "Servicio @promo", "standard_price": 1 }` | 422 | `VALIDATION_ERROR` (`errors.name`) |
+| Precio negativo | `{ "service_category_id": {{service_category_id}}, "name": "Servicio QA", "standard_price": -1 }` | 422 | `VALIDATION_ERROR` |
+| Horas estimadas negativas | `{ "service_category_id": {{service_category_id}}, "name": "Servicio QA", "standard_price": 1, "estimated_hours": -1 }` | 422 | `VALIDATION_ERROR` (`errors.estimated_hours`) |
+| Categoría inexistente | `{ "service_category_id": 999999, "name": "Servicio QA", "standard_price": 1 }` | 422 | `VALIDATION_ERROR` |
+
+Crear un segundo servicio descartable (mismo body con `"name": "Servicio Descartable QA"`) → `service_unused_id`.
+
+### 13.3 Consultar, editar y cambiar estado
+
+| Caso | Método / Endpoint | Body | HTTP | Resultado / error_code |
+|---|---|---|---|---|
+| Listar | `GET {{base_url}}/services?search=QA` | — | 200 | Servicios QA con `meta.pagination` |
+| Filtrar por categoría | `GET {{base_url}}/services?category_id={{service_category_id}}` | — | 200 | Filtrado |
+| Detalle | `GET {{base_url}}/services/{{service_id}}` | — | 200 | Incluye `description` y `category` |
+| Editar (PATCH parcial) | `PATCH {{base_url}}/services/{{service_id}}` | `{ "standard_price": 125000 }` | 200 | `standard_price` `"125000.00"`, el resto sin cambios |
+| Volver al precio original | `PATCH {{base_url}}/services/{{service_id}}` | `{ "standard_price": 120000 }` | 200 | — |
+| Activar uno activo | `POST {{base_url}}/services/{{service_unused_id}}/activate` | — | 422 | `SERVICE_INVALID_STATUS_TRANSITION` |
+| Desactivar | `POST {{base_url}}/services/{{service_unused_id}}/deactivate` | — | 200 | `inactive` |
+| Eliminar sin uso | `DELETE {{base_url}}/services/{{service_unused_id}}` | — | 200 | — |
+| Inexistente | `GET {{base_url}}/services/999999` | — | 404 | `RESOURCE_NOT_FOUND` |
+
+### 13.4 Permisos del mecánico sobre el catálogo (token = `{{token_mec}}`)
+
+| Caso | Método / Endpoint | Body | HTTP | error_code |
+|---|---|---|---|---|
+| Ver categorías | `GET {{base_url}}/service-categories` | — | 200 | — |
+| Ver servicios | `GET {{base_url}}/services` | — | 200 | — |
+| Crear | `POST {{base_url}}/services` | body de 13.2 | 403 | `FORBIDDEN` |
+| Editar | `PATCH {{base_url}}/services/{{service_id}}` | `{ "standard_price": 1 }` | 403 | `FORBIDDEN` |
+| Desactivar | `POST {{base_url}}/services/{{service_id}}/deactivate` | — | 403 | `FORBIDDEN` |
+
+### 13.5 Presupuesto con servicio del catálogo
+
+1. `POST {{base_url}}/budgets` con `{ "reception_id": {{reception_id}} }` → `budget5_id`.
+2. Servicio **sin precio** (toma el de lista):
+
+`POST {{base_url}}/budgets/{{budget5_id}}/items`
+
+```json
+{
+  "type": "service",
+  "service_id": {{service_id}},
+  "description": "Alineacion y balanceo",
+  "quantity": 1
+}
+```
+
+Esperado: `201`, `service.code` informado, `unit_price` `"120000.00"`, `total` `"120000.00"`, `estimated_hours` `"1.50"` (catálogo × cantidad).
+
+3. Mano de obra fuera de catálogo:
+
+```json
+{
+  "type": "labor",
+  "description": "Cambio de embrague",
+  "quantity": 1,
+  "unit_price": 200000,
+  "estimated_hours": 3
+}
+```
+
+Esperado: `201`, `estimated_hours` `"3.00"` (opcional en mano de obra).
+
+Casos de error y borde (sobre `{{budget5_id}}` en `draft`):
+
+| Caso | Body | HTTP | error_code |
+|---|---|---|---|
+| Servicio con precio propio (válido) | `{ "type": "service", "service_id": {{service_id}}, "description": "Con descuento", "quantity": 1, "unit_price": 100000 }` | 201 | — (`unit_price` `"100000.00"`) |
+| `service_id` en ítem que no es servicio | `{ "type": "labor", "service_id": {{service_id}}, "description": "Mano de obra", "quantity": 1, "unit_price": 100 }` | 422 | `VALIDATION_ERROR` (`errors.service_id`) |
+| Servicio sin catálogo ni precio | `{ "type": "service", "description": "Trabajo especial", "quantity": 1 }` | 422 | `VALIDATION_ERROR` (`errors.unit_price`) |
+| Repuesto con horas estimadas | `{ "type": "part", "description": "Filtro", "quantity": 1, "unit_price": 1, "estimated_hours": 1 }` | 422 | `VALIDATION_ERROR` (`errors.estimated_hours`) |
+| Servicio con horas propias (válido) | `{ "type": "service", "service_id": {{service_id}}, "description": "Compleja", "quantity": 1, "estimated_hours": 2.25 }` | 201 | — (`estimated_hours` `"2.25"`) |
+| Servicio inactivo | crear y desactivar un servicio; `{ "type": "service", "service_id": <inactivo>, "description": "X", "quantity": 1 }` | 422 | `SERVICE_NOT_USABLE` |
+| Eliminar un servicio usado | `DELETE {{base_url}}/services/{{service_id}}` | 409 | `SERVICE_IN_USE` |
+
+> Eliminar los ítems "Con descuento" y "Compleja" si se crearon, para mantener los valores esperados (`DELETE {{base_url}}/budgets/{{budget5_id}}/items/{id}`). Al cambiar un ítem a `"type": "labor"` con `PATCH`, el `service_id` vuelve a `null`.
+
+4. `POST {{base_url}}/budgets/{{budget5_id}}/send` → `200`; `POST .../approve` → `200`.
+
+### 13.6 OT con asignación automática al responsable
+
+`POST {{base_url}}/work-orders`
+
+```json
+{
+  "budget_id": {{budget5_id}},
+  "mechanic_id": {{mec1_id}}
+}
+```
+
+Esperado: `201` → `work_order5_id`. Guardar el ID del ítem `labor` → `labor_item_id` y del ítem `service` → `service_item_id`.
+
+| Verificación | Valor esperado |
+|---|---|
+| `items[labor].mechanics[0]` | `mechanic_id` = `{{mec1_id}}`, `share_percentage` `"100.00"`, `commission_percentage` `"10.00"`, `commission_amount` `"20000.00"` |
+| `items[service].mechanics[0].commission_amount` | `"12000.00"` |
+| `commission_summary.total_commission` | `"32000.00"` |
+| `commission_summary.is_final` | `false` |
+| `items[labor].estimated_hours` / `items[service].estimated_hours` | `"3.00"` / `"1.50"` |
+| `labor_summary` | `estimated_hours` `"4.50"`, `actual_hours` `null`, `labor_cost` `null`, `assignments_without_hours` `2`, `is_complete` `false` |
+
+Cargar horas con la OT `pending`: `PATCH {{base_url}}/work-orders/{{work_order5_id}}/items/{{labor_item_id}}/mechanics/{{mec1_id}}/hours` con `{ "hours": 1 }` → `422 WORK_ORDER_ITEM_HOURS_NOT_EDITABLE`.
+
+### 13.7 Cambio de responsable (OT `pending`)
+
+`PATCH {{base_url}}/work-orders/{{work_order5_id}}`
+
+```json
+{ "mechanic_id": {{mec2_id}} }
+```
+
+Esperado: `200`; los dos trabajos pasan a `{{mec2_id}}` con `commission_percentage` `"8.50"`.
+
+Volver al responsable original: `{ "mechanic_id": {{mec1_id}} }` → `200`, trabajos otra vez en `{{mec1_id}}` con `"10.00"`.
+
+### 13.8 Asignar varios mecánicos a un trabajo
+
+Ver la asignación actual: `GET {{base_url}}/work-orders/{{work_order5_id}}/items/{{labor_item_id}}/mechanics` → `200`, un mecánico.
+
+**Partes iguales** (sin porcentajes):
+
+`PUT {{base_url}}/work-orders/{{work_order5_id}}/items/{{labor_item_id}}/mechanics`
+
+```json
+{
+  "mechanics": [
+    { "mechanic_id": {{mec1_id}} },
+    { "mechanic_id": {{mec2_id}} }
+  ]
+}
+```
+
+Esperado: `200`; `{{mec1_id}}` 50% → `commission_amount` `"10000.00"`; `{{mec2_id}}` 50% → `"8500.00"`.
+
+**Reparto personalizado:**
+
+```json
+{
+  "mechanics": [
+    { "mechanic_id": {{mec1_id}}, "share_percentage": 70 },
+    { "mechanic_id": {{mec2_id}}, "share_percentage": 30 }
+  ]
+}
+```
+
+Esperado: `200`; `{{mec1_id}}` → `"14000.00"` (200.000 × 70% × 10%); `{{mec2_id}}` → `"5100.00"` (200.000 × 30% × 8.5%).
+En `GET {{base_url}}/work-orders/{{work_order5_id}}`: `commission_summary.total_commission` `"31100.00"`.
+
+Casos de error (la asignación 70/30 no debe cambiar):
+
+| Caso | Body | HTTP | error_code |
+|---|---|---|---|
+| No suman 100 | `{ "mechanics": [ { "mechanic_id": {{mec1_id}}, "share_percentage": 60 }, { "mechanic_id": {{mec2_id}}, "share_percentage": 30 } ] }` | 422 | `WORK_ORDER_ITEM_SHARES_INVALID` |
+| Porcentaje solo en algunos | `{ "mechanics": [ { "mechanic_id": {{mec1_id}}, "share_percentage": 60 }, { "mechanic_id": {{mec2_id}} } ] }` | 422 | `WORK_ORDER_ITEM_SHARES_INVALID` |
+| Mecánico repetido | `{ "mechanics": [ { "mechanic_id": {{mec1_id}} }, { "mechanic_id": {{mec1_id}} } ] }` | 422 | `VALIDATION_ERROR` |
+| Lista vacía | `{ "mechanics": [] }` | 422 | `VALIDATION_ERROR` |
+| Mecánico inexistente | `{ "mechanics": [ { "mechanic_id": 999999 } ] }` | 422 | `VALIDATION_ERROR` |
+| Mecánico no activo | `PATCH {{base_url}}/mechanics/{{mec2_id}}` con `{ "status": "on_leave" }`, luego asignarlo | 422 | `MECHANIC_NOT_ACTIVE` (después volver `{ "status": "active" }`) |
+| Ítem de tipo repuesto | `PUT {{base_url}}/work-orders/{{work_order4_id}}/items/{id del ítem part}/mechanics` (OT de 12.15, en progreso) con `{ "mechanics": [ { "mechanic_id": {{mec1_id}} } ] }` | 422 | `WORK_ORDER_ITEM_NOT_COMMISSIONABLE` |
+| Ítem de otra OT | `PUT {{base_url}}/work-orders/{{work_order5_id}}/items/999999/mechanics` | 404 | `RESOURCE_NOT_FOUND` |
+
+**Comisión copiada al asignar:** `PATCH {{base_url}}/mechanics/{{mec1_id}}` con `{ "commission_percentage": 50 }` → la asignación existente sigue mostrando `"10.00"`. Volver a `{ "commission_percentage": 10 }`.
+
+### 13.9 Permisos del mecánico sobre las asignaciones (token = `{{token_mec}}`)
+
+| Caso | Método / Endpoint | Body | HTTP | error_code |
+|---|---|---|---|---|
+| Ver asignación | `GET {{base_url}}/work-orders/{{work_order5_id}}/items/{{labor_item_id}}/mechanics` | — | 200 | — |
+| Cambiar asignación | `PUT .../items/{{labor_item_id}}/mechanics` | `{ "mechanics": [ { "mechanic_id": {{mec1_id}} } ] }` | 403 | `FORBIDDEN` |
+
+### 13.10 Completar la OT y consultar comisiones
+
+Token: administrador.
+
+1. `POST {{base_url}}/work-orders/{{work_order5_id}}/start` → `200`.
+
+**Horas reales (opcional)** — `PATCH {{base_url}}/work-orders/{{work_order5_id}}/items/{item}/mechanics/{mechanic}/hours`:
+
+| Token | Ítem / mecánico | Body | HTTP | Resultado / error_code |
+|---|---|---|---|---|
+| `{{token_mec}}` (MEC-001) | `{{labor_item_id}}` / `{{mec1_id}}` | `{ "hours": 2.5 }` | 200 | `hours` `"2.50"`, `hour_cost` `"45000.00"`, `labor_cost` `"112500.00"` |
+| `{{token_mec}}` (MEC-001) | `{{labor_item_id}}` / `{{mec2_id}}` | `{ "hours": 1 }` | 403 | `FORBIDDEN` (solo carga las propias) |
+| `{{token_admin}}` | `{{labor_item_id}}` / `{{mec2_id}}` | `{ "hours": 1 }` | 200 | `labor_cost` `"35000.00"` |
+| `{{token_admin}}` | `{{service_item_id}}` / `{{mec1_id}}` | `{ "hours": 1 }` | 200 | `labor_cost` `"45000.00"` |
+| `{{token_admin}}` | `{{service_item_id}}` / `{{mec2_id}}` (no asignado) | `{ "hours": 1 }` | 404 | `RESOURCE_NOT_FOUND` |
+| `{{token_admin}}` | `{{labor_item_id}}` / `{{mec1_id}}` | `{ "hours": 0 }` | 422 | `VALIDATION_ERROR` |
+| `{{token_admin}}` | `{{labor_item_id}}` / `{{mec1_id}}` | `{}` | 422 | `VALIDATION_ERROR` (`hours` es obligatorio; `null` lo borra) |
+
+Verificar en `GET {{base_url}}/work-orders/{{work_order5_id}}`: `labor_summary` → `estimated_hours` `"4.50"`, `actual_hours` `"4.50"`, `labor_cost` `"192500.00"`, `assignments_without_hours` `0`, `is_complete` `true`.
+
+> Borrar horas: el mismo `PATCH` con `{ "hours": null }` deja `hours` y `labor_cost` en `null`. Si se prueba, volver a cargarlas para mantener los valores esperados.
+
+2. Iniciar y completar cada ítem (`.../items/{id}/start` y `.../items/{id}/complete`).
+3. `POST {{base_url}}/work-orders/{{work_order5_id}}/complete` → `200`, `commission_summary.is_final` `true`, `total_commission` `"31100.00"`.
+
+**Reporte de comisiones** (por defecto, el mes en curso):
+
+| Caso | Método / Endpoint | HTTP | Resultado / error_code |
+|---|---|---|---|
+| MEC-001 | `GET {{base_url}}/mechanics/{{mec1_id}}/commissions` | 200 | `total_commission` `"26000.00"` (14.000 mano de obra + 12.000 servicio), 2 líneas con `work_order_code`, `item_total`, `share_percentage`, `commission_amount` |
+| MEC-002 | `GET {{base_url}}/mechanics/{{mec2_id}}/commissions` | 200 | `total_commission` `"5100.00"`, 1 línea |
+| Período sin OT | `GET {{base_url}}/mechanics/{{mec1_id}}/commissions?date_from=2020-01-01&date_to=2020-01-31` | 200 | `lines` vacío, `total_commission` `"0.00"` |
+| Fecha mal formada | `GET {{base_url}}/mechanics/{{mec1_id}}/commissions?date_from=ayer` | 422 | `VALIDATION_ERROR` |
+| Rango invertido | `GET {{base_url}}/mechanics/{{mec1_id}}/commissions?date_from=2026-02-01&date_to=2026-01-01` | 422 | `VALIDATION_ERROR` |
+| Mecánico inexistente | `GET {{base_url}}/mechanics/999999/commissions` | 404 | `RESOURCE_NOT_FOUND` |
+
+> Los totales esperados asumen que no hay otras OT completadas en el mes con trabajos de MEC-001 o MEC-002. Las OT de las fases anteriores (por ejemplo `{{work_order_id}}` y `{{work_order2_id}}`) quedaron asignadas a su responsable por la migración: si alguna es de MEC-001 o MEC-002, sus líneas también aparecen y suman al total.
+
+**Mecánico consultando** (token = `{{token_mec}}`, usuario `jperez` = MEC-001):
+
+| Caso | Método / Endpoint | HTTP | error_code |
+|---|---|---|---|
+| Sus comisiones | `GET {{base_url}}/mechanics/{{mec1_id}}/commissions` | 200 | — |
+| Comisiones de otro | `GET {{base_url}}/mechanics/{{mec2_id}}/commissions` | 403 | `FORBIDDEN` |
+
+### 13.11 OT completada: asignaciones y horas congeladas
+
+| Caso | Método / Endpoint | Body | HTTP | error_code |
+|---|---|---|---|---|
+| Cambiar asignación | `PUT {{base_url}}/work-orders/{{work_order5_id}}/items/{{labor_item_id}}/mechanics` | `{ "mechanics": [ { "mechanic_id": {{mec1_id}} } ] }` | 422 | `WORK_ORDER_ITEM_MECHANICS_NOT_EDITABLE` |
+| Cargar horas | `PATCH {{base_url}}/work-orders/{{work_order5_id}}/items/{{labor_item_id}}/mechanics/{{mec1_id}}/hours` | `{ "hours": 5 }` | 422 | `WORK_ORDER_ITEM_HOURS_NOT_EDITABLE` |
+
+### 13.12 Trabajo cancelado no genera comisión
+
+1. Repetir 13.5 y 13.6 con un presupuesto nuevo → `work_order6_id`.
+2. Iniciar la OT y cancelar el ítem `service`: `POST .../items/{id}/cancel` → `200`.
+3. `PUT` de mecánicos sobre ese ítem → `422 WORK_ORDER_ITEM_MECHANICS_NOT_EDITABLE`.
+4. Completar el ítem `labor` y la OT → `commission_summary.total_commission` `"20000.00"` (el servicio cancelado no suma).
 
 ---
 

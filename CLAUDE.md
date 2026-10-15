@@ -365,6 +365,7 @@ También se completaron:
 * **FASE 10 — Catálogo de repuestos:** `Part`, `PartCategory`, `Supplier`, pivote `part_supplier`.
 * **FASE 11 — Inventario:** ver sección 2.24.
 * **FASE 12 — Repuestos en WorkOrder:** ver sección 2.25.
+* **FASE 13 — Servicios y mano de obra (comisiones):** ver sección 2.26.
 
 ---
 
@@ -453,6 +454,73 @@ Endpoints: `GET|POST work-orders/{workOrder}/parts`, `PATCH work-orders/{workOrd
 `POST work-orders/{workOrder}/parts/{part}/reserve|consume|return|cancel`.
 Permisos: `work-order-parts.index|store|update|reserve|consume|return|cancel`
 (mecánico: `index`, `consume`, `return`).
+
+---
+
+# 2.26 Servicios y mano de obra (FASE 13)
+
+Contexto del negocio: los mecánicos cobran **sueldo + comisión**, un trabajo puede hacerlo **más de un mecánico**
+y la mano de obra se cobra con **lista de precios**. Hoy **el taller no registra horas**: por eso el tiempo estimado,
+las horas reales y el costo del mecánico (13.4–13.6) son **opcionales**. Sin horas, el costo de mano de obra es
+desconocido (`null`), nunca cero.
+
+Tipos de ítem:
+
+```text
+service  → trabajo del catálogo (precio de lista, ajustable)      → genera comisión
+labor    → mano de obra fuera de catálogo, cotizada a mano        → genera comisión
+part     → repuesto (FASE 12)                                     → no genera comisión
+```
+
+Componentes:
+
+```text
+Service                   (catálogo: code SRV-XXXXXX, service_category_id, name, description, standard_price,
+                           estimated_hours nullable, status)
+ServiceStatus             (active, inactive)
+ServiceCategory           (existente; reutilizada como categoría del catálogo; API solo lectura)
+budget_items.service_id   (nullable; solo type = service; sin unit_price toma standard_price)
+budget_items.estimated_hours (nullable; service: catálogo × cantidad si no se informa; labor: opcional; part: prohibido)
+WorkOrderItemMechanic     (work_order_item_mechanics: mecánico, share_percentage, commission_percentage copiado,
+                           hours nullable, hour_cost nullable copiado de Mechanic.hour_cost)
+ServiceCatalogService     (create, update, activate, deactivate, delete)
+WorkOrderCommissionService (assignResponsible, syncItemMechanics, reassignResponsible, logHours,
+                            summary, laborSummary, mechanicCommissions)
+ServiceException
+```
+
+Reglas:
+
+* Al crear la OT, cada ítem `labor`/`service` queda asignado al mecánico responsable con 100%.
+* Cambiar el responsable de una OT `pending` reasigna los trabajos que tenía al 100%.
+* `PUT .../items/{item}/mechanics` reemplaza la asignación completa: sin porcentajes → partes iguales
+  (33.33/33.33/33.34); con porcentajes → todos deben informarlo y sumar 100 (`WORK_ORDER_ITEM_SHARES_INVALID`).
+* Solo mecánicos `active` (`MECHANIC_NOT_ACTIVE`); solo ítems `labor`/`service` (`WORK_ORDER_ITEM_NOT_COMMISSIONABLE`).
+* No editable con la OT `completed`/`cancelled` ni con el ítem `cancelled` (`WORK_ORDER_ITEM_MECHANICS_NOT_EDITABLE`).
+* `commission_percentage` se copia al asignar; un mecánico que sigue asignado conserva su copia.
+* Comisión = `budget_item.total` (sin IVA) × `share_percentage` × `commission_percentage`. Se calcula, no se persiste
+  (la FASE 14 la congela). Los ítems cancelados no generan comisión.
+* Reporte liquidable: ítems `completed` de OT `completed`, filtrado por `completed_at` (por defecto, el mes en curso).
+  Sin `mechanic-commissions.view-all` cada mecánico ve solo las propias (403 `FORBIDDEN`).
+* Servicio inactivo no se presupuesta (`SERVICE_NOT_USABLE`); usado en presupuestos no se elimina (`SERVICE_IN_USE`).
+* Horas reales: `PATCH .../items/{item}/mechanics/{mechanic}/hours` (`hours` o `null` para borrar). Solo con la OT
+  `in_progress`/`paused` y el ítem no cancelado (`WORK_ORDER_ITEM_HOURS_NOT_EDITABLE`). Mecánico no asignado → 404
+  (scoped binding vía `WorkOrderItem::mechanics()`). Sin `log-hours-any` cada mecánico carga solo las propias.
+* `hour_cost` se copia en la primera carga y se conserva; si `Mechanic.hour_cost` es 0 queda `null` (costo desconocido).
+* Costo de mano de obra = `hours × hour_cost`; completar la OT no exige horas.
+
+Endpoints: `GET service-categories`, CRUD `services` (+ `activate`/`deactivate`),
+`GET|PUT work-orders/{workOrder}/items/{item}/mechanics`,
+`PATCH work-orders/{workOrder}/items/{item}/mechanics/{mechanic}/hours`,
+`GET mechanics/{mechanic}/commissions?date_from&date_to`.
+`ShowWorkOrderResource` incluye `items[].estimated_hours`, `items[].mechanics` (con `hours`, `hour_cost`, `labor_cost`),
+`commission_summary` (`is_final`, `total_commission`, `by_mechanic`) y `labor_summary` (`estimated_hours`,
+`actual_hours`, `labor_cost`, `assignments_without_hours`, `assignments_without_cost`, `is_complete`).
+
+Permisos: `service-categories.index`, `services.index|store|show|update|destroy|change-status`,
+`work-order-item-mechanics.index|sync|log-hours|log-hours-any`, `mechanic-commissions.index|view-all`
+(mecánico: `service-categories.index`, `services.index|show`, `work-order-item-mechanics.index|log-hours`,
+`mechanic-commissions.index`).
 
 ---
 
@@ -2721,16 +2789,16 @@ La arquitectura objetivo es:
 El proyecto actualmente se encuentra en:
 
 ```text
-FASE 12 — REPUESTOS EN WORKORDER — CERRADA
+FASE 13 — SERVICIOS Y MANO DE OBRA (COMISIONES) — CERRADA
 ```
 
 El siguiente gran paso recomendado es:
 
 ```text
-FASE 13 — CATÁLOGO DE SERVICIOS Y MANO DE OBRA
+FASE 14 — CIERRE ECONÓMICO DE WORKORDER (congelar costos de repuestos y comisiones; margen)
 ```
 
-El orden de trabajo de abajo se usó para las FASES 10 a 12 y sigue siendo la referencia.
+El orden de trabajo de abajo se usó para las FASES 10 a 13 y sigue siendo la referencia.
 
 Pero la implementación debe comenzar primero por el **diseño funcional y de datos**, no directamente por el CRUD.
 
@@ -2825,14 +2893,15 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 [✓] Inventario (FASE 11)
 [✓] Movimientos de inventario (FASE 11)
 [✓] Repuestos utilizados en WorkOrder (FASE 12)
+[✓] Catálogo de servicios (FASE 13)
+[✓] Asignación de mecánicos y comisiones (FASE 13)
+[✓] Tiempo estimado, horas reales y costo del mecánico — opcionales (FASE 13)
 ```
 
 ## Próximo
 
 ```text
 [ ] Compras
-[ ] Servicios
-[ ] Mano de obra avanzada
 [ ] Cierre económico
 [ ] Facturación
 [ ] Pagos

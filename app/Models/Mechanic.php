@@ -44,4 +44,14 @@ class Mechanic extends Model
     {
         return $this->hasMany(WorkOrder::class);
     }
+
+    public function workOrderItemAssignments(): HasMany
+    {
+        return $this->hasMany(WorkOrderItemMechanic::class);
+    }
+
+    public function fullName(): string
+    {
+        return trim(($this->user?->first_name ?? '') . ' ' . ($this->user?->last_name ?? ''));
+    }
 }

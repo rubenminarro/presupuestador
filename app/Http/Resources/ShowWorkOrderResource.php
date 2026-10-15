@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\WorkOrderCommissionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -37,6 +38,14 @@ class ShowWorkOrderResource extends JsonResource
             ),
             'items' => WorkOrderItemResource::collection(
                 $this->whenLoaded('items')
+            ),
+            'commission_summary' => $this->when(
+                $this->relationLoaded('items'),
+                fn () => app(WorkOrderCommissionService::class)->summary($this->resource)
+            ),
+            'labor_summary' => $this->when(
+                $this->relationLoaded('items'),
+                fn () => app(WorkOrderCommissionService::class)->laborSummary($this->resource)
             ),
             'parts' => WorkOrderPartResource::collection(
                 $this->whenLoaded('parts')

@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             BrandSeeder::class,
             VehicleModelSeeder::class,
             ServiceCategorySeeder::class,
+            ServiceSeeder::class,
             CheckListItemSeeder::class,
             CheckListItemServiceCategorySeeder::class,
             ClientsSeeder::class,

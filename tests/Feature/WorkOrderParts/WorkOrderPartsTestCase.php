@@ -55,7 +55,7 @@ abstract class WorkOrderPartsTestCase extends InventoryTestCase
         $this->postJson("/api/budgets/{$budgetId}/approve")->assertOk();
     }
 
-    protected function createMechanic(): Mechanic
+    protected function createMechanic(array $attributes = []): Mechanic
     {
         $user = User::create([
             'name' => 'mec_' . Str::random(6),
@@ -65,9 +65,12 @@ abstract class WorkOrderPartsTestCase extends InventoryTestCase
             'password' => bcrypt('password'),
         ]);
 
+        $user->assignRole('mechanic');
+
         return Mechanic::create([
             'user_id' => $user->id,
             'employee_code' => 'EMP-' . Str::upper(Str::random(5)),
+            ...$attributes,
         ]);
     }
 

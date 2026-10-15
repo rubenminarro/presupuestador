@@ -27,6 +27,12 @@ class UpdateBudgetItemRequest extends FormRequest
                 'integer',
                 Rule::exists('parts', 'id')->whereNull('deleted_at'),
             ],
+            'service_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('services', 'id')->whereNull('deleted_at'),
+            ],
             'description' => [
                 'sometimes',
                 'string',
@@ -42,6 +48,14 @@ class UpdateBudgetItemRequest extends FormRequest
                 'sometimes',
                 'numeric',
                 'min:0',
+            ],
+            'estimated_hours' => [
+                'sometimes',
+                'nullable',
+                'numeric',
+                'decimal:0,2',
+                'min:0',
+                'max:999999.99',
             ],
             'notes' => [
                 'sometimes',
@@ -62,6 +76,10 @@ class UpdateBudgetItemRequest extends FormRequest
                 'integer' => 'El ID del repuesto debe ser un número entero.',
                 'exists' => 'El repuesto seleccionado no existe.',
             ],
+            'service_id' => [
+                'integer' => 'El ID del servicio debe ser un número entero.',
+                'exists' => 'El servicio seleccionado no existe.',
+            ],
             'description' => [
                 'string' => 'La descripción debe ser una cadena de texto.',
                 'max' => 'La descripción no puede exceder los 255 caracteres.',
@@ -74,6 +92,12 @@ class UpdateBudgetItemRequest extends FormRequest
             'unit_price' => [
                 'numeric' => 'El precio unitario debe ser un número.',
                 'min' => 'El precio unitario no puede ser negativo.',
+            ],
+            'estimated_hours' => [
+                'numeric' => 'Las horas estimadas deben ser un número.',
+                'decimal' => 'Las horas estimadas admiten como máximo 2 decimales.',
+                'min' => 'Las horas estimadas no pueden ser negativas.',
+                'max' => 'Las horas estimadas superan el máximo permitido.',
             ],
             'notes' => [
                 'string' => 'Las notas deben ser una cadena de texto.',

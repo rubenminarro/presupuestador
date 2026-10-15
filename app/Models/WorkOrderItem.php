@@ -44,4 +44,29 @@ class WorkOrderItem extends Model
     {
         return $this->hasMany(WorkOrderPart::class);
     }
+
+    public function mechanicAssignments()
+    {
+        // chaperone: cada asignación conoce su ítem (y su budgetItem) sin consultas extra.
+        return $this->hasMany(WorkOrderItemMechanic::class)->chaperone('workOrderItem');
+    }
+
+    /**
+     * Mecánicos asignados (vía work_order_item_mechanics). Permite el scoped
+     * binding de /items/{item}/mechanics/{mechanic}: 404 si no está asignado.
+     */
+    public function mechanics()
+    {
+        return $this->belongsToMany(Mechanic::class, 'work_order_item_mechanics')
+            ->withPivot(['id', 'share_percentage', 'commission_percentage', 'hours', 'hour_cost'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Solo la mano de obra y los servicios generan comisión.
+     */
+    public function isCommissionable(): bool
+    {
+        return in_array($this->type, [WorkOrderItemType::LABOR, WorkOrderItemType::SERVICE], true);
+    }
 }

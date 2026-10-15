@@ -27,6 +27,12 @@ class StoreBudgetItemRequest extends FormRequest
                 'integer',
                 Rule::exists('parts', 'id')->whereNull('deleted_at'),
             ],
+            'service_id' => [
+                Rule::prohibitedIf(fn () => $this->input('type') !== BudgetItemType::SERVICE->value),
+                'nullable',
+                'integer',
+                Rule::exists('services', 'id')->whereNull('deleted_at'),
+            ],
             'description' => [
                 'required',
                 'string',
@@ -39,9 +45,21 @@ class StoreBudgetItemRequest extends FormRequest
                 'min:0.01',
             ],
             'unit_price' => [
-                'required',
+                // Un servicio del catálogo toma su precio estándar si no se informa.
+                Rule::requiredIf(fn () => !(
+                    $this->input('type') === BudgetItemType::SERVICE->value && $this->filled('service_id')
+                )),
+                'nullable',
                 'numeric',
                 'min:0',
+            ],
+            'estimated_hours' => [
+                Rule::prohibitedIf(fn () => $this->input('type') === BudgetItemType::PART->value),
+                'nullable',
+                'numeric',
+                'decimal:0,2',
+                'min:0',
+                'max:999999.99',
             ],
             'notes' => [
                 'nullable',
@@ -65,6 +83,11 @@ class StoreBudgetItemRequest extends FormRequest
                 'integer' => 'El ID del repuesto debe ser un número entero.',
                 'exists' => 'El repuesto seleccionado no existe.',
             ],
+            'service_id' => [
+                'prohibited' => 'Solo los ítems de tipo servicio pueden vincularse a un servicio del catálogo.',
+                'integer' => 'El ID del servicio debe ser un número entero.',
+                'exists' => 'El servicio seleccionado no existe.',
+            ],
             'description' => [
                 'required' => 'La descripción es obligatoria.',
                 'string' => 'La descripción debe ser una cadena de texto.',
@@ -80,6 +103,13 @@ class StoreBudgetItemRequest extends FormRequest
                 'required' => 'El precio unitario es obligatorio.',
                 'numeric' => 'El precio unitario debe ser un número.',
                 'min' => 'El precio unitario no puede ser negativo.',
+            ],
+            'estimated_hours' => [
+                'prohibited' => 'Los repuestos no llevan tiempo estimado.',
+                'numeric' => 'Las horas estimadas deben ser un número.',
+                'decimal' => 'Las horas estimadas admiten como máximo 2 decimales.',
+                'min' => 'Las horas estimadas no pueden ser negativas.',
+                'max' => 'Las horas estimadas superan el máximo permitido.',
             ],
             'notes' => [
                 'string' => 'Las notas deben ser una cadena de texto.',

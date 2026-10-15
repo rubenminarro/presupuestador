@@ -15,10 +15,12 @@ class BudgetItem extends Model
         'budget_id',
         'type',
         'part_id',
+        'service_id',
         'description',
         'quantity',
         'unit_price',
         'total',
+        'estimated_hours',
         'notes',
     ];
 
@@ -27,6 +29,7 @@ class BudgetItem extends Model
         'quantity' => 'decimal:2',
         'unit_price' => 'decimal:2',
         'total' => 'decimal:2',
+        'estimated_hours' => 'decimal:2',
     ];
 
     public function budget(): BelongsTo
@@ -37,6 +40,11 @@ class BudgetItem extends Model
     public function part(): BelongsTo
     {
         return $this->belongsTo(Part::class)->withTrashed();
+    }
+
+    public function service(): BelongsTo
+    {
+        return $this->belongsTo(Service::class)->withTrashed();
     }
 
     public function workOrderItems(): HasMany

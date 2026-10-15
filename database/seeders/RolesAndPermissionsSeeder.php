@@ -192,6 +192,23 @@ class RolesAndPermissionsSeeder extends Seeder
             'parts.change-status',
             'parts.manage-suppliers',
 
+            /* service catalog permissions */
+            'service-categories.index',
+            'services.index',
+            'services.store',
+            'services.show',
+            'services.update',
+            'services.destroy',
+            'services.change-status',
+
+            /* work order item mechanics / commissions */
+            'work-order-item-mechanics.index',
+            'work-order-item-mechanics.sync',
+            'work-order-item-mechanics.log-hours',
+            'work-order-item-mechanics.log-hours-any',
+            'mechanic-commissions.index',
+            'mechanic-commissions.view-all',
+
             /* inventory permissions */
             'inventory.index',
             'inventory.show',
@@ -253,6 +270,14 @@ class RolesAndPermissionsSeeder extends Seeder
             'work-order-parts.index',
             'work-order-parts.consume',
             'work-order-parts.return',
+
+            'service-categories.index',
+            'services.index',
+            'services.show',
+
+            'work-order-item-mechanics.index',
+            'work-order-item-mechanics.log-hours',
+            'mechanic-commissions.index',
 
             'parts.index',
             'parts.show',
