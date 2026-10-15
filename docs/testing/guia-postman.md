@@ -1,6 +1,6 @@
 # Guía de pruebas con Postman — Presupuestador
 
-**Alcance:** API al cierre de la FASE 13 (servicios y comisiones), incluidos los ajustes posteriores a la FASE 12 (rutas de vehículos por cliente, permisos de ítems de presupuesto, `error_code` del login y validaciones de texto).
+**Alcance:** API al cierre de la FASE 14 (cierre económico de la OT y liquidación de comisiones), incluidos los ajustes posteriores a la FASE 12 (rutas de vehículos por cliente, permisos de ítems de presupuesto, `error_code` del login y validaciones de texto) y la corrección de `roles/permissions-grouped-by-module`.
 **Uso:** ejecutar los requests en el orden indicado; cada sección parte de los datos creados en las anteriores.
 
 ---
@@ -19,7 +19,7 @@
 | `token_admin` | (vacío) |
 | `token_mec` | (vacío) |
 
-Variables de IDs que se irán completando con las respuestas: `client_id`, `client2_id`, `brand_id`, `model_id`, `vehicle_id`, `vehicle2_id`, `reception_id`, `budget_id`, `budget_item_id`, `mechanic_id`, `work_order_id`, `work_order_item_id`, `category_id`, `supplier_id`, `part_id`, `part_unit_id`, `part_status_id`, `movement_id`, `budget2_id`, `work_order2_id`, `work_order3_id`, `work_order4_id`, `line_id`, `extra_line_id`, `pending_line_id`, `mec1_id`, `mec2_id`, `service_category_id`, `service_id`, `service_unused_id`, `budget5_id`, `work_order5_id`, `labor_item_id`, `service_item_id`, `work_order6_id`.
+Variables de IDs que se irán completando con las respuestas: `client_id`, `client2_id`, `brand_id`, `model_id`, `vehicle_id`, `vehicle2_id`, `reception_id`, `budget_id`, `budget_item_id`, `mechanic_id`, `work_order_id`, `work_order_item_id`, `category_id`, `supplier_id`, `part_id`, `part_unit_id`, `part_status_id`, `movement_id`, `budget2_id`, `work_order2_id`, `work_order3_id`, `work_order4_id`, `line_id`, `extra_line_id`, `pending_line_id`, `mec1_id`, `mec2_id`, `service_category_id`, `service_id`, `service_unused_id`, `budget5_id`, `work_order5_id`, `labor_item_id`, `service_item_id`, `work_order6_id`, `work_order7_id`.
 
 ### 0.2 Headers comunes
 
@@ -122,6 +122,17 @@ Esperado: `200`. Copiar `data.token` en `token_mec`.
 | **Body** | ninguno |
 
 Esperado: `200`. Repetir cualquier request con el mismo token → `401 UNAUTHENTICATED`. Después, volver a ejecutar B.1 y B.2.
+
+### B.5 Permisos agrupados por módulo
+
+`GET {{base_url}}/roles/permissions-grouped-by-module`
+
+Esperado: `200`, `data` es una lista de `{ "module": "...", "list": [ { "id", "name" } ] }` (incluye los módulos `roles` y `work-orders`).
+
+| Caso | Token | HTTP | error_code |
+|---|---|---|---|
+| Administrador | `{{token_admin}}` | 200 | — (antes de la corrección devolvía `404 RESOURCE_NOT_FOUND`) |
+| Mecánico | `{{token_mec}}` | 403 | `FORBIDDEN` |
 
 ---
 
@@ -1381,6 +1392,117 @@ Verificar en `GET {{base_url}}/work-orders/{{work_order5_id}}`: `labor_summary` 
 2. Iniciar la OT y cancelar el ítem `service`: `POST .../items/{id}/cancel` → `200`.
 3. `PUT` de mecánicos sobre ese ítem → `422 WORK_ORDER_ITEM_MECHANICS_NOT_EDITABLE`.
 4. Completar el ítem `labor` y la OT → `commission_summary.total_commission` `"20000.00"` (el servicio cancelado no suma).
+
+---
+
+## FASE 14 — Cierre económico de la OT
+
+Token: administrador salvo indicación. Parte de las OT `{{work_order5_id}}` (13.10) y `{{work_order6_id}}` (13.12), ya completadas.
+
+> Importes **sin IVA**. Al completar la OT se congelan venta, costos, margen y comisiones.
+> **Venta** = mano de obra/servicios no cancelados (total presupuestado) + repuestos **usados** (cantidad neta × `unit_price`, incluidos los extras) + repuestos fuera de catálogo no cancelados.
+> **Costo** = repuestos (neta × `unit_cost`) + mano de obra (horas × costo por hora) + comisiones.
+> Si falta algún costo (horas sin cargar, repuesto fuera de catálogo), el margen se calcula con los costos conocidos y `is_cost_complete` es `false`.
+> `economic_summary` solo aparece con el permiso `work-orders.view-economics` (el mecánico no lo ve).
+
+### 14.1 Resumen provisional de una OT abierta
+
+Repetir 13.5 y 13.6 con un presupuesto nuevo (servicio 120.000 + mano de obra 200.000, responsable `{{mec1_id}}`) → `work_order7_id`. No iniciarla.
+
+`GET {{base_url}}/work-orders/{{work_order7_id}}`
+
+| Campo de `data.economic_summary` | Valor esperado |
+|---|---|
+| `is_final` / `closed_at` | `false` / `null` |
+| `budgeted` | `labor` `"320000.00"`, `parts` `"0.00"`, `total` `"320000.00"` |
+| `sale.total` / `variance` | `"320000.00"` / `"0.00"` |
+| `cost` | `parts` `"0.00"`, `labor` `null` (sin horas), `commissions` `"32000.00"`, `total` `"32000.00"` |
+| `gross_margin` / `margin_percentage` | `"288000.00"` / `"90.00"` |
+| `is_cost_complete` | `false` |
+
+### 14.2 Cierre congelado de una OT completada
+
+`GET {{base_url}}/work-orders/{{work_order5_id}}`
+
+| Campo de `data.economic_summary` | Valor esperado |
+|---|---|
+| `is_final` / `closed_at` | `true` / fecha de cierre (= `completed_at`) |
+| `budgeted.total` / `sale.total` / `variance` | `"320000.00"` / `"320000.00"` / `"0.00"` |
+| `cost.labor` | `"192500.00"` (2,5 h × 45.000 + 1 h × 35.000 + 1 h × 45.000) |
+| `cost.commissions` | `"31100.00"` (14.000 + 5.100 + 12.000) |
+| `cost.total` | `"223600.00"` |
+| `gross_margin` / `margin_percentage` | `"96400.00"` / `"30.13"` |
+| `is_cost_complete` | `true` |
+
+**Congelado:** `PATCH {{base_url}}/mechanics/{{mec1_id}}` con `{ "commission_percentage": 50, "hour_cost": 99999 }` → repetir el `GET`: el `economic_summary` no cambia. Volver a `{ "commission_percentage": 10, "hour_cost": 45000 }`.
+
+### 14.3 Trabajo cancelado y sin horas
+
+`GET {{base_url}}/work-orders/{{work_order6_id}}`
+
+| Campo de `data.economic_summary` | Valor esperado |
+|---|---|
+| `budgeted.total` / `sale.total` | `"320000.00"` / `"200000.00"` (el servicio cancelado no se vende) |
+| `variance` | `"-120000.00"` |
+| `cost` | `labor` `null`, `commissions` `"20000.00"`, `total` `"20000.00"` |
+| `gross_margin` / `margin_percentage` | `"180000.00"` / `"90.00"` |
+| `is_cost_complete` | `false` (no se cargaron horas) |
+
+### 14.4 Repuestos en el cierre (opcional)
+
+Sobre `{{work_order2_id}}` (FASE 12, completada): `sale.parts` = suma de `parts[].total_price` (cantidad neta usada, incluido el extra) y `cost.parts` = suma de `parts[].total_cost`; ambos coinciden con `parts_summary.total_price` / `total_cost`. Un ítem `part` sin catálogo suma su total presupuestado a `sale.parts` y deja `is_cost_complete` en `false`.
+
+### 14.5 Permisos del mecánico (token = `{{token_mec}}`)
+
+| Caso | Método / Endpoint | HTTP | Resultado / error_code |
+|---|---|---|---|
+| Ver la OT | `GET {{base_url}}/work-orders/{{work_order5_id}}` | 200 | Sin la clave `economic_summary` (sí `commission_summary` y `labor_summary`) |
+| Liquidar comisiones | `POST {{base_url}}/mechanics/{{mec1_id}}/commissions/settle` (body de 14.7) | 403 | `FORBIDDEN` |
+
+### 14.6 Reporte de comisiones con estado
+
+El reporte lee las comisiones congeladas al completar cada OT. Nuevos campos: `total_pending`, `total_settled` y `lines[].settled_at`.
+
+| Caso | Método / Endpoint | HTTP | Resultado / error_code |
+|---|---|---|---|
+| MEC-001 | `GET {{base_url}}/mechanics/{{mec1_id}}/commissions` | 200 | `total_commission` `"46000.00"` (26.000 de `{{work_order5_id}}` + 20.000 de `{{work_order6_id}}`), `total_pending` `"46000.00"`, `total_settled` `"0.00"`, 3 líneas con `settled_at` `null` |
+| MEC-002 | `GET {{base_url}}/mechanics/{{mec2_id}}/commissions` | 200 | `total_commission` `"5100.00"`, pendiente |
+| Solo pendientes | `GET {{base_url}}/mechanics/{{mec1_id}}/commissions?status=pending` | 200 | 3 líneas |
+| Estado inválido | `GET {{base_url}}/mechanics/{{mec1_id}}/commissions?status=pagado` | 422 | `VALIDATION_ERROR` (`errors.status`) |
+
+> `{{work_order7_id}}` no suma: está abierta. Como en 13.10, si OT anteriores de MEC-001 se completaron en el mes, también aparecen.
+
+### 14.7 Liquidar comisiones
+
+`POST {{base_url}}/mechanics/{{mec1_id}}/commissions/settle`
+
+```json
+{
+  "date_from": "2026-10-01",
+  "date_to": "2026-10-31"
+}
+```
+
+(Usar el primer y el último día del mes en curso.)
+
+Esperado: `200`, `settled_count` `3`, `settled_total` `"46000.00"`, `settled_at` informado.
+
+| Caso | Método / Endpoint | Body | HTTP | Resultado / error_code |
+|---|---|---|---|---|
+| Liquidar otra vez | mismo request | mismo body | 422 | `MECHANIC_COMMISSIONS_NOTHING_TO_SETTLE` |
+| Período sin comisiones | mismo endpoint | `{ "date_from": "2020-01-01", "date_to": "2020-01-31" }` | 422 | `MECHANIC_COMMISSIONS_NOTHING_TO_SETTLE` |
+| Sin fechas | mismo endpoint | `{}` | 422 | `VALIDATION_ERROR` (`date_from`, `date_to`) |
+| Rango invertido | mismo endpoint | `{ "date_from": "2026-10-31", "date_to": "2026-10-01" }` | 422 | `VALIDATION_ERROR` |
+| Mecánico inexistente | `POST {{base_url}}/mechanics/999999/commissions/settle` | body válido | 404 | `RESOURCE_NOT_FOUND` |
+
+Verificación posterior:
+
+| Caso | Método / Endpoint | HTTP | Resultado |
+|---|---|---|---|
+| Liquidadas | `GET {{base_url}}/mechanics/{{mec1_id}}/commissions?status=settled` | 200 | 3 líneas con `settled_at`, `total_settled` `"46000.00"`, `total_pending` `"0.00"` |
+| Pendientes | `GET {{base_url}}/mechanics/{{mec1_id}}/commissions?status=pending` | 200 | `lines` vacío |
+| Otro mecánico | `GET {{base_url}}/mechanics/{{mec2_id}}/commissions` | 200 | `total_pending` `"5100.00"` (no se liquidó) |
+| Mecánico consultando las suyas | `GET {{base_url}}/mechanics/{{mec1_id}}/commissions` con `{{token_mec}}` | 200 | Ve `settled_at` de sus líneas |
 
 ---
 
