@@ -55,8 +55,7 @@ return new class extends Migration
         });
 
         // Solo estructura: una migración no debe depender de código de la app
-        // (que evoluciona con el esquema). Las OT completadas antes de esta fase
-        // se cierran con el comando `php artisan work-orders:close-completed`.
+        // (que evoluciona con el esquema y rompería migrate:fresh en el futuro).
     }
 
     /**

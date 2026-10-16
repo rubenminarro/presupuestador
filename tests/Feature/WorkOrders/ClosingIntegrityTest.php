@@ -5,8 +5,6 @@ namespace Tests\Feature\WorkOrders;
 use App\Exceptions\WorkOrderException;
 use App\Models\ServiceCategory;
 use App\Models\WorkOrderClosing;
-use App\Models\WorkOrderCommission;
-use Illuminate\Support\Facades\DB;
 use Tests\Feature\WorkOrderParts\WorkOrderPartsTestCase;
 
 class ClosingIntegrityTest extends WorkOrderPartsTestCase
@@ -48,30 +46,6 @@ class ClosingIntegrityTest extends WorkOrderPartsTestCase
         }
 
         $this->assertSame('1000.00', WorkOrderClosing::find($closing->id)->sale_total);
-    }
-
-    public function test_close_completed_command_is_idempotent(): void
-    {
-        $this->actingAsAdmin();
-
-        $workOrder = $this->completedWorkOrder();
-
-        // Simula una OT completada antes de la FASE 14 (sin cierre ni comisiones).
-        DB::table('work_order_commissions')->where('work_order_id', $workOrder['id'])->delete();
-        DB::table('work_order_closings')->where('work_order_id', $workOrder['id'])->delete();
-
-        $this->artisan('work-orders:close-completed')
-            ->expectsOutput('OT cerradas: 1.')
-            ->assertSuccessful();
-
-        $this->assertSame('1000.00', WorkOrderClosing::where('work_order_id', $workOrder['id'])->sole()->sale_total);
-        $this->assertSame('100.00', WorkOrderCommission::where('work_order_id', $workOrder['id'])->sole()->amount);
-
-        $this->artisan('work-orders:close-completed')
-            ->expectsOutput('OT cerradas: 0.')
-            ->assertSuccessful();
-
-        $this->assertSame(1, WorkOrderClosing::where('work_order_id', $workOrder['id'])->count());
     }
 
     public function test_service_description_and_estimated_hours_can_be_cleared(): void
