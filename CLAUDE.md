@@ -551,7 +551,10 @@ Reglas (importes sin IVA):
 * Comisiones: el reporte lee `work_order_commissions` (`?status=pending|settled`, `total_pending`, `total_settled`).
   `POST mechanics/{mechanic}/commissions/settle` (`date_from`, `date_to` obligatorios) liquida las pendientes del
   período; sin pendientes → `MECHANIC_COMMISSIONS_NOTHING_TO_SETTLE`.
-* La migración 000037 cierra las OT ya completadas con sus datos actuales (`closed_by = null`).
+* `WorkOrderClosing` es inmutable (`WORK_ORDER_CLOSING_IMMUTABLE`): es la base de la facturación.
+* La migración 000037 crea solo la estructura (las migraciones no dependen de código de la app). Las OT completadas
+  sin cierre (anteriores a la fase) se cierran con `php artisan work-orders:close-completed` (idempotente,
+  `closed_by = null`).
 
 Endpoints: `GET work-orders/{workOrder}` (`economic_summary`), `GET mechanics/{mechanic}/commissions`,
 `POST mechanics/{mechanic}/commissions/settle`.

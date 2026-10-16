@@ -29,6 +29,7 @@ class UpdateServiceRequest extends FormRequest
             ],
             'description' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'max:1000',
                 'regex:/^[\pL\pN\s.,;:()\-\/#%+&"\'°º]+$/u',
@@ -42,6 +43,7 @@ class UpdateServiceRequest extends FormRequest
             ],
             'estimated_hours' => [
                 'sometimes',
+                'nullable',
                 'numeric',
                 'decimal:0,2',
                 'min:0',

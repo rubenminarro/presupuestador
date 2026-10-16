@@ -1,8 +1,5 @@
 <?php
 
-use App\Enums\WorkOrderStatus;
-use App\Models\WorkOrder;
-use App\Services\WorkOrderClosingService;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -57,10 +54,9 @@ return new class extends Migration
             $table->index(['mechanic_id', 'earned_at']);
         });
 
-        // Las OT completadas antes de esta fase se cierran con sus datos actuales.
-        WorkOrder::where('status', WorkOrderStatus::COMPLETED)
-            ->orderBy('id')
-            ->each(fn (WorkOrder $workOrder) => app(WorkOrderClosingService::class)->close($workOrder, null));
+        // Solo estructura: una migración no debe depender de código de la app
+        // (que evoluciona con el esquema). Las OT completadas antes de esta fase
+        // se cierran con el comando `php artisan work-orders:close-completed`.
     }
 
     /**

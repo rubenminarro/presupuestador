@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Exceptions\WorkOrderException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -47,6 +48,23 @@ class WorkOrderClosing extends Model
             'margin_percentage' => 'decimal:2',
             'is_cost_complete' => 'boolean',
         ];
+    }
+
+    /**
+     * El cierre es la base de la facturación: no se modifica ni se elimina.
+     */
+    protected static function booted(): void
+    {
+        $immutable = function () {
+            throw new WorkOrderException(
+                'El cierre económico de la orden de trabajo no puede modificarse ni eliminarse.',
+                409,
+                'WORK_ORDER_CLOSING_IMMUTABLE'
+            );
+        };
+
+        static::updating($immutable);
+        static::deleting($immutable);
     }
 
     public function workOrder(): BelongsTo
