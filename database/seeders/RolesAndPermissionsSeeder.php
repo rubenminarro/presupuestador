@@ -211,6 +211,18 @@ class RolesAndPermissionsSeeder extends Seeder
             'mechanic-commissions.view-all',
             'mechanic-commissions.settle',
 
+            /* invoicing permissions */
+            'invoice-stamps.index',
+            'invoice-stamps.store',
+            'invoice-stamps.update',
+            'invoices.index',
+            'invoices.show',
+            'invoices.store',
+            'invoices.update',
+            'invoices.issue',
+            'invoices.cancel',
+            'invoices.destroy',
+
             /* inventory permissions */
             'inventory.index',
             'inventory.show',

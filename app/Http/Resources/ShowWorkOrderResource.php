@@ -64,6 +64,19 @@ class ShowWorkOrderResource extends JsonResource
                     fn ($line) => $line->status->isOpen()
                 )->count(),
             ]),
+            // Factura vigente (borrador o emitida): solo con permiso de facturas.
+            'invoice' => $this->when(
+                $this->relationLoaded('currentInvoice') && (bool) $request->user()?->can('invoices.show'),
+                fn () => $this->currentInvoice ? [
+                    'id' => $this->currentInvoice->id,
+                    'number' => $this->currentInvoice->number,
+                    'status' => [
+                        'value' => $this->currentInvoice->status->value,
+                        'label' => $this->currentInvoice->status->label(),
+                    ],
+                    'total' => $this->currentInvoice->total,
+                ] : null
+            ),
             // Costos y margen: solo con permiso (no visibles para el mecánico).
             'economic_summary' => $this->when(
                 $this->relationLoaded('items') &&

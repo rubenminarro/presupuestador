@@ -167,6 +167,7 @@ class WorkOrderController extends Controller implements HasMiddleware
             'items.budgetItem',
             'items.mechanicAssignments.mechanic.user',
             'parts.part',
+            'currentInvoice',
         ]);
 
         return $this->successResponse(

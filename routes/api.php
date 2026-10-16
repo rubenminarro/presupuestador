@@ -27,6 +27,8 @@ use App\Http\Controllers\Api\WorkOrderItemMechanicController;
 use App\Http\Controllers\Api\MechanicCommissionController;
 use App\Http\Controllers\Api\ServiceCategoryController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\InvoiceStampController;
 use App\Http\Controllers\Api\PartCategoryController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\PartController;
@@ -121,6 +123,28 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::get('mechanics/{mechanic}/commissions', [MechanicCommissionController::class, 'index'])->name('mechanics.commissions.index');
 
     Route::post('mechanics/{mechanic}/commissions/settle', [MechanicCommissionController::class, 'settle'])->name('mechanics.commissions.settle');
+
+    Route::get('invoice-stamps', [InvoiceStampController::class, 'index'])->name('invoice-stamps.index');
+
+    Route::post('invoice-stamps', [InvoiceStampController::class, 'store'])->name('invoice-stamps.store');
+
+    Route::patch('invoice-stamps/{invoiceStamp}', [InvoiceStampController::class, 'update'])->name('invoice-stamps.update');
+
+    Route::post('work-orders/{workOrder}/invoice', [InvoiceController::class, 'storeFromWorkOrder'])->name('work-orders.invoice.store');
+
+    Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+
+    Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+
+    Route::patch('invoices/{invoice}', [InvoiceController::class, 'update'])->name('invoices.update');
+
+    Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
+
+    Route::patch('invoices/{invoice}/items/{item}', [InvoiceController::class, 'updateItem'])->name('invoices.items.update');
+
+    Route::post('invoices/{invoice}/issue', [InvoiceController::class, 'issue'])->name('invoices.issue');
+
+    Route::post('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
 
     Route::get('service-categories', [ServiceCategoryController::class, 'index'])->name('service-categories.index');
 

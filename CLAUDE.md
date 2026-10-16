@@ -367,6 +367,7 @@ También se completaron:
 * **FASE 12 — Repuestos en WorkOrder:** ver sección 2.25.
 * **FASE 13 — Servicios y mano de obra (comisiones):** ver sección 2.26.
 * **FASE 14 — Cierre económico de WorkOrder:** ver sección 2.27.
+* **FASE 15 — Facturación:** ver sección 2.28.
 
 ---
 
@@ -558,6 +559,63 @@ Reglas (importes sin IVA):
 Endpoints: `GET work-orders/{workOrder}` (`economic_summary`), `GET mechanics/{mechanic}/commissions`,
 `POST mechanics/{mechanic}/commissions/settle`.
 Permisos: `work-orders.view-economics`, `mechanic-commissions.settle` (solo administrador).
+
+---
+
+# 2.28 Facturación (FASE 15)
+
+Contexto (Paraguay): **timbrado** con numeración `001-001-0000001` (establecimiento − punto de expedición −
+correlativo), IVA **10% / 5% / exento**, condición **contado/crédito**. Los precios del sistema son **sin IVA**;
+la factura los expresa **con IVA incluido**. Importes en **guaraníes enteros** (`config/invoice.php`: `decimals = 0`,
+`default_tax_rate = 10`).
+
+Componentes:
+
+```text
+InvoiceStamp        (invoice_stamps: stamp_number, establishment, expedition_point, valid_from, valid_until,
+                     next_number, is_active; solo uno activo por establecimiento + punto)
+Invoice             (invoices: work_order_id, client_id, status, número y copia del timbrado al emitir, datos del
+                     cliente copiados, condition, due_date, totales por tasa, IVA 5/10, descuento, total)
+InvoiceItem         (invoice_items: source morph work_order_item | work_order_part, quantity, base_unit_price y
+                     base_total sin IVA, tax_rate, unit_price con IVA, discount, total)
+InvoiceStatus       (draft, issued, cancelled)   InvoiceCondition (cash, credit)   TaxRate (0, 5, 10)
+InvoiceService      (generate, update, updateItem, issue, cancel, delete)
+InvoiceStampService (create, update)
+InvoiceException
+```
+
+Ciclo:
+
+```text
+OT completed --generar-->  draft    (líneas = lo realmente usado; debe coincidir con closing.sale_total)
+draft        --editar-->   draft    (cliente, condición, vencimiento; por línea: descripción, tasa, descuento)
+draft        --descartar-> (se elimina; no consume número)
+draft        --emitir-->   issued   (timbrado activo y vigente; toma next_number con lockForUpdate; inmutable)
+issued       --anular-->   cancelled (motivo obligatorio; el número no se reutiliza; la OT puede refacturarse)
+```
+
+Reglas:
+
+* Líneas: `labor`/`service` no cancelados y repuestos fuera de catálogo (valores presupuestados), repuestos de
+  catálogo por cantidad neta usada (`WorkOrderPart`, incluidos extras). Si no coincide con el cierre:
+  `INVOICE_TOTAL_MISMATCH`.
+* Precio con IVA = sin IVA × (100 + tasa) / 100, redondeado; total = cantidad × precio − descuento (con IVA).
+  Liquidación: IVA 10% = total_10 ÷ 11, IVA 5% = total_5 ÷ 21. Descuento solo por línea, ≤ importe de la línea.
+* Una factura vigente (`draft`/`issued`) por OT (`WORK_ORDER_ALREADY_INVOICED`); OT no completada:
+  `WORK_ORDER_NOT_INVOICEABLE`.
+* Emitir exige RUC/CI (`INVOICE_CUSTOMER_TAX_ID_REQUIRED`) y, a crédito, vencimiento ≥ hoy (`INVOICE_DUE_DATE_REQUIRED`).
+* Timbrado: sin vigente → `INVOICE_STAMP_NOT_AVAILABLE`; varios vigentes sin `invoice_stamp_id` →
+  `INVOICE_STAMP_REQUIRED`; numeración agotada (> 9.999.999) → `INVOICE_STAMP_EXHAUSTED`; dos activos en el mismo
+  establecimiento + punto → `INVOICE_STAMP_OVERLAP`.
+* `Invoice` emitida es inmutable a nivel de modelo (solo admite los campos de anulación): `INVOICE_NOT_EDITABLE`.
+* `ShowWorkOrderResource.invoice` (factura vigente) solo con `invoices.show`.
+* Fuera de alcance: SIFEN (factura electrónica), notas de crédito, venta de mostrador sin OT, PDF, pagos (FASE 16).
+
+Endpoints: `GET|POST invoice-stamps`, `PATCH invoice-stamps/{invoiceStamp}`, `POST work-orders/{workOrder}/invoice`,
+`GET invoices`, `GET|PATCH|DELETE invoices/{invoice}`, `PATCH invoices/{invoice}/items/{item}`,
+`POST invoices/{invoice}/issue|cancel`.
+Permisos (solo administrador): `invoice-stamps.index|store|update`,
+`invoices.index|show|store|update|issue|cancel|destroy`.
 
 ---
 
@@ -2826,13 +2884,13 @@ La arquitectura objetivo es:
 El proyecto actualmente se encuentra en:
 
 ```text
-FASE 14 — CIERRE ECONÓMICO DE WORKORDER — CERRADA
+FASE 15 — FACTURACIÓN — CERRADA
 ```
 
 El siguiente gran paso recomendado es:
 
 ```text
-FASE 15 — FACTURACIÓN (Invoice a partir del cierre congelado de la OT)
+FASE 16 — PAGOS (Payment contra facturas emitidas; contado/crédito, pagos parciales, saldo)
 ```
 
 El orden de trabajo de abajo se usó para las FASES 10 a 13 y sigue siendo la referencia.
@@ -2934,13 +2992,13 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 [✓] Asignación de mecánicos y comisiones (FASE 13)
 [✓] Tiempo estimado, horas reales y costo del mecánico — opcionales (FASE 13)
 [✓] Cierre económico, margen y liquidación de comisiones (FASE 14)
+[✓] Facturación con timbrado e IVA incluido (FASE 15)
 ```
 
 ## Próximo
 
 ```text
 [ ] Compras
-[ ] Facturación
 [ ] Pagos
 [ ] Entrega
 [ ] Historial del vehículo

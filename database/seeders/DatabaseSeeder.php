@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
             SupplierSeeder::class,
             PartSeeder::class,
             InventorySeeder::class,
+            InvoiceStampSeeder::class,
         ]);
     }
 }

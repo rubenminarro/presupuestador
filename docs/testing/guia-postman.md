@@ -1,6 +1,6 @@
 # Guía de pruebas con Postman — Presupuestador
 
-**Alcance:** API al cierre de la FASE 14 (cierre económico de la OT y liquidación de comisiones), incluidos los ajustes posteriores a la FASE 12 (rutas de vehículos por cliente, permisos de ítems de presupuesto, `error_code` del login y validaciones de texto) y la corrección de `roles/permissions-grouped-by-module`.
+**Alcance:** API al cierre de la FASE 15 (facturación con timbrado e IVA incluido), con la FASE 14 (cierre económico de la OT y liquidación de comisiones), incluidos los ajustes posteriores a la FASE 12 (rutas de vehículos por cliente, permisos de ítems de presupuesto, `error_code` del login y validaciones de texto) y la corrección de `roles/permissions-grouped-by-module`.
 **Uso:** ejecutar los requests en el orden indicado; cada sección parte de los datos creados en las anteriores.
 
 ---
@@ -19,7 +19,7 @@
 | `token_admin` | (vacío) |
 | `token_mec` | (vacío) |
 
-Variables de IDs que se irán completando con las respuestas: `client_id`, `client2_id`, `brand_id`, `model_id`, `vehicle_id`, `vehicle2_id`, `reception_id`, `budget_id`, `budget_item_id`, `mechanic_id`, `work_order_id`, `work_order_item_id`, `category_id`, `supplier_id`, `part_id`, `part_unit_id`, `part_status_id`, `movement_id`, `budget2_id`, `work_order2_id`, `work_order3_id`, `work_order4_id`, `line_id`, `extra_line_id`, `pending_line_id`, `mec1_id`, `mec2_id`, `service_category_id`, `service_id`, `service_unused_id`, `budget5_id`, `work_order5_id`, `labor_item_id`, `service_item_id`, `work_order6_id`, `work_order7_id`.
+Variables de IDs que se irán completando con las respuestas: `client_id`, `client2_id`, `brand_id`, `model_id`, `vehicle_id`, `vehicle2_id`, `reception_id`, `budget_id`, `budget_item_id`, `mechanic_id`, `work_order_id`, `work_order_item_id`, `category_id`, `supplier_id`, `part_id`, `part_unit_id`, `part_status_id`, `movement_id`, `budget2_id`, `work_order2_id`, `work_order3_id`, `work_order4_id`, `line_id`, `extra_line_id`, `pending_line_id`, `mec1_id`, `mec2_id`, `service_category_id`, `service_id`, `service_unused_id`, `budget5_id`, `work_order5_id`, `labor_item_id`, `service_item_id`, `work_order6_id`, `work_order7_id`, `stamp_id`, `invoice_id`, `invoice_service_item_id`, `invoice_labor_item_id`, `invoice2_id`, `invoice3_id`.
 
 ### 0.2 Headers comunes
 
@@ -1503,6 +1503,192 @@ Verificación posterior:
 | Pendientes | `GET {{base_url}}/mechanics/{{mec1_id}}/commissions?status=pending` | 200 | `lines` vacío |
 | Otro mecánico | `GET {{base_url}}/mechanics/{{mec2_id}}/commissions` | 200 | `total_pending` `"5100.00"` (no se liquidó) |
 | Mecánico consultando las suyas | `GET {{base_url}}/mechanics/{{mec1_id}}/commissions` con `{{token_mec}}` | 200 | Ve `settled_at` de sus líneas |
+
+---
+
+## FASE 15 — Facturación
+
+Token: administrador salvo indicación.
+
+> Precios **con IVA incluido**, importes en **guaraníes enteros**. Los precios del sistema son sin IVA: la factura los convierte (precio sin IVA × 1,10 al 10%).
+> Liquidación: **IVA 10% = total gravado 10% ÷ 11**, **IVA 5% = total gravado 5% ÷ 21**.
+> Numeración `001-001-0000001` (establecimiento − punto de expedición − correlativo), asignada **al emitir**.
+
+### 15.1 Timbrado
+
+`POST {{base_url}}/invoice-stamps`
+
+```json
+{
+  "stamp_number": "12345678",
+  "establishment": "001",
+  "expedition_point": "001",
+  "valid_from": "2026-10-01",
+  "valid_until": "2027-09-30"
+}
+```
+
+Esperado: `201`, `next_number` `1`, `next_invoice_number` `"001-001-0000001"`, `is_active` `true`, `is_valid_today` `true` → `stamp_id`.
+
+> Si la base se sembró con `InvoiceStampSeeder`, el timbrado ya existe: `GET {{base_url}}/invoice-stamps` y guardar su `id`.
+
+| Caso | Body | HTTP | error_code |
+|---|---|---|---|
+| Otro activo en el mismo establecimiento y punto | `{ "stamp_number": "87654321", "establishment": "001", "expedition_point": "001", "valid_from": "2026-10-01", "valid_until": "2027-09-30" }` | 409 | `INVOICE_STAMP_OVERLAP` |
+| Número de timbrado inválido | `{ ..., "stamp_number": "1234" }` | 422 | `VALIDATION_ERROR` (`errors.stamp_number`) |
+| Establecimiento inválido | `{ ..., "establishment": "1" }` | 422 | `VALIDATION_ERROR` (`errors.establishment`) |
+| Vigencia invertida | `{ ..., "valid_from": "2027-01-01", "valid_until": "2026-01-01" }` | 422 | `VALIDATION_ERROR` (`errors.valid_until`) |
+| Próximo número fuera de rango | `{ ..., "next_number": 10000000 }` | 422 | `VALIDATION_ERROR` (`errors.next_number`) |
+
+Listar: `GET {{base_url}}/invoice-stamps` → `200`.
+
+### 15.2 Generar la factura en borrador
+
+`POST {{base_url}}/work-orders/{{work_order5_id}}/invoice` (sin body)
+
+Esperado: `201` → `invoice_id`.
+
+| Campo | Valor esperado |
+|---|---|
+| `status.value` / `number` | `draft` / `null` |
+| `customer.name` / `customer.tax_id` | `"Lucia Benitez"` / `"QA-1001"` (copiados del cliente) |
+| `condition.value` | `cash` |
+| Línea del servicio | `base_unit_price` `"120000.00"`, `tax_rate.value` `10`, `unit_price` `"132000.00"`, `total` `"132000.00"` |
+| Línea de mano de obra | `base_unit_price` `"200000.00"`, `unit_price` `"220000.00"`, `total` `"220000.00"` |
+| `totals` | `taxed_10` `"352000.00"`, `iva_10` `"32000.00"`, `exempt` `"0.00"`, `total` `"352000.00"` |
+
+Guardar los IDs de las líneas en `invoice_service_item_id` y `invoice_labor_item_id`.
+
+`GET {{base_url}}/work-orders/{{work_order5_id}}` → `data.invoice` con `status` `draft` y `total` `"352000.00"`.
+
+| Caso | Método / Endpoint | HTTP | error_code |
+|---|---|---|---|
+| Facturar de nuevo la misma OT | `POST {{base_url}}/work-orders/{{work_order5_id}}/invoice` | 409 | `WORK_ORDER_ALREADY_INVOICED` |
+| OT no completada | `POST {{base_url}}/work-orders/{{work_order7_id}}/invoice` (14.1, abierta) | 422 | `WORK_ORDER_NOT_INVOICEABLE` |
+| OT inexistente | `POST {{base_url}}/work-orders/999999/invoice` | 404 | `RESOURCE_NOT_FOUND` |
+
+> En OT con repuestos de catálogo se factura la **cantidad neta usada** (por ejemplo 1,7 L), no la presupuestada; los repuestos fuera de catálogo se facturan por lo presupuestado.
+
+### 15.3 Editar líneas (tasa y descuento)
+
+`PATCH {{base_url}}/invoices/{{invoice_id}}/items/{{invoice_service_item_id}}`
+
+```json
+{ "tax_rate": 5 }
+```
+
+Esperado: `200`; servicio `unit_price` `"126000.00"`; `totals.taxed_5` `"126000.00"`, `iva_5` `"6000.00"`, `taxed_10` `"220000.00"`, `iva_10` `"20000.00"`, `total` `"346000.00"`.
+
+`PATCH {{base_url}}/invoices/{{invoice_id}}/items/{{invoice_labor_item_id}}`
+
+```json
+{ "discount": 22000, "description": "Cambio de embrague completo" }
+```
+
+Esperado: `200`; mano de obra `total` `"198000.00"`; `totals.iva_10` `"18000.00"`, `discount` `"22000.00"`, `total` `"324000.00"`.
+
+| Caso | Línea / Body | HTTP | error_code |
+|---|---|---|---|
+| Exenta | servicio: `{ "tax_rate": 0 }` | 200 | `unit_price` `"120000.00"` (vuelve al precio sin IVA), `totals.exempt` `"120000.00"` |
+| Tasa inválida | `{ "tax_rate": 7 }` | 422 | `VALIDATION_ERROR` (`errors.tax_rate`) |
+| Descuento mayor al importe | mano de obra: `{ "discount": 300000 }` | 422 | `INVOICE_DISCOUNT_EXCEEDS_AMOUNT` |
+| Descuento negativo | `{ "discount": -1 }` | 422 | `VALIDATION_ERROR` |
+
+**Volver a los valores originales** para los pasos siguientes: servicio `{ "tax_rate": 10 }` y mano de obra `{ "discount": 0 }` → `totals.total` `"352000.00"`.
+
+### 15.4 Editar la cabecera
+
+`PATCH {{base_url}}/invoices/{{invoice_id}}`
+
+```json
+{
+  "customer_name": "Transportes del Sur S.A.",
+  "customer_tax_id": "80012345-6",
+  "customer_address": "Av. Espana 1234"
+}
+```
+
+Esperado: `200`, `customer` actualizado.
+
+| Caso | Body | HTTP | Resultado / error_code |
+|---|---|---|---|
+| Crédito con vencimiento | `{ "condition": "credit", "due_date": "<hoy + 30 días>" }` | 200 | `condition.value` `credit` |
+| Volver a contado | `{ "condition": "cash" }` | 200 | `due_date` `null` (se descarta) |
+| Condición inválida | `{ "condition": "otro" }` | 422 | `VALIDATION_ERROR` |
+| RUC con caracteres inválidos | `{ "customer_tax_id": "RUC 800!" }` | 422 | `VALIDATION_ERROR` |
+
+### 15.5 Emitir
+
+`POST {{base_url}}/invoices/{{invoice_id}}/issue` (body opcional: `{ "invoice_stamp_id": {{stamp_id}} }`)
+
+Esperado: `200`, `status.value` `issued`, `number` `"001-001-0000001"`, `stamp.stamp_number` `"12345678"`, `issue_date` = hoy, `issued_at` informado.
+En `GET {{base_url}}/invoice-stamps`: `next_number` `2`.
+
+Casos de error (usar `{{invoice2_id}}`, generado desde `{{work_order6_id}}`: `POST {{base_url}}/work-orders/{{work_order6_id}}/invoice`):
+
+| Caso | Preparación | HTTP | error_code |
+|---|---|---|---|
+| Sin RUC/CI | `PATCH .../invoices/{{invoice2_id}}` con `{ "customer_tax_id": null }` | 422 | `INVOICE_CUSTOMER_TAX_ID_REQUIRED` |
+| Crédito sin vencimiento | `{ "customer_tax_id": "QA-1001", "condition": "credit" }` | 422 | `INVOICE_DUE_DATE_REQUIRED` |
+| Crédito vencido | `{ "due_date": "<ayer>" }` | 422 | `INVOICE_DUE_DATE_REQUIRED` |
+| Timbrado desactivado | Primero `{ "due_date": "<hoy + 30 días>" }` (el vencimiento se valida antes que el timbrado); luego `PATCH {{base_url}}/invoice-stamps/{{stamp_id}}` con `{ "is_active": false }` | 422 | `INVOICE_STAMP_NOT_AVAILABLE` (después volver `{ "is_active": true }`) |
+| Timbrado inexistente | body `{ "invoice_stamp_id": 999999 }` | 422 | `VALIDATION_ERROR` |
+| Emitir una factura ya emitida | `POST .../invoices/{{invoice_id}}/issue` | 422 | `INVOICE_NOT_ISSUABLE` |
+
+Emisión a crédito válida: con el timbrado activo y `due_date` futura, emitir `{{invoice2_id}}` → `200`, `number` `"001-001-0000002"`, `condition.value` `credit`.
+
+### 15.6 Factura emitida: inmutable
+
+| Caso | Método / Endpoint | Body | HTTP | error_code |
+|---|---|---|---|---|
+| Editar cabecera | `PATCH {{base_url}}/invoices/{{invoice_id}}` | `{ "customer_name": "Otro" }` | 422 | `INVOICE_NOT_EDITABLE` |
+| Editar línea | `PATCH {{base_url}}/invoices/{{invoice_id}}/items/{{invoice_labor_item_id}}` | `{ "discount": 1 }` | 422 | `INVOICE_NOT_EDITABLE` |
+| Eliminar | `DELETE {{base_url}}/invoices/{{invoice_id}}` | — | 422 | `INVOICE_NOT_EDITABLE` |
+
+### 15.7 Anular y refacturar
+
+`POST {{base_url}}/invoices/{{invoice2_id}}/cancel`
+
+```json
+{ "reason": "RUC del cliente incorrecto" }
+```
+
+Esperado: `200`, `status.value` `cancelled`, `number` `"001-001-0000002"` (se conserva), `cancellation_reason` informado.
+
+| Caso | Body | HTTP | error_code |
+|---|---|---|---|
+| Sin motivo | `{}` | 422 | `VALIDATION_ERROR` (`errors.reason`) |
+| Anular otra vez | `{ "reason": "x" }` | 422 | `INVOICE_NOT_CANCELLABLE` |
+| Anular un borrador | sobre un borrador | 422 | `INVOICE_NOT_CANCELLABLE` |
+
+Después de anular:
+1. `GET {{base_url}}/work-orders/{{work_order6_id}}` → `data.invoice` `null`.
+2. `POST {{base_url}}/work-orders/{{work_order6_id}}/invoice` → `201` (se puede refacturar) → `invoice3_id`.
+3. Emitir `{{invoice3_id}}` → `number` `"001-001-0000003"` (el número anulado no se reutiliza).
+
+### 15.8 Descartar un borrador
+
+Con un borrador (por ejemplo, generar uno nuevo para otra OT completada): `DELETE {{base_url}}/invoices/{id}` → `200`. No consume número y la OT queda libre para facturar.
+
+### 15.9 Listado
+
+| Caso | Método / Endpoint | HTTP | Resultado / error_code |
+|---|---|---|---|
+| Todas | `GET {{base_url}}/invoices` | 200 | Con `meta.pagination` |
+| Emitidas | `GET {{base_url}}/invoices?status=issued` | 200 | Solo emitidas |
+| Por número o cliente | `GET {{base_url}}/invoices?search=001-001-0000001` | 200 | Filtrado |
+| Por fecha de emisión | `GET {{base_url}}/invoices?date_from=<hoy>&date_to=<hoy>` | 200 | Emitidas hoy |
+| Estado inválido | `GET {{base_url}}/invoices?status=pagada` | 422 | `VALIDATION_ERROR` |
+| Detalle | `GET {{base_url}}/invoices/{{invoice_id}}` | 200 | `items`, `totals`, `customer`, `stamp` |
+
+### 15.10 Permisos del mecánico (token = `{{token_mec}}`)
+
+| Caso | Método / Endpoint | HTTP | error_code |
+|---|---|---|---|
+| Listar facturas | `GET {{base_url}}/invoices` | 403 | `FORBIDDEN` |
+| Generar | `POST {{base_url}}/work-orders/{{work_order5_id}}/invoice` | 403 | `FORBIDDEN` |
+| Timbrados | `GET {{base_url}}/invoice-stamps` | 403 | `FORBIDDEN` |
+| Ver la OT | `GET {{base_url}}/work-orders/{{work_order5_id}}` | 200 | Sin la clave `invoice` |
 
 ---
 

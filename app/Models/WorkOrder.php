@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\InvoiceStatus;
 use App\Enums\WorkOrderStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -72,5 +73,21 @@ class WorkOrder extends Model
     public function commissions(): HasMany
     {
         return $this->hasMany(WorkOrderCommission::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    /**
+     * Factura vigente (borrador o emitida); las anuladas no cuentan.
+     */
+    public function currentInvoice(): HasOne
+    {
+        return $this->hasOne(Invoice::class)->ofMany(
+            ['id' => 'max'],
+            fn ($query) => $query->whereIn('status', InvoiceStatus::currentStatuses())
+        );
     }
 }
