@@ -8,21 +8,31 @@ Cliente → Vehículo → Recepción → Diagnóstico → Presupuesto → Aproba
        → Ejecución (servicios, mano de obra, repuestos) → Cierre económico → Factura → Pago → Entrega
 ```
 
-> El documento de referencia del proyecto (arquitectura, reglas de negocio y decisiones por fase) es
-> [`CLAUDE.md`](CLAUDE.md). La guía de pruebas manuales está en
-> [`docs/testing/guia-postman.md`](docs/testing/guia-postman.md).
+> **Documentación del proyecto**
+>
+> | Documento | Contenido |
+> |---|---|
+> | `README.md` (este) | Qué es, cómo se instala y ejecuta, estado general |
+> | [`CLAUDE.md`](CLAUDE.md) | Reglas operativas, convenciones y reglas de negocio vigentes (para quien modifica el código) |
+> | [`docs/handoff.md`](docs/handoff.md) | Historia y decisiones de diseño por fase, roadmap original y deuda técnica conocida |
+> | [`docs/testing/guia-postman.md`](docs/testing/guia-postman.md) | Pruebas manuales de la API, por fase |
 
 ---
 
 ## Stack
 
+Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17):
+
 | Capa | Tecnología |
 |---|---|
-| Backend | PHP 8.2+, Laravel 12 |
-| Autenticación | Laravel Sanctum (tokens Bearer) |
-| Roles y permisos | spatie/laravel-permission (guard `api`) |
-| Base de datos | MySQL (desarrollo y producción), SQLite en memoria (tests) |
-| Frontend | React 19 (repositorio aparte), consume esta API |
+| Lenguaje | PHP `^8.2` (desarrollo con PHP 8.3) |
+| Backend | Laravel 12 (`laravel/framework` 12.56) |
+| Autenticación | Laravel Sanctum 4.3 (tokens Bearer) |
+| Roles y permisos | spatie/laravel-permission 6.25 (guard `api`) |
+| Base de datos | MySQL (Laragon con MySQL 8.4); SQLite en memoria para los tests |
+| Tests | PHPUnit 11.5 |
+| Assets | Vite 7 + Tailwind CSS 4 + axios (scaffold por defecto de Laravel, sin uso: la app es solo API) |
+| Frontend | **No incluido en este repositorio** (ver [Frontend](#frontend)) |
 | Entorno local | Laragon (Windows) |
 
 ---
@@ -48,7 +58,14 @@ Cliente → Vehículo → Recepción → Diagnóstico → Presupuesto → Aproba
 | Mantenimiento preventivo | Planes por km y/o días, registro automático desde la OT, km actual estimado por uso y alertas de vencimiento |
 | Reportes y dashboard | Dashboard por permisos; reportes de ventas, presupuestos, rentabilidad, productividad, inventario y clientes |
 
-Pendiente: compras, notificaciones, exportación de reportes y comprobantes, auditoría avanzada y el frontend.
+### Estado real (verificado el 2026-10-17)
+
+| Estado | Qué |
+|---|---|
+| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20) más los módulos base. 190 rutas API y 235 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
+| Implementado con limitaciones conocidas | Estados de la recepción (solo la entrega los cambia), algunos errores sin `error_code`, IVA del presupuesto calculado con `float`, seeders de ejemplo no idempotentes. Detalle en [`docs/handoff.md`](docs/handoff.md), sección 14 |
+| No verificable desde este repositorio | El frontend (ver [Frontend](#frontend)) |
+| Pendiente, sin diseño | Compras (con ingreso de stock), notificaciones, exportación de reportes (CSV/PDF) y comprobantes imprimibles, auditoría avanzada |
 
 ---
 
@@ -56,8 +73,9 @@ Pendiente: compras, notificaciones, exportación de reportes y comprobantes, aud
 
 - PHP 8.2 o superior con las extensiones `pdo_mysql`, `bcmath` y `mbstring` (y `pdo_sqlite` para los tests)
 - Composer
-- MySQL 8
-- Node.js y npm (solo para los assets de Vite)
+- MySQL 8 (Laragon trae MySQL; en desarrollo se usa 8.4)
+- Acceso a internet al correr los tests (la validación `email:rfc,dns` resuelve dominios)
+- Node.js y npm: **opcionales**; solo los usan los scripts `npm run dev|build` del scaffold de Vite, que la API no necesita
 
 ---
 
@@ -68,11 +86,14 @@ git clone https://github.com/rubenminarro/presupuestador.git
 cd presupuestador
 
 composer install
-npm install
 
 cp .env.example .env
 php artisan key:generate
 ```
+
+`composer.json` también trae los scripts estándar de Laravel: `composer setup` (instala, crea `.env`, genera la clave,
+migra y compila assets con npm), `composer dev` (servidor, cola, logs con Pail y Vite en paralelo; requiere npm) y
+`composer test`.
 
 Configurar en `.env` la base de datos y la contraseña de los usuarios de prueba:
 
@@ -91,7 +112,11 @@ DB_PASSWORD=
 ADMIN_PASSWORD=
 ```
 
-Crear la base `presupuestador` en MySQL y luego:
+### Base de datos (MySQL en Laragon)
+
+1. Iniciar MySQL desde Laragon y crear la base `presupuestador` (utf8mb4), por ejemplo desde HeidiSQL o con
+   `CREATE DATABASE presupuestador CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`.
+2. Sobre una base **vacía**, migrar y cargar los datos iniciales y de ejemplo:
 
 ```bash
 php artisan migrate --seed
@@ -99,6 +124,23 @@ php artisan serve
 ```
 
 La API queda disponible en `http://127.0.0.1:8000/api`.
+
+**Precauciones:**
+
+- `php artisan migrate` (sin `--seed`) es lo que corresponde después de traer cambios: aplica solo las migraciones nuevas.
+- `migrate:fresh`, `migrate:refresh` y `db:wipe` **borran todos los datos**. No usarlos sobre una base con datos que
+  interesen.
+- `php artisan db:seed` completo sobre una base ya sembrada **duplica datos o falla**: los seeders de datos de ejemplo
+  (marcas, modelos, servicios, clientes, vehículos, recepciones, diagnósticos, presupuestos, repuestos) usan `create()`.
+- Se pueden volver a ejecutar sin riesgo: `RolesAndPermissionsSeeder` (sincroniza roles y permisos; correrlo después de
+  cada fase que agregue permisos), `AdminUserSeeder`, `MechanicSeeder`, `ServiceCategorySeeder`, `PartCategorySeeder`,
+  `SupplierSeeder`, `MaintenancePlanSeeder` e `InvoiceStampSeeder`:
+
+```bash
+php artisan db:seed --class=RolesAndPermissionsSeeder
+```
+
+- Si se cambia el `.env` y no se ve reflejado, verificar que no haya configuración cacheada (`php artisan config:clear`).
 
 ### Usuarios del seeder
 
@@ -110,18 +152,38 @@ La API queda disponible en `http://127.0.0.1:8000/api`.
 
 Todos usan la contraseña definida en `ADMIN_PASSWORD`.
 
-El seeder también crea los roles `recepcionista`, `jefe-taller`, `cajero` y `deposito` (sin usuarios asignados). Qué
-puede hacer cada uno está en la sección 2.3 de [`CLAUDE.md`](CLAUDE.md).
+El seeder también crea los roles `recepcionista`, `jefe-taller`, `cajero` y `deposito` (sin usuarios asignados; se
+asignan con `PATCH /api/users/{id}` enviando `role`). Qué puede hacer cada uno está en la sección 5 de
+[`CLAUDE.md`](CLAUDE.md).
 
-> Después de agregar permisos nuevos (por ejemplo al pasar a una fase nueva) hay que volver a ejecutar
-> `php artisan db:seed --class=RolesAndPermissionsSeeder`.
+---
+
+## Frontend
+
+Este repositorio contiene **solo la API**. No hay código del frontend: `resources/` y `package.json` son el scaffold
+por defecto de Laravel (Vite + Tailwind) y `routes/web.php` no define rutas.
+
+Lo que está preparado para un frontend SPA separado (por ejemplo el React 19 previsto en el handoff, que no pudo
+verificarse):
+
+| Configuración | Valor actual |
+|---|---|
+| `config/cors.php` → `allowed_origins` | `http://localhost:5173` (servidor de desarrollo de Vite) |
+| `config/sanctum.php` → `stateful` (`SANCTUM_STATEFUL_DOMAINS`) | `localhost:5173` |
+| URL base de la API para el frontend | `http://127.0.0.1:8000/api` (o el `APP_URL` + `/api`) |
+
+La variable con la URL de la API (por ejemplo `VITE_API_URL`) pertenece al proyecto del frontend; este repositorio no
+la usa. Si el frontend corre en otro origen, agregarlo en `config/cors.php`.
 
 ---
 
 ## Uso de la API
 
-Todas las rutas (salvo `POST /api/login`) requieren el header `Authorization: Bearer {token}` y
-`Accept: application/json`.
+Todas las rutas (salvo `POST /api/login`) requieren el header `Authorization: Bearer {token}`. Enviar siempre
+`Accept: application/json`: sin ese header los errores no se devuelven con el formato JSON de la API.
+
+Autenticación con Sanctum: `POST /api/login` devuelve `data.token` y `data.user` (con roles); `POST /api/logout` revoca
+el token actual. Los tokens no expiran. Cada endpoint exige un permiso (`recurso.acción`) asignado al rol del usuario.
 
 ```http
 POST /api/login
@@ -135,8 +197,10 @@ Content-Type: application/json
 Éxito:
 
 ```json
-{ "success": true, "status": 200, "message": "...", "data": {}, "errors": null, "meta": {}, "timestamp": "..." }
+{ "success": true, "status": 200, "message": "...", "data": {}, "errors": null, "meta": null, "timestamp": "..." }
 ```
+
+En los listados `meta.pagination` trae `total`, `perPage`, `currentPage` y `lastPage`.
 
 Error:
 
@@ -148,8 +212,10 @@ Error:
 - `error_code` es estable y es el que debe usar el frontend para decidir qué hacer.
 - Los errores de negocio responden `422` (o `409` en conflictos), nunca `500`.
 
-Códigos HTTP estándar: `401 UNAUTHENTICATED`, `403 FORBIDDEN`, `404 RESOURCE_NOT_FOUND`,
-`405 METHOD_NOT_ALLOWED`, `422 VALIDATION_ERROR`.
+Códigos HTTP estándar: `400 BAD_REQUEST`, `401 UNAUTHENTICATED`, `403 FORBIDDEN`, `404 RESOURCE_NOT_FOUND`,
+`405 METHOD_NOT_ALLOWED`, `406 NOT_ACCEPTABLE`, `415 UNSUPPORTED_MEDIA_TYPE`, `422 VALIDATION_ERROR`,
+`429 TOO_MANY_REQUESTS`, `500 INTERNAL_SERVER_ERROR`, `503 SERVICE_UNAVAILABLE`. Nunca se devuelven trazas ni
+detalles internos.
 
 ### Importes
 
@@ -166,7 +232,12 @@ Los tests usan SQLite en memoria (no tocan la base de desarrollo):
 php artisan test
 # o
 vendor/bin/phpunit
+# o (limpia la config cacheada antes)
+composer test
 ```
+
+235 tests en `tests/Feature`, uno o más archivos por módulo. Los de usuarios y clientes necesitan internet
+(validación `email:rfc,dns`).
 
 Si `pdo_sqlite` no está habilitado en el `php.ini` de Laragon:
 
@@ -195,16 +266,21 @@ API Resource (Resource para listados, ShowResource para detalle)
 
 | Carpeta | Contenido |
 |---|---|
-| `app/Http/Controllers/Api` | Endpoints |
+| `app/Http/Controllers/Api` | Endpoints (41 controllers) |
 | `app/Http/Requests` | Validación |
-| `app/Services` | Lógica de negocio |
+| `app/Services` | Lógica de negocio (18 services) |
 | `app/Models` | Modelos Eloquent |
 | `app/Http/Resources` | Contrato JSON público |
 | `app/Enums` | Estados y tipos |
-| `app/Exceptions` | Excepciones de dominio (`AppException` y derivadas, con `error_code`) |
+| `app/Exceptions` | Excepciones de dominio (`AppException` y una por módulo, con `error_code`) |
+| `app/Support/Decimal.php` | Redondeo con BCMath |
 | `app/Traits/ApiResponse.php` | Respuestas estándar |
-| `routes/api.php` | Rutas de la API |
+| `bootstrap/app.php` | Middlewares de permisos y mapeo de excepciones a JSON |
+| `config/budget.php`, `config/invoice.php`, `config/maintenance.php` | Parámetros de negocio (IVA, decimales, umbrales de mantenimiento) |
+| `routes/api.php` | Rutas de la API (190) |
+| `database/migrations`, `database/seeders` | Esquema y datos iniciales/de ejemplo |
 | `tests/Feature` | Tests por módulo |
+| `docs/` | Handoff y guía de Postman |
 
 Convenciones principales:
 
@@ -220,5 +296,6 @@ Convenciones principales:
 ## Flujo de trabajo
 
 - No se trabaja directamente sobre `main`: cada fase o cambio va en su propia rama (`feature/...`, `fix/...`,
-  `docs/...`) y se integra a `main` con merge manual.
-- Cada fase actualiza `CLAUDE.md` y la guía de Postman.
+  `docs/...`, `test/...`) y se integra a `main` con merge manual.
+- Cada fase actualiza `CLAUDE.md` (reglas vigentes), `docs/handoff.md` (decisiones e historia) y la guía de Postman.
+- Antes de modificar código, leer [`CLAUDE.md`](CLAUDE.md): metodología, convenciones y reglas de negocio.

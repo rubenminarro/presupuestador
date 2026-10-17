@@ -164,7 +164,7 @@ Esperado: `201`. Login con ese email y contraseña (B.1) → guardar el token en
 | Ver recepciones | `GET {{base_url}}/receptions` | 403 | `FORBIDDEN` |
 | Crear timbrado | `POST {{base_url}}/invoice-stamps` | 403 | `FORBIDDEN` |
 
-> Mismo procedimiento para `recepcionista` (clientes, recepciones, presupuestos, entregas), `jefe-taller` (OT, mecánicos, diagnóstico) y `deposito` (repuestos, proveedores, inventario). Qué puede hacer cada rol: sección 2.3 del `CLAUDE.md`.
+> Mismo procedimiento para `recepcionista` (clientes, recepciones, presupuestos, entregas), `jefe-taller` (OT, mecánicos, diagnóstico) y `deposito` (repuestos, proveedores, inventario). Qué puede hacer cada rol: sección 5 del `CLAUDE.md` (detalle histórico en `docs/handoff.md`, sección 2.3).
 
 ---
 
