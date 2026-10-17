@@ -20,6 +20,13 @@ class StorePaymentRequest extends FormRequest
             // Guaraníes: sin decimales.
             'amount' => ['required', 'integer', 'min:1'],
             'method' => ['required', Rule::enum(PaymentMethod::class)],
+            // Solo efectivo: lo entregado por el cliente (para calcular el vuelto).
+            'amount_received' => [
+                Rule::prohibitedIf(fn () => $this->input('method') !== 'cash'),
+                'nullable',
+                'integer',
+                'gte:amount',
+            ],
             'payment_date' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today'],
             'reference' => [
                 Rule::requiredIf(fn () => in_array($this->input('method'), ['card', 'transfer', 'check'], true)),
@@ -50,6 +57,11 @@ class StorePaymentRequest extends FormRequest
             'method' => [
                 'required' => 'El medio de pago es obligatorio.',
                 Enum::class => 'El medio de pago debe ser cash, card, transfer o check.',
+            ],
+            'amount_received' => [
+                'prohibited' => 'El monto entregado solo se informa en pagos en efectivo.',
+                'integer' => 'El monto entregado debe ser un número entero (guaraníes, sin decimales).',
+                'gte' => 'El monto entregado no puede ser menor al monto del pago.',
             ],
             'payment_date' => [
                 'date_format' => 'La fecha del pago debe tener el formato AAAA-MM-DD.',

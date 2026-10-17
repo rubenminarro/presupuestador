@@ -647,7 +647,9 @@ Reglas:
 * Solo facturas `issued` admiten pagos (`INVOICE_NOT_PAYABLE`). Varios pagos por factura, al contado o a crédito,
   hasta cubrir el total. Saldo = total − pagos `registered`.
 * Monto en guaraníes enteros (`integer`, > 0). Supera el saldo → `PAYMENT_EXCEEDS_BALANCE`; saldo 0 → `INVOICE_ALREADY_PAID`.
-  Sin vuelto: se registra el monto aplicado.
+* Vuelto (solo efectivo): `amount_received` opcional, ≥ `amount`; se guarda `change_amount = amount_received − amount`
+  (migración 000042). `amount` es lo aplicado a la factura; sin `amount_received` el pago es exacto (ambos `null`).
+  En otros medios `amount_received` está prohibido.
 * `payment_date` opcional (hoy por defecto), no futura (validación) ni anterior a `issue_date` (`PAYMENT_DATE_BEFORE_ISSUE`).
 * `reference` obligatoria para tarjeta, transferencia y cheque (se descarta en efectivo); `bank` obligatorio en cheque
   (se guarda solo en cheque y transferencia).
@@ -658,7 +660,8 @@ Reglas:
 * Una factura con pagos vigentes no se anula (`INVOICE_HAS_PAYMENTS`): primero se anulan los pagos.
 * `ShowInvoiceResource` incluye `payment_summary` (`paid_total`, `balance`, `status`) y `payments`; el listado de
   facturas incluye `balance` y `payment_status` (con `withSum`).
-* Resumen de caja: pagos `registered` del período (por defecto, hoy) agrupados por medio, más la cantidad de anulados.
+* Resumen de caja: pagos `registered` del período (por defecto, hoy) agrupados por medio, `cash.received` y
+  `cash.change` (efectivo recibido y vuelto entregado), más la cantidad de anulados.
 
 Endpoints: `POST invoices/{invoice}/payments`, `GET payments`, `GET payments/summary?date_from&date_to`,
 `GET payments/{payment}`, `POST payments/{payment}/cancel`.

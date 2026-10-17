@@ -69,6 +69,7 @@ class PaymentService
 
             $payment = $invoice->payments()->create([
                 ...$this->receipt($invoice),
+                ...$this->cashChange($method, $amount, $data['amount_received'] ?? null),
                 'payment_date' => $paymentDate->toDateString(),
                 'amount' => $amount,
                 'method' => $method,
@@ -145,15 +146,45 @@ class PaymentService
             $count += (int) ($row?->payments_count ?? 0);
         }
 
+        // Efectivo: recibido (o el monto exacto si no se informó) y vuelto entregado.
+        $cash = Payment::query()
+            ->registered()
+            ->where('method', PaymentMethod::CASH)
+            ->tap($inPeriod)
+            ->selectRaw('SUM(COALESCE(amount_received, amount)) as received, SUM(COALESCE(change_amount, 0)) as change_total')
+            ->first();
+
         return [
             'period' => ['date_from' => $from->toDateString(), 'date_to' => $to->toDateString()],
             'payments_count' => $count,
             'total' => $total,
             'by_method' => $byMethod,
+            'cash' => [
+                'received' => bcadd((string) ($cash?->received ?? '0'), '0', 2),
+                'change' => bcadd((string) ($cash?->change_total ?? '0'), '0', 2),
+            ],
             'cancelled_count' => Payment::query()
                 ->where('status', PaymentStatus::CANCELLED)
                 ->tap($inPeriod)
                 ->count(),
+        ];
+    }
+
+    /**
+     * En efectivo: lo entregado por el cliente y el vuelto. Sin monto entregado
+     * se asume el exacto (sin vuelto). El Request ya exige entregado ≥ monto.
+     */
+    private function cashChange(PaymentMethod $method, string $amount, int|string|null $received): array
+    {
+        if ($method !== PaymentMethod::CASH || $received === null) {
+            return [];
+        }
+
+        $received = bcadd((string) $received, '0', 2);
+
+        return [
+            'amount_received' => $received,
+            'change_amount' => bcsub($received, $amount, 2),
         ];
     }
 

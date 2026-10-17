@@ -1700,6 +1700,7 @@ Token: administrador salvo indicación.
 > Medios: `cash` (efectivo), `card` (tarjeta), `transfer` (transferencia), `check` (cheque). Tarjeta, transferencia y cheque exigen `reference`; el cheque también `bank`.
 > Los pagos de facturas **a crédito** llevan recibo numerado (`REC-000001`…). Un pago no se edita: **se anula** (con motivo) y el saldo vuelve a estar disponible.
 > La factura muestra `payment_summary`: `paid_total`, `balance` y `status` (`unpaid`, `partial`, `paid`).
+> **Vuelto** (solo efectivo): enviar `amount_received` (lo entregado por el cliente); se guarda `change_amount`. Lo aplicado a la factura es siempre `amount`.
 
 ### 16.1 Pagos parciales al contado
 
@@ -1718,6 +1719,8 @@ Casos de error (antes de pagar):
 | Fecha futura | `{ "amount": 1000, "method": "cash", "payment_date": "<mañana>" }` | 422 | `VALIDATION_ERROR` (`errors.payment_date`) |
 | Fecha anterior a la emisión | `{ "amount": 1000, "method": "cash", "payment_date": "<día anterior a issue_date>" }` | 422 | `PAYMENT_DATE_BEFORE_ISSUE` |
 | Supera el saldo | `{ "amount": 352001, "method": "cash" }` | 422 | `PAYMENT_EXCEEDS_BALANCE` |
+| Entregado menor al monto | `{ "amount": 1000, "method": "cash", "amount_received": 500 }` | 422 | `VALIDATION_ERROR` (`errors.amount_received`) |
+| Entregado en otro medio | `{ "amount": 1000, "method": "card", "reference": "V-1", "amount_received": 2000 }` | 422 | `VALIDATION_ERROR` (`errors.amount_received`) |
 
 **Primer pago (efectivo):**
 
@@ -1734,6 +1737,7 @@ Esperado: `201` → `payment1_id`.
 | `status.value` / `method.value` | `registered` / `cash` |
 | `payment_date` | hoy (si no se informa) |
 | `receipt_number` | `null` (al contado la factura es el comprobante) |
+| `amount_received` / `change_amount` | `null` / `null` (pago exacto, sin vuelto) |
 | `invoice.paid_total` / `invoice.balance` | `"100000.00"` / `"252000.00"` |
 | `invoice.payment_status` | `partial` |
 
@@ -1770,10 +1774,10 @@ Verificar `GET {{base_url}}/invoices/{{invoice_id}}`: `payment_summary` → `pai
 `POST {{base_url}}/invoices/{{invoice4_id}}/payments`
 
 ```json
-{ "amount": 200, "method": "cash" }
+{ "amount": 200, "method": "cash", "amount_received": 500 }
 ```
 
-Esperado: `201`, `receipt_number` `"REC-000001"`, `invoice.balance` `"350.00"`, `invoice.payment_status` `partial` → `payment3_id`.
+Esperado: `201`, `receipt_number` `"REC-000001"`, `amount` `"200.00"`, `amount_received` `"500.00"`, `change_amount` `"300.00"` (vuelto), `invoice.balance` `"350.00"`, `invoice.payment_status` `partial` → `payment3_id`.
 
 ```json
 { "amount": 350, "method": "transfer", "reference": "OP-998", "bank": "Banco Continental" }
@@ -1830,6 +1834,7 @@ Volver a pagar el saldo: `POST {{base_url}}/invoices/{{invoice4_id}}/payments` c
 | `by_method` efectivo | `payments_count` `3`, `total` `"100550.00"` (100.000 + 200 + 350) |
 | `by_method` tarjeta | `payments_count` `1`, `total` `"252000.00"` |
 | `by_method` transferencia / cheque | `"0.00"` / `"0.00"` |
+| `cash.received` / `cash.change` | `"100850.00"` / `"300.00"` (en 16.3 se entregaron 500 por un pago de 200) |
 | `cancelled_count` | `1` |
 
 | Caso | Método / Endpoint | HTTP | Resultado / error_code |

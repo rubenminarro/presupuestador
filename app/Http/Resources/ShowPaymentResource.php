@@ -14,6 +14,8 @@ class ShowPaymentResource extends JsonResource
             'receipt_number' => $this->receipt_number,
             'payment_date' => $this->payment_date?->toDateString(),
             'amount' => $this->amount,
+            'amount_received' => $this->amount_received,
+            'change_amount' => $this->change_amount,
             'method' => [
                 'value' => $this->method?->value,
                 'label' => $this->method?->label(),
