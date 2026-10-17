@@ -742,6 +742,10 @@ HasMiddleware
 
 y definen permisos por operación.
 
+> El rol `administrador` pasa todos los permisos por `Gate::before` (AppServiceProvider), por eso un permiso mal
+> escrito en un controller no se nota con el admin. El nombre del middleware debe coincidir exactamente con el del
+> `RolesAndPermissionsSeeder`; los tests con roles propios (`tests/Feature/Access`, `WorkOrderLifecycleTest`) lo verifican.
+
 Ejemplo conceptual:
 
 ```text

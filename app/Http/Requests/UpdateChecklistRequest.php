@@ -54,9 +54,8 @@ class UpdateChecklistRequest extends FormRequest
                 'string'   => 'El tipo del checklist debe tener el formato correcto.',
                 Enum::class => 'El tipo del checklist seleccionado no es válido.',
             ],
-            'required' => [
-                'boolean' => 'El campo required debe ser un valor booleano.',
-            ],
+            // Clave con punto: ver StoreCheckListRequest.
+            'required.boolean' => 'El campo required debe ser un valor booleano.',
         ];
     }
 }

@@ -11,10 +11,22 @@ use App\Http\Requests\UploadDiagnosticItemPhotosRequest;
 use App\Http\Requests\UpdateDiagnosticItemPhotoRequest;
 use App\Http\Resources\DiagnosticItemPhotoResource;
 use App\Traits\ApiResponse;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class DiagnosticItemPhotoController extends Controller
+class DiagnosticItemPhotoController extends Controller implements HasMiddleware
 {
     use ApiResponse;
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:diagnostic-item-photos.index', only: ['index']),
+            new Middleware('permission:diagnostic-item-photos.store', only: ['store']),
+            new Middleware('permission:diagnostic-item-photos.update', only: ['update']),
+            new Middleware('permission:diagnostic-item-photos.destroy', only: ['destroy']),
+        ];
+    }
 
     public function index(DiagnosticItem $diagnosticItem)
     {
