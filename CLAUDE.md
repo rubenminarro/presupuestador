@@ -4,8 +4,9 @@
 
 **Versión del handoff:** 1.1
 **Fecha:** 2026-10-17
-**Estado:** Backend/API funcional — FASES 10 a 19 cerradas (repuestos, inventario, servicios, cierre económico,
-facturación, pagos, entrega, historial del vehículo y mantenimiento preventivo); 6 roles; todos los módulos con tests
+**Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
+cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes); 6 roles; todos los
+módulos con tests
 **Stack principal:** Laravel 12 + React 19 + MySQL
 **Entorno local:** Laragon / Windows
 **Base de datos:** `presupuestador`
@@ -382,6 +383,7 @@ También se completaron:
 * **FASE 17 — Entrega del vehículo:** ver sección 2.30.
 * **FASE 18 — Historial del vehículo:** ver sección 2.31.
 * **FASE 19 — Mantenimiento preventivo:** ver sección 2.32.
+* **FASE 20 — Reportes y dashboard:** ver sección 2.33.
 
 ---
 
@@ -796,6 +798,29 @@ Endpoints: CRUD `maintenance-plans` (PATCH para editar/activar), `GET|POST vehic
 Permisos: `maintenance-plans.index|show|store|update|destroy`, `vehicle-maintenances.index|record|configure`,
 `maintenance-alerts.index`. Mecánico: ver planes y el estado del vehículo; recepcionista: además registrar y ver
 alertas; jefe-taller: además configurar intervalos del vehículo; ABM de planes: administrador.
+
+---
+
+# 2.33 Reportes y dashboard (FASE 20)
+
+Solo lectura y sin tablas nuevas. `ReportService` (reutiliza `PaymentService::summary` y `MaintenanceService::alerts`),
+`ReportController`, `ReportRequest` (`date_from`/`date_to`, por defecto el mes en curso; `group_by` = day|month).
+Solo JSON (la exportación queda para más adelante).
+
+| Endpoint | Contenido | Fecha que filtra | Permiso |
+|---|---|---|---|
+| `GET dashboard` | Bloques según permisos: `workshop` (siempre), `sales`, `budgets`, `profitability`, `productivity`, `inventory`, `maintenance` | mes en curso | `dashboard.view` (+ el permiso de cada bloque) |
+| `GET reports/sales` | Facturas emitidas: totales por tasa, IVA, descuento, ticket promedio, por día/mes, por condición; cobrado por medio; anuladas | emisión de la factura | `reports.sales` |
+| `GET reports/budgets` | Por estado actual (cantidad y monto); tasa de aprobación = aprobados / (aprobados + rechazados) | creación del presupuesto | `reports.budgets` |
+| `GET reports/profitability` | Cierres: venta, costos, comisiones, margen y %; 5 OT de menor y mayor margen; cuántas con costo incompleto | cierre de la OT | `reports.profitability` |
+| `GET reports/productivity` | Por mecánico: OT como responsable, trabajos, venta de mano de obra atribuida (total × participación), comisiones, horas y costo | cierre de la OT | `reports.productivity` |
+| `GET reports/inventory` | Valor del stock y bajo mínimo (a hoy; sin stock = 0); 10 más consumidos (neto de devoluciones) y movimientos por tipo | movimiento | `reports.inventory` |
+| `GET reports/clients` | 10 clientes que más facturan, clientes nuevos, saldos por cobrar por cliente (a hoy), 10 vehículos con más visitas | emisión / alta / recepción | `reports.clients` |
+
+Importes de ventas y clientes: con IVA (factura). Rentabilidad y productividad: sin IVA (cierre).
+Acceso por área: cajero `sales` y `clients`; recepcionista `budgets`; jefe-taller `productivity`; depósito `inventory`;
+`profitability` solo administrador; mecánico solo el dashboard (bloque `workshop`). El bloque `maintenance` del
+dashboard usa `maintenance-alerts.index`.
 
 ---
 
@@ -3083,13 +3108,17 @@ La arquitectura objetivo es:
 El proyecto actualmente se encuentra en:
 
 ```text
-FASE 19 — MANTENIMIENTO PREVENTIVO — CERRADA
+FASE 20 — REPORTES Y DASHBOARD — CERRADA
 ```
 
-El siguiente gran paso recomendado es:
+Con la FASE 20 se completa el roadmap original (FASES 10–20). Pendientes sin fase asignada, a priorizar:
 
 ```text
-FASE 20 — REPORTES Y DASHBOARD (ventas, rentabilidad, productividad, inventario, clientes y vehículos)
+Compras (Purchase / PurchaseItem → ingreso de stock)
+Notificaciones (presupuesto enviado, vehículo listo, pago pendiente, mantenimiento próximo)
+Exportación de reportes (CSV / PDF) y comprobantes imprimibles (factura, recibo, entrega)
+Auditoría avanzada (AuditLog de precios, stock, facturación y pagos)
+Frontend React 19 (consumo de esta API)
 ```
 
 El orden de trabajo de abajo se usó para las FASES 10 a 13 y sigue siendo la referencia.
@@ -3197,6 +3226,7 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 [✓] Roles del taller: recepcionista, jefe-taller, cajero, depósito
 [✓] Historial del vehículo con resumen, visitas, repuestos y kilometraje (FASE 18)
 [✓] Mantenimiento preventivo con planes, km estimado y alertas (FASE 19)
+[✓] Reportes y dashboard por área (FASE 20)
 ```
 
 ## Próximo
@@ -3204,7 +3234,7 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 ```text
 [ ] Compras
 [ ] Notificaciones
-[ ] Reportes
+[ ] Exportación de reportes y comprobantes
 [ ] Auditoría avanzada
 ```
 

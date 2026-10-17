@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\VehicleDeliveryController;
 use App\Http\Controllers\Api\VehicleHistoryController;
 use App\Http\Controllers\Api\MaintenancePlanController;
 use App\Http\Controllers\Api\VehicleMaintenanceController;
+use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\PartCategoryController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\PartController;
@@ -190,6 +191,20 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
         ->name('vehicles.maintenances.configure');
 
     Route::get('maintenance/alerts', [VehicleMaintenanceController::class, 'alerts'])->name('maintenance.alerts');
+
+    Route::get('dashboard', [ReportController::class, 'dashboard'])->name('dashboard');
+
+    Route::get('reports/sales', [ReportController::class, 'sales'])->name('reports.sales');
+
+    Route::get('reports/budgets', [ReportController::class, 'budgets'])->name('reports.budgets');
+
+    Route::get('reports/profitability', [ReportController::class, 'profitability'])->name('reports.profitability');
+
+    Route::get('reports/productivity', [ReportController::class, 'productivity'])->name('reports.productivity');
+
+    Route::get('reports/inventory', [ReportController::class, 'inventory'])->name('reports.inventory');
+
+    Route::get('reports/clients', [ReportController::class, 'clients'])->name('reports.clients');
 
     Route::get('service-categories', [ServiceCategoryController::class, 'index'])->name('service-categories.index');
 

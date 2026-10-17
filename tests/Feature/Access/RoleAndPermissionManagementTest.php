@@ -78,17 +78,17 @@ class RoleAndPermissionManagementTest extends PartsTestCase
 
     public function test_crud_of_permissions(): void
     {
-        $permission = $this->postJson('/api/permissions', ['name' => 'reports.sales', 'guard_name' => 'api'])
+        $permission = $this->postJson('/api/permissions', ['name' => 'audits.view', 'guard_name' => 'api'])
             ->assertCreated()
-            ->assertJsonPath('data.name', 'reports.sales')
+            ->assertJsonPath('data.name', 'audits.view')
             ->json('data');
 
-        $this->getJson('/api/permissions?search=reports')->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson('/api/permissions?search=audits')->assertOk()->assertJsonCount(1, 'data');
         $this->getJson("/api/permissions/{$permission['id']}")->assertOk()->assertJsonPath('data.guard_name', 'api');
 
-        $this->patchJson("/api/permissions/{$permission['id']}", ['name' => 'reports.profit'])
+        $this->patchJson("/api/permissions/{$permission['id']}", ['name' => 'audits.export'])
             ->assertOk()
-            ->assertJsonPath('data.name', 'reports.profit');
+            ->assertJsonPath('data.name', 'audits.export');
 
         $this->deleteJson("/api/permissions/{$permission['id']}")->assertOk();
         $this->getJson("/api/permissions/{$permission['id']}")->assertNotFound();
@@ -102,7 +102,7 @@ class RoleAndPermissionManagementTest extends PartsTestCase
 
         $this->postJson('/api/permissions', ['name' => 'sin-formato', 'guard_name' => 'api'])->assertJsonValidationErrors(['name']);
         $this->postJson('/api/permissions', ['name' => 'clients.index', 'guard_name' => 'api'])->assertJsonValidationErrors(['name']);
-        $this->postJson('/api/permissions', ['name' => 'reports.sales', 'guard_name' => 'otro'])->assertJsonValidationErrors(['guard_name']);
+        $this->postJson('/api/permissions', ['name' => 'audits.view', 'guard_name' => 'otro'])->assertJsonValidationErrors(['guard_name']);
     }
 
     /**

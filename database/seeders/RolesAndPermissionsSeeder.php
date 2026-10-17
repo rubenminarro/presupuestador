@@ -250,6 +250,15 @@ class RolesAndPermissionsSeeder extends Seeder
             'vehicle-maintenances.configure',
             'maintenance-alerts.index',
 
+            /* dashboard and report permissions */
+            'dashboard.view',
+            'reports.sales',
+            'reports.budgets',
+            'reports.profitability',
+            'reports.productivity',
+            'reports.inventory',
+            'reports.clients',
+
             /* inventory permissions */
             'inventory.index',
             'inventory.show',
@@ -333,6 +342,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'maintenance-plans.index',
             'vehicle-maintenances.index',
 
+            'dashboard.view',
+
         ];
 
         $mecanico->syncPermissions(
@@ -385,6 +396,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'vehicle-history.view',
                     'maintenance-plans.index', 'maintenance-plans.show',
                     'vehicle-maintenances.index', 'vehicle-maintenances.record', 'maintenance-alerts.index',
+                    'dashboard.view', 'reports.budgets',
                 ],
             ],
             'jefe-taller' => [
@@ -416,6 +428,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'maintenance-plans.index', 'maintenance-plans.show',
                     'vehicle-maintenances.index', 'vehicle-maintenances.record', 'vehicle-maintenances.configure',
                     'maintenance-alerts.index',
+                    'dashboard.view', 'reports.productivity',
                 ],
             ],
             'cajero' => [
@@ -430,6 +443,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'payments.index', 'payments.show', 'payments.store', 'payments.cancel', 'payments.summary',
                     'vehicle-deliveries.index', 'vehicle-deliveries.show',
                     'vehicle-history.view',
+                    'dashboard.view', 'reports.sales', 'reports.clients',
                 ],
             ],
             'deposito' => [
@@ -445,6 +459,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'work-order-parts.index', 'work-order-parts.store', 'work-order-parts.update', 'work-order-parts.reserve',
                     'work-order-parts.consume', 'work-order-parts.return', 'work-order-parts.cancel',
                     'vehicle-history.view',
+                    'dashboard.view', 'reports.inventory',
                 ],
             ],
         ];

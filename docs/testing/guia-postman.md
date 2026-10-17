@@ -1,6 +1,6 @@
 # Guía de pruebas con Postman — Presupuestador
 
-**Alcance:** API al cierre de la FASE 19 (mantenimiento preventivo), con la FASE 18 (historial del vehículo), los roles del taller, la FASE 17 (entrega del vehículo), la FASE 16 (pagos, vuelto, recibos y resumen de caja), la FASE 15 (facturación con timbrado e IVA incluido), la FASE 14 (cierre económico de la OT y liquidación de comisiones), incluidos los ajustes posteriores a la FASE 12 (rutas de vehículos por cliente, permisos de ítems de presupuesto, `error_code` del login y validaciones de texto) y la corrección de `roles/permissions-grouped-by-module`.
+**Alcance:** API al cierre de la FASE 20 (reportes y dashboard), con la FASE 19 (mantenimiento preventivo), la FASE 18 (historial del vehículo), los roles del taller, la FASE 17 (entrega del vehículo), la FASE 16 (pagos, vuelto, recibos y resumen de caja), la FASE 15 (facturación con timbrado e IVA incluido), la FASE 14 (cierre económico de la OT y liquidación de comisiones), incluidos los ajustes posteriores a la FASE 12 (rutas de vehículos por cliente, permisos de ítems de presupuesto, `error_code` del login y validaciones de texto) y la corrección de `roles/permissions-grouped-by-module`.
 **Uso:** ejecutar los requests en el orden indicado; cada sección parte de los datos creados en las anteriores.
 
 ---
@@ -2193,6 +2193,76 @@ Esperado: `200`; incluye "Revision de frenos" de `QAB456` con `status.value` `ov
 | Alertas | `{{token_mec}}` | `GET {{base_url}}/maintenance/alerts` | 403 `FORBIDDEN` |
 | Alertas | `{{token_caja}}` | `GET {{base_url}}/maintenance/alerts` | 403 `FORBIDDEN` |
 | Crear plan | `{{token_mec}}` | `POST {{base_url}}/maintenance-plans` | 403 `FORBIDDEN` |
+
+---
+
+## FASE 20 — Reportes y dashboard
+
+Token: administrador salvo indicación. Todos los reportes aceptan `date_from` y `date_to` (`AAAA-MM-DD`); sin fechas toman el **mes en curso**.
+
+> Los valores dependen de todo lo cargado en las fases anteriores: esta sección verifica la **estructura** y la **coherencia** con lo ya probado, no montos fijos.
+> Ventas y clientes: importes **con IVA** (facturas, por fecha de emisión). Rentabilidad y productividad: **sin IVA** (cierres, por fecha de cierre de la OT).
+
+### 20.1 Dashboard
+
+`GET {{base_url}}/dashboard`
+
+Esperado (admin): `200` con los bloques `workshop`, `sales`, `budgets`, `profitability`, `productivity`, `inventory`, `maintenance`.
+
+| Bloque | Qué verificar |
+|---|---|
+| `workshop` | `vehicles_in_shop` (recepciones no entregadas ni canceladas), `open_work_orders` por estado (incluye `{{work_order7_id}}` pendiente), `completed_this_month` |
+| `sales` | `invoiced_this_month`, `collected_this_month` (igual al `total` de `GET .../payments/summary` del mes), `receivables` |
+| `budgets` | `awaiting_response` (presupuestos `sent`), `approval_rate_this_month` |
+| `inventory` | `stock_value`, `below_minimum` (incluye `REF-REF-001` del seeder) |
+| `maintenance` | `overdue` / `due_soon` (igual a `meta.counts` de `GET .../maintenance/alerts`) |
+
+| Token | Bloques visibles |
+|---|---|
+| `{{token_mec}}` | solo `workshop` |
+| `{{token_caja}}` (B.6) | `workshop`, `sales` |
+
+### 20.2 Ventas
+
+`GET {{base_url}}/reports/sales`
+
+Esperado: `200`; `totals` (`invoices_count`, `total`, `taxed_10`, `iva_10`, `average_ticket`, …), `by_period` (por día), `by_condition` (`cash`/`credit`), `collected.by_method` y `cancelled` (incluye `{{invoice2_id}}`, anulada en 15.7).
+
+| Caso | Endpoint | HTTP | Resultado / error_code |
+|---|---|---|---|
+| Por mes | `GET {{base_url}}/reports/sales?group_by=month` | 200 | `by_period[].period` con formato `AAAA-MM` |
+| Período sin ventas | `GET {{base_url}}/reports/sales?date_from=2020-01-01&date_to=2020-01-31` | 200 | `invoices_count` `0`, `average_ticket` `"0.00"` |
+| Agrupación inválida | `GET {{base_url}}/reports/sales?group_by=week` | 422 | `VALIDATION_ERROR` |
+| Rango invertido | `GET {{base_url}}/reports/sales?date_from=2026-02-01&date_to=2026-01-01` | 422 | `VALIDATION_ERROR` |
+
+### 20.3 Presupuestos
+
+`GET {{base_url}}/reports/budgets` → `200`; `by_status` con cada estado (`draft`, `sent`, `approved`, `rejected`, `cancelled`), cantidad y monto; `approval_rate` = aprobados / (aprobados + rechazados) × 100 (`null` si no hay ninguno decidido).
+
+### 20.4 Rentabilidad (solo administrador)
+
+`GET {{base_url}}/reports/profitability` → `200`; `totals.sale_total` y `totals.gross_margin` = suma de los `economic_summary` de las OT completadas en el período (por ejemplo `{{work_order5_id}}`: venta `320000.00`, margen `96400.00`, ver 14.2); `lowest_margin` / `highest_margin` con hasta 5 OT; `incomplete_cost_count`.
+
+### 20.5 Productividad
+
+`GET {{base_url}}/reports/productivity` → `200`; una fila por mecánico (MEC-001, MEC-002) con `work_orders_as_responsible`, `jobs_completed`, `labor_sale_attributed`, `commission_total` (coincide con `GET .../mechanics/{id}/commissions` del mes) y `hours_logged` (MEC-001 incluye las 3,5 h de 13.10).
+
+### 20.6 Inventario
+
+`GET {{base_url}}/reports/inventory` → `200`; `stock_value`, `below_minimum`, `top_consumed` (el aceite `QA-ACE-001` aparece con su consumo neto de 12.9/12.10) y `movements_by_type`.
+
+### 20.7 Clientes
+
+`GET {{base_url}}/reports/clients` → `200`; `top_clients` (Lucia Benitez con las facturas emitidas), `new_clients`, `receivables` (saldos de facturas a crédito sin pagar), `top_vehicles` (`QAA123` con sus visitas).
+
+### 20.8 Acceso por área
+
+| Token | Puede ver | 403 `FORBIDDEN` en |
+|---|---|---|
+| `{{token_caja}}` | `reports/sales`, `reports/clients` | `reports/budgets`, `reports/profitability` |
+| `{{token_mec}}` | — (solo `dashboard`) | todos los `reports/*` |
+
+> Recepcionista: `reports/budgets`; jefe de taller: `reports/productivity`; depósito: `reports/inventory`; rentabilidad: solo administrador.
 
 ---
 
