@@ -82,6 +82,43 @@ class PaymentTest extends InvoiceTestCase
             ->assertJsonPath('data.0.payment_status', 'paid');
     }
 
+    public function test_cash_payment_records_the_change(): void
+    {
+        $invoice = $this->issuedInvoice();
+        $url = "/api/invoices/{$invoice['id']}/payments";
+
+        // Paga 85.000 entregando 100.000: vuelto 15.000. Se aplica solo el monto.
+        $this->postJson($url, ['amount' => 85000, 'method' => 'cash', 'amount_received' => 100000])
+            ->assertCreated()
+            ->assertJsonPath('data.amount', '85000.00')
+            ->assertJsonPath('data.amount_received', '100000.00')
+            ->assertJsonPath('data.change_amount', '15000.00')
+            ->assertJsonPath('data.invoice.paid_total', '85000.00');
+
+        // Sin monto entregado: pago exacto, sin vuelto.
+        $this->postJson($url, ['amount' => 1000, 'method' => 'cash'])
+            ->assertCreated()
+            ->assertJsonPath('data.amount_received', null)
+            ->assertJsonPath('data.change_amount', null);
+
+        $this->postJson($url, ['amount' => 1000, 'method' => 'cash', 'amount_received' => 500])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['amount_received']);
+
+        $this->postJson($url, ['amount' => 1000, 'method' => 'card', 'reference' => 'V-1', 'amount_received' => 2000])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['amount_received']);
+
+        $this->postJson($url, ['amount' => 1000, 'method' => 'cash', 'amount_received' => 1500.5])
+            ->assertJsonValidationErrors(['amount_received']);
+
+        $this->getJson('/api/payments/summary')
+            ->assertOk()
+            ->assertJsonPath('data.total', '86000.00')
+            ->assertJsonPath('data.cash.received', '101000.00')
+            ->assertJsonPath('data.cash.change', '15000.00');
+    }
+
     public function test_payment_cannot_exceed_the_balance(): void
     {
         $invoice = $this->issuedInvoice();

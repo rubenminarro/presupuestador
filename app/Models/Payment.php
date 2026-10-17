@@ -25,6 +25,8 @@ class Payment extends Model
         'receipt_number',
         'payment_date',
         'amount',
+        'amount_received',
+        'change_amount',
         'method',
         'reference',
         'bank',
@@ -43,6 +45,8 @@ class Payment extends Model
             'status' => PaymentStatus::class,
             'payment_date' => 'date',
             'amount' => 'decimal:2',
+            'amount_received' => 'decimal:2',
+            'change_amount' => 'decimal:2',
             'cancelled_at' => 'datetime',
         ];
     }
