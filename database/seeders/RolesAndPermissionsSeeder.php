@@ -230,6 +230,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'payments.cancel',
             'payments.summary',
 
+            /* vehicle delivery permissions */
+            'vehicle-deliveries.index',
+            'vehicle-deliveries.show',
+            'vehicle-deliveries.store',
+            'vehicle-deliveries.cancel',
+
             /* inventory permissions */
             'inventory.index',
             'inventory.show',

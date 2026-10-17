@@ -5,7 +5,7 @@ hasta el pago de la factura.
 
 ```text
 Cliente → Vehículo → Recepción → Diagnóstico → Presupuesto → Aprobación → Orden de trabajo
-       → Ejecución (servicios, mano de obra, repuestos) → Cierre económico → Factura → Pago
+       → Ejecución (servicios, mano de obra, repuestos) → Cierre económico → Factura → Pago → Entrega
 ```
 
 > El documento de referencia del proyecto (arquitectura, reglas de negocio y decisiones por fase) es
@@ -42,9 +42,10 @@ Cliente → Vehículo → Recepción → Diagnóstico → Presupuesto → Aproba
 | Servicios y mano de obra | Catálogo de servicios, reparto entre mecánicos, horas reales, comisiones |
 | Cierre económico | Al completar la OT se congelan venta, costos, margen y comisiones; liquidación de comisiones |
 | Facturación | Timbrado, numeración `001-001-0000001`, IVA 10% / 5% / exento, contado o crédito |
-| Pagos | Pagos parciales, medios de pago, recibos para crédito, saldo y resumen de caja |
+| Pagos | Pagos parciales, medios de pago, vuelto en efectivo, recibos para crédito, saldo y resumen de caja |
+| Entrega del vehículo | Comprobante `ENT-000001`, kilometraje final, quién retira, conformidad y firma; exige factura emitida y pagada si es al contado |
 
-Próximas fases: entrega del vehículo, historial del vehículo, mantenimiento preventivo, compras, reportes.
+Próximas fases: historial del vehículo, mantenimiento preventivo, compras, reportes.
 
 ---
 

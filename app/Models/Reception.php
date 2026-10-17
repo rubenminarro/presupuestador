@@ -80,6 +80,11 @@ class Reception extends Model
         return $this->belongsToMany(ServiceCategory::class);
     }
 
+    public function deliveries(): HasMany
+    {
+        return $this->hasMany(VehicleDelivery::class);
+    }
+
     public function workOrders(): HasMany
     {
         return $this->hasMany(WorkOrder::class);

@@ -1,6 +1,6 @@
 # Guía de pruebas con Postman — Presupuestador
 
-**Alcance:** API al cierre de la FASE 16 (pagos, recibos y resumen de caja), con la FASE 15 (facturación con timbrado e IVA incluido), la FASE 14 (cierre económico de la OT y liquidación de comisiones), incluidos los ajustes posteriores a la FASE 12 (rutas de vehículos por cliente, permisos de ítems de presupuesto, `error_code` del login y validaciones de texto) y la corrección de `roles/permissions-grouped-by-module`.
+**Alcance:** API al cierre de la FASE 17 (entrega del vehículo), con la FASE 16 (pagos, vuelto, recibos y resumen de caja), la FASE 15 (facturación con timbrado e IVA incluido), la FASE 14 (cierre económico de la OT y liquidación de comisiones), incluidos los ajustes posteriores a la FASE 12 (rutas de vehículos por cliente, permisos de ítems de presupuesto, `error_code` del login y validaciones de texto) y la corrección de `roles/permissions-grouped-by-module`.
 **Uso:** ejecutar los requests en el orden indicado; cada sección parte de los datos creados en las anteriores.
 
 ---
@@ -19,7 +19,7 @@
 | `token_admin` | (vacío) |
 | `token_mec` | (vacío) |
 
-Variables de IDs que se irán completando con las respuestas: `client_id`, `client2_id`, `brand_id`, `model_id`, `vehicle_id`, `vehicle2_id`, `reception_id`, `budget_id`, `budget_item_id`, `mechanic_id`, `work_order_id`, `work_order_item_id`, `category_id`, `supplier_id`, `part_id`, `part_unit_id`, `part_status_id`, `movement_id`, `budget2_id`, `work_order2_id`, `work_order3_id`, `work_order4_id`, `line_id`, `extra_line_id`, `pending_line_id`, `mec1_id`, `mec2_id`, `service_category_id`, `service_id`, `service_unused_id`, `budget5_id`, `work_order5_id`, `labor_item_id`, `service_item_id`, `work_order6_id`, `work_order7_id`, `stamp_id`, `invoice_id`, `invoice_service_item_id`, `invoice_labor_item_id`, `invoice2_id`, `invoice3_id`, `invoice4_id`, `payment1_id`, `payment2_id`, `payment3_id`, `payment4_id`.
+Variables de IDs que se irán completando con las respuestas: `client_id`, `client2_id`, `brand_id`, `model_id`, `vehicle_id`, `vehicle2_id`, `reception_id`, `budget_id`, `budget_item_id`, `mechanic_id`, `work_order_id`, `work_order_item_id`, `category_id`, `supplier_id`, `part_id`, `part_unit_id`, `part_status_id`, `movement_id`, `budget2_id`, `work_order2_id`, `work_order3_id`, `work_order4_id`, `line_id`, `extra_line_id`, `pending_line_id`, `mec1_id`, `mec2_id`, `service_category_id`, `service_id`, `service_unused_id`, `budget5_id`, `work_order5_id`, `labor_item_id`, `service_item_id`, `work_order6_id`, `work_order7_id`, `stamp_id`, `invoice_id`, `invoice_service_item_id`, `invoice_labor_item_id`, `invoice2_id`, `invoice3_id`, `invoice4_id`, `payment1_id`, `payment2_id`, `payment3_id`, `payment4_id`, `reception2_id`, `budget8_id`, `work_order8_id`, `work_order8_item_id`, `invoice5_id`, `delivery_id`, `delivery2_id`.
 
 ### 0.2 Headers comunes
 
@@ -1852,6 +1852,140 @@ Volver a pagar el saldo: `POST {{base_url}}/invoices/{{invoice4_id}}/payments` c
 | Listar pagos | `GET {{base_url}}/payments` | 403 | `FORBIDDEN` |
 | Resumen de caja | `GET {{base_url}}/payments/summary` | 403 | `FORBIDDEN` |
 | Anular pago | `POST {{base_url}}/payments/{{payment1_id}}/cancel` | 403 | `FORBIDDEN` |
+
+---
+
+## FASE 17 — Entrega del vehículo
+
+Token: administrador salvo indicación.
+
+> La entrega se registra **por recepción**. Requisitos: ninguna OT de la recepción abierta, al menos una completada y cada OT completada con **factura emitida**; si la factura es **al contado** debe estar **totalmente pagada** (a crédito se entrega con saldo).
+> Al entregar, la recepción pasa a `delivered` y el kilometraje del vehículo se actualiza (solo si es mayor). Comprobante `ENT-000001`.
+> La entrega no se edita: se **anula** con motivo y la recepción vuelve a su estado anterior.
+
+### 17.1 Recepción con OT abiertas
+
+`POST {{base_url}}/receptions/{{reception_id}}/delivery` con el body de 17.3.
+
+Esperado: `422 DELIVERY_WORK_ORDERS_OPEN`. La recepción de las fases anteriores tiene OT sin terminar (por ejemplo `{{work_order4_id}}` y `{{work_order7_id}}`); el mensaje las lista.
+
+### 17.2 Preparar una recepción entregable
+
+Con el vehículo `{{vehicle2_id}}` (M.5.1, del cliente `{{client_id}}`):
+
+1. `POST {{base_url}}/receptions` con el body de M.6 cambiando `"vehicle_id": {{vehicle2_id}}` y `"mileage": 30000` → `reception2_id`.
+2. `POST {{base_url}}/budgets` con `{ "reception_id": {{reception2_id}} }` → `budget8_id`.
+3. `POST {{base_url}}/budgets/{{budget8_id}}/items` con `{ "type": "labor", "description": "Revision general", "quantity": 1, "unit_price": 1000 }`.
+4. `POST .../budgets/{{budget8_id}}/send` y `POST .../budgets/{{budget8_id}}/approve`.
+5. `POST {{base_url}}/work-orders` con `{ "budget_id": {{budget8_id}}, "mechanic_id": {{mec1_id}} }` → `work_order8_id` (guardar el id del ítem → `work_order8_item_id`).
+
+Casos de error mientras se avanza (body de 17.3):
+
+| Momento | Método / Endpoint | HTTP | error_code |
+|---|---|---|---|
+| OT recién creada (`pending`) | `POST {{base_url}}/receptions/{{reception2_id}}/delivery` | 422 | `DELIVERY_WORK_ORDERS_OPEN` |
+
+6. Iniciar la OT, iniciar y completar el ítem, completar la OT (`.../work-orders/{{work_order8_id}}/start`, `.../items/{{work_order8_item_id}}/start`, `.../items/{{work_order8_item_id}}/complete`, `.../work-orders/{{work_order8_id}}/complete`).
+
+| Momento | Método / Endpoint | HTTP | error_code |
+|---|---|---|---|
+| OT completada sin factura | `POST {{base_url}}/receptions/{{reception2_id}}/delivery` | 422 | `DELIVERY_WORK_ORDER_NOT_INVOICED` |
+
+7. `POST {{base_url}}/work-orders/{{work_order8_id}}/invoice` → `invoice5_id`, `totals.total` `"1100.00"`.
+
+| Momento | Método / Endpoint | HTTP | error_code |
+|---|---|---|---|
+| Factura en borrador | `POST {{base_url}}/receptions/{{reception2_id}}/delivery` | 422 | `DELIVERY_WORK_ORDER_NOT_INVOICED` |
+
+8. `POST {{base_url}}/invoices/{{invoice5_id}}/issue` → `number` `"001-001-0000005"` (contado).
+
+| Momento | Método / Endpoint | HTTP | error_code |
+|---|---|---|---|
+| Contado sin pagar | `POST {{base_url}}/receptions/{{reception2_id}}/delivery` | 422 | `DELIVERY_INVOICE_NOT_PAID` |
+
+9. `POST {{base_url}}/invoices/{{invoice5_id}}/payments` con `{ "amount": 1100, "method": "cash" }` → `201`, `invoice.payment_status` `paid`.
+
+### 17.3 Registrar la entrega
+
+`POST {{base_url}}/receptions/{{reception2_id}}/delivery`
+
+```json
+{
+  "final_mileage": 30150,
+  "fuel_level": "half",
+  "received_by_name": "Lucia Benitez",
+  "received_by_document": "QA-1001",
+  "customer_accepted": true,
+  "observations": "Se entrega lavado."
+}
+```
+
+> Para adjuntar la firma usar **form-data** (no JSON): los mismos campos como texto (`customer_accepted` = `1`) y `signature` de tipo *File* (jpg, png o webp, máximo 2 MB).
+
+Esperado: `201` → `delivery_id`.
+
+| Campo | Valor esperado |
+|---|---|
+| `delivery_number` / `status.value` | `"ENT-000001"` / `delivered` |
+| `final_mileage` / `fuel_level` | `30150` / `half` |
+| `received_by` | `name` `"Lucia Benitez"`, `document` `"QA-1001"` |
+| `customer_accepted` | `true` |
+| `reception.status` | `delivered` |
+| `vehicle.mileage` | `30150` |
+| `signature_url` | URL de la imagen si se adjuntó; `null` si no |
+
+Casos de error:
+
+| Caso | Body | HTTP | error_code |
+|---|---|---|---|
+| Body vacío | `{}` | 422 | `VALIDATION_ERROR` (`final_mileage`, `received_by_name`, `received_by_document`, `customer_accepted`) |
+| Sin conformidad | `{ ..., "customer_accepted": false }` | 422 | `VALIDATION_ERROR` (`errors.customer_accepted`) |
+| Kilometraje menor al de la recepción | `{ ..., "final_mileage": 29000 }` | 422 | `DELIVERY_MILEAGE_BELOW_RECEPTION` |
+| Combustible inválido | `{ ..., "fuel_level": "lleno" }` | 422 | `VALIDATION_ERROR` (`errors.fuel_level`) |
+| Nombre con números | `{ ..., "received_by_name": "Ana 123" }` | 422 | `VALIDATION_ERROR` (`errors.received_by_name`) |
+| Firma que no es imagen | form-data con `signature` = PDF | 422 | `VALIDATION_ERROR` (`errors.signature`) |
+| Entregar otra vez | mismo body | 409 | `DELIVERY_ALREADY_REGISTERED` |
+| Recepción inexistente | `POST {{base_url}}/receptions/999999/delivery` | 404 | `RESOURCE_NOT_FOUND` |
+
+> Los casos de validación conviene probarlos **antes** de la entrega válida (después, la recepción ya está entregada).
+
+### 17.4 Anular la entrega
+
+`POST {{base_url}}/vehicle-deliveries/{{delivery_id}}/cancel`
+
+```json
+{ "reason": "Se registro por error" }
+```
+
+Esperado: `200`, `status.value` `cancelled`, `cancellation_reason` informado, `reception.status` vuelve a `pending`. El kilometraje del vehículo se conserva.
+
+| Caso | Body | HTTP | error_code |
+|---|---|---|---|
+| Sin motivo | `{}` | 422 | `VALIDATION_ERROR` (`errors.reason`) |
+| Anular otra vez | `{ "reason": "x" }` | 422 | `DELIVERY_NOT_CANCELLABLE` |
+
+Volver a entregar con el body de 17.3 → `201`, `delivery_number` `"ENT-000002"` (el número anulado no se reutiliza) → `delivery2_id`.
+
+### 17.5 Listado y detalle
+
+| Caso | Método / Endpoint | HTTP | Resultado / error_code |
+|---|---|---|---|
+| Todas | `GET {{base_url}}/vehicle-deliveries` | 200 | 2 entregas con `meta.pagination` |
+| Por recepción | `GET {{base_url}}/vehicle-deliveries?reception_id={{reception2_id}}` | 200 | 2 entregas |
+| Vigentes | `GET {{base_url}}/vehicle-deliveries?status=delivered` | 200 | Solo `ENT-000002` |
+| Por número, chapa o quien retira | `GET {{base_url}}/vehicle-deliveries?search=QAB456` | 200 | Filtrado |
+| Por fecha | `GET {{base_url}}/vehicle-deliveries?date_from=<hoy>&date_to=<hoy>` | 200 | Entregas de hoy |
+| Estado inválido | `GET {{base_url}}/vehicle-deliveries?status=retirado` | 422 | `VALIDATION_ERROR` |
+| Detalle | `GET {{base_url}}/vehicle-deliveries/{{delivery2_id}}` | 200 | `reception`, `vehicle`, `client`, `received_by` |
+| Inexistente | `GET {{base_url}}/vehicle-deliveries/999999` | 404 | `RESOURCE_NOT_FOUND` |
+
+### 17.6 Permisos del mecánico (token = `{{token_mec}}`)
+
+| Caso | Método / Endpoint | HTTP | error_code |
+|---|---|---|---|
+| Registrar entrega | `POST {{base_url}}/receptions/{{reception2_id}}/delivery` | 403 | `FORBIDDEN` |
+| Listar entregas | `GET {{base_url}}/vehicle-deliveries` | 403 | `FORBIDDEN` |
+| Anular | `POST {{base_url}}/vehicle-deliveries/{{delivery2_id}}/cancel` | 403 | `FORBIDDEN` |
 
 ---
 

@@ -369,6 +369,7 @@ También se completaron:
 * **FASE 14 — Cierre económico de WorkOrder:** ver sección 2.27.
 * **FASE 15 — Facturación:** ver sección 2.28.
 * **FASE 16 — Pagos:** ver sección 2.29.
+* **FASE 17 — Entrega del vehículo:** ver sección 2.30.
 
 ---
 
@@ -666,6 +667,47 @@ Reglas:
 Endpoints: `POST invoices/{invoice}/payments`, `GET payments`, `GET payments/summary?date_from&date_to`,
 `GET payments/{payment}`, `POST payments/{payment}/cancel`.
 Permisos (solo administrador): `payments.index|show|store|cancel|summary`.
+
+---
+
+# 2.30 Entrega del vehículo (FASE 17)
+
+Componentes:
+
+```text
+VehicleDelivery         (vehicle_deliveries: reception_id, vehicle_id, client_id, delivery_number ENT-000001,
+                         delivered_at/by, final_mileage, fuel_level, received_by_name/document, customer_accepted,
+                         signature_path (imagen opcional), observations, previous_reception_status, datos de anulación)
+VehicleDeliveryStatus   (delivered, cancelled)
+VehicleDeliveryService  (deliver, cancel)
+VehicleDeliveryException
+Reception               (+ deliveries)
+```
+
+Ciclo:
+
+```text
+recepción --entregar--> delivered   (recepción → delivered; vehicles.mileage solo avanza)
+delivered --anular-->   cancelled   (motivo; la recepción vuelve a previous_reception_status; ENT no se reutiliza)
+```
+
+Reglas:
+
+* Una entrega vigente por recepción (`DELIVERY_ALREADY_REGISTERED`, 409); recepción cancelada → `DELIVERY_RECEPTION_CANCELLED`.
+* Ninguna OT de la recepción abierta (`pending|in_progress|paused|waiting_parts` → `DELIVERY_WORK_ORDERS_OPEN`) y al
+  menos una completada (`DELIVERY_WITHOUT_COMPLETED_WORK_ORDER`).
+* Cada OT completada con factura vigente **emitida** (`DELIVERY_WORK_ORDER_NOT_INVOICED`); si es al contado, sin saldo
+  (`DELIVERY_INVOICE_NOT_PAID`). A crédito se entrega con saldo.
+* `final_mileage` ≥ kilometraje de la recepción (`DELIVERY_MILEAGE_BELOW_RECEPTION`). `customer_accepted` debe ser `true`
+  (validación). Quién retira (nombre y documento) es obligatorio; la firma es una imagen opcional (disco `public`).
+* La OT no cambia de estado al entregar (sigue `completed`): `WorkOrderStatus::DELIVERED` no se usa, porque el cierre
+  económico y la facturación dependen de `completed`.
+* La entrega no se edita ni se elimina (`DELIVERY_NOT_EDITABLE`, a nivel de modelo); anular una anulada →
+  `DELIVERY_NOT_CANCELLABLE`. Anular no revierte el kilometraje del vehículo.
+
+Endpoints: `POST receptions/{reception}/delivery` (JSON o multipart con `signature`), `GET vehicle-deliveries`,
+`GET vehicle-deliveries/{delivery}`, `POST vehicle-deliveries/{delivery}/cancel`.
+Permisos (solo administrador): `vehicle-deliveries.index|show|store|cancel`.
 
 ---
 
@@ -2938,13 +2980,13 @@ La arquitectura objetivo es:
 El proyecto actualmente se encuentra en:
 
 ```text
-FASE 16 — PAGOS — CERRADA
+FASE 17 — ENTREGA DEL VEHÍCULO — CERRADA
 ```
 
 El siguiente gran paso recomendado es:
 
 ```text
-FASE 17 — ENTREGA DEL VEHÍCULO (VehicleDelivery tras OT completada, factura y pago)
+FASE 18 — HISTORIAL DEL VEHÍCULO (recepciones, OT, repuestos, servicios, costos y kilometraje por vehículo)
 ```
 
 El orden de trabajo de abajo se usó para las FASES 10 a 13 y sigue siendo la referencia.
@@ -3048,13 +3090,13 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 [✓] Cierre económico, margen y liquidación de comisiones (FASE 14)
 [✓] Facturación con timbrado e IVA incluido (FASE 15)
 [✓] Pagos, recibos y resumen de caja (FASE 16)
+[✓] Entrega del vehículo con comprobante y conformidad (FASE 17)
 ```
 
 ## Próximo
 
 ```text
 [ ] Compras
-[ ] Entrega
 [ ] Historial del vehículo
 [ ] Mantenimiento preventivo
 [ ] Notificaciones

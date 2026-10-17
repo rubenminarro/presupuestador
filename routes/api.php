@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\InvoiceStampController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\VehicleDeliveryController;
 use App\Http\Controllers\Api\PartCategoryController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\PartController;
@@ -157,6 +158,14 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::get('payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
 
     Route::post('payments/{payment}/cancel', [PaymentController::class, 'cancel'])->name('payments.cancel');
+
+    Route::post('receptions/{reception}/delivery', [VehicleDeliveryController::class, 'store'])->name('receptions.delivery.store');
+
+    Route::get('vehicle-deliveries', [VehicleDeliveryController::class, 'index'])->name('vehicle-deliveries.index');
+
+    Route::get('vehicle-deliveries/{delivery}', [VehicleDeliveryController::class, 'show'])->name('vehicle-deliveries.show');
+
+    Route::post('vehicle-deliveries/{delivery}/cancel', [VehicleDeliveryController::class, 'cancel'])->name('vehicle-deliveries.cancel');
 
     Route::get('service-categories', [ServiceCategoryController::class, 'index'])->name('service-categories.index');
 
