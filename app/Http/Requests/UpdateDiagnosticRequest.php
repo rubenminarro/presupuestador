@@ -24,7 +24,7 @@ class UpdateDiagnosticRequest extends FormRequest
             ],
             'mechanic_id' => [
                 'sometimes',
-                Rule::exists('users', 'id')
+                Rule::exists('mechanics', 'id')->withoutTrashed()
             ],
             'customer_complaint' => [
                 'sometimes',

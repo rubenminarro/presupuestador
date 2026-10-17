@@ -21,11 +21,11 @@ class VehicleModelController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:vehicle-models.index', only: ['index']),
-            new Middleware('permission:vehicle-models.store', only: ['store']),
-            new Middleware('permission:vehicle-models.show', only: ['show']),
-            new Middleware('permission:vehicle-models.update', only: ['update']),
-            new Middleware('permission:vehicle-models.destroy', only: ['destroy']),
+            new Middleware('permission:vehicle_models.index', only: ['index']),
+            new Middleware('permission:vehicle_models.store', only: ['store']),
+            new Middleware('permission:vehicle_models.show', only: ['show']),
+            new Middleware('permission:vehicle_models.update', only: ['update']),
+            new Middleware('permission:vehicle_models.destroy', only: ['destroy']),
         ];
     }
 

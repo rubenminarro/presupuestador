@@ -24,9 +24,9 @@ class WorkOrderItemController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:work-orders.start', only: ['start']),
-            new Middleware('permission:work-orders.complete', only: ['complete']),
-            new Middleware('permission:work-orders.cancel', only: ['cancel']),
+            new Middleware('permission:work-order-items.start', only: ['start']),
+            new Middleware('permission:work-order-items.complete', only: ['complete']),
+            new Middleware('permission:work-order-items.cancel', only: ['cancel']),
         ];
     }
 

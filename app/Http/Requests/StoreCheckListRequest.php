@@ -53,10 +53,10 @@ class StoreCheckListRequest extends FormRequest
                 'string'   => 'El tipo del checklist debe tener el formato correcto.',
                 Enum::class => 'El tipo del checklist seleccionado no es válido.',
             ],
-            'required' => [
-                'required' => 'El campo required es obligatorio.',
-                'boolean' => 'El campo required debe ser un valor booleano.',
-            ],
+            // Claves con punto: un bloque 'required' => [...] choca con la regla
+            // "required" y Laravel devolvería un array como mensaje (error 500).
+            'required.required' => 'El campo required es obligatorio.',
+            'required.boolean' => 'El campo required debe ser un valor booleano.',
         ];
     }
 }

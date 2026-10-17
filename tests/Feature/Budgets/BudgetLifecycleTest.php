@@ -1,0 +1,148 @@
+<?php
+
+namespace Tests\Feature\Budgets;
+
+use App\Models\Budget;
+use Tests\Feature\WorkOrderParts\WorkOrderPartsTestCase;
+
+class BudgetLifecycleTest extends WorkOrderPartsTestCase
+{
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->actingAsAdmin();
+    }
+
+    private function labor(int $unitPrice = 100000): array
+    {
+        return ['type' => 'labor', 'description' => 'Mano de obra', 'quantity' => 1, 'unit_price' => $unitPrice];
+    }
+
+    private function draftWithItem(): int
+    {
+        return $this->createBudgetWithItems([$this->labor()]);
+    }
+
+    private function action(int $budgetId, string $action)
+    {
+        return $this->postJson("/api/budgets/{$budgetId}/{$action}");
+    }
+
+    public function test_crud_of_budgets(): void
+    {
+        $receptionId = Budget::findOrFail($this->draftWithItem())->reception_id;
+
+        $budget = $this->postJson('/api/budgets', ['reception_id' => $receptionId, 'notes' => 'Cliente pide urgencia'])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'draft')
+            ->assertJsonPath('data.total', '0.00')
+            ->json('data');
+
+        $this->assertMatchesRegularExpression('/^BUD-/', $budget['code']);
+
+        $this->getJson('/api/budgets')->assertOk()->assertJsonPath('meta.pagination.total', 2);
+        $this->getJson("/api/budgets/{$budget['id']}")->assertOk()->assertJsonPath('data.notes', 'Cliente pide urgencia');
+
+        $this->patchJson("/api/budgets/{$budget['id']}", ['notes' => 'Sin urgencia'])
+            ->assertOk()
+            ->assertJsonPath('data.notes', 'Sin urgencia');
+
+        $this->deleteJson("/api/budgets/{$budget['id']}")->assertOk();
+        $this->getJson("/api/budgets/{$budget['id']}")->assertNotFound()->assertJsonPath('error_code', 'RESOURCE_NOT_FOUND');
+
+        $this->postJson('/api/budgets', [])->assertStatus(422)->assertJsonValidationErrors(['reception_id']);
+        $this->postJson('/api/budgets', ['reception_id' => 999999])->assertJsonValidationErrors(['reception_id']);
+    }
+
+    public function test_items_recalculate_the_totals(): void
+    {
+        $budgetId = $this->createBudgetWithItems([]);
+
+        $item = $this->postJson("/api/budgets/{$budgetId}/items", ['type' => 'labor', 'description' => 'Mano de obra', 'quantity' => 2, 'unit_price' => 50000])
+            ->assertCreated()
+            ->assertJsonPath('data.total', '100000.00')
+            ->json('data');
+
+        // IVA 10% sobre el subtotal.
+        $this->getJson("/api/budgets/{$budgetId}")
+            ->assertOk()
+            ->assertJsonPath('data.subtotal', '100000.00')
+            ->assertJsonPath('data.tax', '10000.00')
+            ->assertJsonPath('data.total', '110000.00')
+            ->assertJsonCount(1, 'data.items');
+
+        $this->getJson("/api/budgets/{$budgetId}/items")->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson("/api/budgets/{$budgetId}/items/{$item['id']}")->assertOk();
+
+        $this->patchJson("/api/budgets/{$budgetId}/items/{$item['id']}", ['quantity' => 3])
+            ->assertOk()
+            ->assertJsonPath('data.total', '150000.00');
+
+        $this->getJson("/api/budgets/{$budgetId}")->assertJsonPath('data.total', '165000.00');
+
+        $this->deleteJson("/api/budgets/{$budgetId}/items/{$item['id']}")->assertOk();
+
+        $this->getJson("/api/budgets/{$budgetId}")
+            ->assertJsonPath('data.subtotal', '0.00')
+            ->assertJsonPath('data.total', '0.00');
+    }
+
+    public function test_reject_reopen_and_cancel(): void
+    {
+        $budgetId = $this->draftWithItem();
+
+        $this->action($budgetId, 'approve')->assertStatus(422)->assertJsonPath('error_code', 'BUDGET_NOT_APPROVABLE');
+        $this->action($budgetId, 'reject')->assertStatus(422)->assertJsonPath('error_code', 'BUDGET_NOT_REJECTABLE');
+        $this->action($budgetId, 'reopen')->assertStatus(422)->assertJsonPath('error_code', 'BUDGET_NOT_REOPENABLE');
+
+        $this->action($budgetId, 'send')->assertOk()->assertJsonPath('data.status', 'sent');
+        $this->action($budgetId, 'reject')->assertOk()->assertJsonPath('data.status', 'rejected');
+        $this->action($budgetId, 'approve')->assertStatus(422)->assertJsonPath('error_code', 'BUDGET_NOT_APPROVABLE');
+
+        $this->action($budgetId, 'reopen')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'draft')
+            ->assertJsonPath('data.approved_at', null);
+
+        // Reabierto vuelve a ser editable.
+        $this->postJson("/api/budgets/{$budgetId}/items", $this->labor(5000))->assertCreated();
+
+        $this->action($budgetId, 'send')->assertOk();
+        $this->action($budgetId, 'cancel')->assertOk()->assertJsonPath('data.status', 'cancelled');
+        $this->action($budgetId, 'cancel')->assertStatus(422)->assertJsonPath('error_code', 'BUDGET_NOT_CANCELLABLE');
+        $this->action($budgetId, 'send')->assertStatus(422)->assertJsonPath('error_code', 'BUDGET_NOT_SENDABLE');
+
+        // Un borrador también puede cancelarse; uno aprobado no.
+        $this->action($this->draftWithItem(), 'cancel')->assertOk()->assertJsonPath('data.status', 'cancelled');
+
+        $approved = $this->draftWithItem();
+        $this->approveBudget($approved);
+        $this->action($approved, 'cancel')->assertStatus(422)->assertJsonPath('error_code', 'BUDGET_NOT_CANCELLABLE');
+    }
+
+    public function test_only_drafts_are_editable(): void
+    {
+        $budgetId = $this->draftWithItem();
+        $itemId = Budget::findOrFail($budgetId)->items()->value('id');
+
+        $this->action($budgetId, 'send')->assertOk();
+
+        $this->patchJson("/api/budgets/{$budgetId}", ['notes' => 'x'])->assertStatus(422)->assertJsonPath('error_code', 'BUDGET_NOT_EDITABLE');
+        $this->postJson("/api/budgets/{$budgetId}/items", $this->labor())->assertStatus(422)->assertJsonPath('error_code', 'BUDGET_NOT_EDITABLE');
+        $this->patchJson("/api/budgets/{$budgetId}/items/{$itemId}", ['quantity' => 5])->assertStatus(422)->assertJsonPath('error_code', 'BUDGET_NOT_EDITABLE');
+        $this->deleteJson("/api/budgets/{$budgetId}/items/{$itemId}")->assertStatus(422)->assertJsonPath('error_code', 'BUDGET_NOT_EDITABLE');
+        $this->deleteJson("/api/budgets/{$budgetId}")->assertStatus(422)->assertJsonPath('error_code', 'BUDGET_NOT_EDITABLE');
+    }
+
+    public function test_mechanic_cannot_manage_budgets(): void
+    {
+        $budgetId = $this->draftWithItem();
+
+        $this->actingAsMechanic();
+
+        $this->getJson('/api/budgets')->assertForbidden()->assertJsonPath('error_code', 'FORBIDDEN');
+        $this->action($budgetId, 'send')->assertForbidden();
+        $this->deleteJson("/api/budgets/{$budgetId}")->assertForbidden();
+    }
+}

@@ -23,7 +23,7 @@ class StoreDiagnosticRequest extends FormRequest
             ],
             'mechanic_id' => [
                 'nullable',
-                Rule::exists('users', 'id')
+                Rule::exists('mechanics', 'id')->withoutTrashed()
             ],
             'customer_complaint' => [
                 'nullable',

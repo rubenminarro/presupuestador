@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\ReceptionStatus;
 use App\Http\Controllers\Controller;
 use App\Models\ReceptionCheckList;
 use App\Http\Requests\UpdateReceptionCheckListRequest;
@@ -42,14 +43,16 @@ class ReceptionCheckListController extends Controller implements HasMiddleware
         ReceptionCheckList $receptionCheckList,
         ReceptionCheckListItemService $service
     ) {
+        // status es un enum: comparar contra los casos, no contra strings.
         if (
             in_array(
                 $receptionCheckList->reception->status,
                 [
-                    'in_progress',
-                    'completed',
-                    'delivered',
-                ]
+                    ReceptionStatus::IN_PROGRESS,
+                    ReceptionStatus::COMPLETED,
+                    ReceptionStatus::DELIVERED,
+                ],
+                true
             )
         ) {
             return $this->errorResponse(
