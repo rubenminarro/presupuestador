@@ -18,27 +18,27 @@ class RoleAndPermissionManagementTest extends PartsTestCase
     public function test_crud_of_roles(): void
     {
         $role = $this->postJson('/api/roles', [
-            'name' => 'recepcionista',
-            'description' => 'Atiende la recepcion de vehiculos',
+            'name' => 'turnos',
+            'description' => 'Agenda los turnos de vehiculos',
             'guard_name' => 'api',
             'permissions' => ['clients.index', 'receptions.store'],
         ])
             ->assertCreated()
-            ->assertJsonPath('data.description', 'Atiende la recepcion de vehiculos')
+            ->assertJsonPath('data.description', 'Agenda los turnos de vehiculos')
             ->assertJsonCount(2, 'data.permissions')
             ->json('data');
 
-        $this->getJson('/api/roles?search=recepcion')->assertOk()->assertJsonCount(1, 'data');
-        $this->getJson("/api/roles/{$role['id']}")->assertOk()->assertJsonPath('data.name', 'recepcionista');
+        $this->getJson('/api/roles?search=turnos')->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson("/api/roles/{$role['id']}")->assertOk()->assertJsonPath('data.name', 'turnos');
 
         $this->patchJson("/api/roles/{$role['id']}", [
-            'name' => 'recepcionista',
-            'description' => 'Recepcion y clientes',
+            'name' => 'turnos',
+            'description' => 'Turnos y clientes',
             'guard_name' => 'api',
             'permissions' => ['clients.index'],
         ])
             ->assertOk()
-            ->assertJsonPath('data.description', 'Recepcion y clientes')
+            ->assertJsonPath('data.description', 'Turnos y clientes')
             ->assertJsonCount(1, 'data.permissions');
 
         // Un usuario con el rol obtiene solo sus permisos.
@@ -49,7 +49,7 @@ class RoleAndPermissionManagementTest extends PartsTestCase
             'email' => 'recep@test.local',
             'password' => bcrypt('password'),
         ]);
-        $user->assignRole('recepcionista');
+        $user->assignRole('turnos');
         Sanctum::actingAs($user);
 
         $this->getJson('/api/clients')->assertOk();

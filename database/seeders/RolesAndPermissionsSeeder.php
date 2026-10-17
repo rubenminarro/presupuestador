@@ -319,5 +319,106 @@ class RolesAndPermissionsSeeder extends Seeder
         $mecanico->syncPermissions(
             Permission::where('guard_name', 'api')->whereIn('name', $mechanicPermissions)->get()
         );
+
+        foreach (self::workshopRoles() as $name => $role) {
+            Role::firstOrCreate(
+                ['name' => $name, 'guard_name' => 'api'],
+                ['description' => $role['description']]
+            )->syncPermissions(
+                Permission::where('guard_name', 'api')->whereIn('name', $role['permissions'])->get()
+            );
+        }
+    }
+
+    /**
+     * Roles del taller además de administrador y mecánico. Lo que queda solo
+     * para el administrador: usuarios/roles/permisos, ver costos y margen
+     * (work-orders.view-economics), liquidar comisiones, anular entregas y
+     * gestionar timbrados.
+     *
+     * @return array<string, array{description: string, permissions: string[]}>
+     */
+    public static function workshopRoles(): array
+    {
+        return [
+            'recepcionista' => [
+                'description' => 'Recepción y atención al cliente',
+                'permissions' => [
+                    'clients.index', 'clients.store', 'clients.show', 'clients.update',
+                    'brands.index', 'brands.show',
+                    'vehicle_models.index', 'vehicle_models.show',
+                    'vehicles.index', 'vehicles.store', 'vehicles.show', 'vehicles.update',
+                    'checklists.index', 'checklists.show',
+                    'receptions.index', 'receptions.store', 'receptions.show', 'receptions.update', 'receptions.destroy',
+                    'reception-check-lists.show', 'reception-check-lists.update',
+                    'receptions-photos.index', 'receptions-photos.store', 'receptions-photos.update', 'receptions-photos.destroy',
+                    'diagnostics.index', 'diagnostics.show',
+                    'diagnostic-items.index', 'diagnostic-items.show',
+                    'diagnostic-item-photos.index',
+                    'budgets.index', 'budgets.store', 'budgets.show', 'budgets.update', 'budgets.destroy',
+                    'budgets.send', 'budgets.approve', 'budgets.reject', 'budgets.cancel', 'budgets.reopen',
+                    'budget-items.index', 'budget-items.store', 'budget-items.show', 'budget-items.update', 'budget-items.destroy',
+                    'service-categories.index', 'services.index', 'services.show',
+                    'parts.index', 'parts.show', 'part-categories.index', 'inventory.index',
+                    'work-orders.index', 'work-orders.show',
+                    'invoices.index', 'invoices.show',
+                    'vehicle-deliveries.index', 'vehicle-deliveries.show', 'vehicle-deliveries.store',
+                ],
+            ],
+            'jefe-taller' => [
+                'description' => 'Organiza y controla el trabajo del taller',
+                'permissions' => [
+                    'clients.index', 'clients.show',
+                    'vehicles.index', 'vehicles.show',
+                    'receptions.index', 'receptions.show', 'receptions.update',
+                    'reception-check-lists.show', 'reception-check-lists.update',
+                    'receptions-photos.index',
+                    'diagnostics.index', 'diagnostics.store', 'diagnostics.show', 'diagnostics.update', 'diagnostics.destroy',
+                    'diagnostic-items.index', 'diagnostic-items.store', 'diagnostic-items.show', 'diagnostic-items.update', 'diagnostic-items.destroy',
+                    'diagnostic-item-photos.index', 'diagnostic-item-photos.store', 'diagnostic-item-photos.update', 'diagnostic-item-photos.destroy',
+                    'budgets.index', 'budgets.show', 'budget-items.index', 'budget-items.show',
+                    'mechanics.index', 'mechanics.show',
+                    'work-orders.index', 'work-orders.store', 'work-orders.show', 'work-orders.update',
+                    'work-orders.start', 'work-orders.pause', 'work-orders.resume', 'work-orders.complete', 'work-orders.cancel',
+                    'work-order-items.start', 'work-order-items.complete', 'work-order-items.cancel',
+                    'work-order-parts.index', 'work-order-parts.store', 'work-order-parts.update', 'work-order-parts.reserve',
+                    'work-order-parts.consume', 'work-order-parts.return', 'work-order-parts.cancel',
+                    'work-order-item-mechanics.index', 'work-order-item-mechanics.sync',
+                    'work-order-item-mechanics.log-hours', 'work-order-item-mechanics.log-hours-any',
+                    'mechanic-commissions.index', 'mechanic-commissions.view-all',
+                    'service-categories.index', 'services.index', 'services.show',
+                    'parts.index', 'parts.show', 'part-categories.index',
+                    'inventory.index', 'inventory.show',
+                    'vehicle-deliveries.index', 'vehicle-deliveries.show',
+                ],
+            ],
+            'cajero' => [
+                'description' => 'Facturación, cobros y caja',
+                'permissions' => [
+                    'clients.index', 'clients.show',
+                    'budgets.index', 'budgets.show',
+                    'work-orders.index', 'work-orders.show',
+                    'invoice-stamps.index',
+                    'invoices.index', 'invoices.show', 'invoices.store', 'invoices.update',
+                    'invoices.issue', 'invoices.cancel', 'invoices.destroy',
+                    'payments.index', 'payments.show', 'payments.store', 'payments.cancel', 'payments.summary',
+                    'vehicle-deliveries.index', 'vehicle-deliveries.show',
+                ],
+            ],
+            'deposito' => [
+                'description' => 'Repuestos, proveedores e inventario',
+                'permissions' => [
+                    'part-categories.index', 'part-categories.store', 'part-categories.show',
+                    'part-categories.update', 'part-categories.destroy',
+                    'suppliers.index', 'suppliers.store', 'suppliers.show', 'suppliers.update', 'suppliers.destroy',
+                    'parts.index', 'parts.store', 'parts.show', 'parts.update', 'parts.destroy',
+                    'parts.change-status', 'parts.manage-suppliers',
+                    'inventory.index', 'inventory.show', 'inventory.entry', 'inventory.exit', 'inventory.adjust',
+                    'work-orders.index', 'work-orders.show',
+                    'work-order-parts.index', 'work-order-parts.store', 'work-order-parts.update', 'work-order-parts.reserve',
+                    'work-order-parts.consume', 'work-order-parts.return', 'work-order-parts.cancel',
+                ],
+            ],
+        ];
     }
 }

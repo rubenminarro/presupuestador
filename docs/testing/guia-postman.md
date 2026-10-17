@@ -18,6 +18,7 @@
 | `token` | (vacío; se completa con el token del login) |
 | `token_admin` | (vacío) |
 | `token_mec` | (vacío) |
+| `token_caja` | (vacío; B.6) |
 
 Variables de IDs que se irán completando con las respuestas: `client_id`, `client2_id`, `brand_id`, `model_id`, `vehicle_id`, `vehicle2_id`, `reception_id`, `budget_id`, `budget_item_id`, `mechanic_id`, `work_order_id`, `work_order_item_id`, `category_id`, `supplier_id`, `part_id`, `part_unit_id`, `part_status_id`, `movement_id`, `budget2_id`, `work_order2_id`, `work_order3_id`, `work_order4_id`, `line_id`, `extra_line_id`, `pending_line_id`, `mec1_id`, `mec2_id`, `service_category_id`, `service_id`, `service_unused_id`, `budget5_id`, `work_order5_id`, `labor_item_id`, `service_item_id`, `work_order6_id`, `work_order7_id`, `stamp_id`, `invoice_id`, `invoice_service_item_id`, `invoice_labor_item_id`, `invoice2_id`, `invoice3_id`, `invoice4_id`, `payment1_id`, `payment2_id`, `payment3_id`, `payment4_id`, `reception2_id`, `budget8_id`, `work_order8_id`, `work_order8_item_id`, `invoice5_id`, `delivery_id`, `delivery2_id`.
 
@@ -133,6 +134,37 @@ Esperado: `200`, `data` es una lista de `{ "module": "...", "list": [ { "id", "n
 |---|---|---|---|
 | Administrador | `{{token_admin}}` | 200 | — (antes de la corrección devolvía `404 RESOURCE_NOT_FOUND`) |
 | Mecánico | `{{token_mec}}` | 403 | `FORBIDDEN` |
+
+### B.6 Roles del taller
+
+`GET {{base_url}}/roles?per_page=20` (token admin) → `200` con 6 roles: `administrador`, `mechanic`, `recepcionista`, `jefe-taller`, `cajero`, `deposito` (cada uno con `description`).
+
+Para probar un rol se crea un usuario con ese rol. Ejemplo con cajero:
+
+`POST {{base_url}}/users`
+
+```json
+{
+  "name": "qa_cajero",
+  "email": "qa.cajero@gmail.com",
+  "password": "Cajero#2026Qa",
+  "password_confirmation": "Cajero#2026Qa",
+  "role": "cajero",
+  "first_name": "Carla",
+  "last_name": "Caja"
+}
+```
+
+Esperado: `201`. Login con ese email y contraseña (B.1) → guardar el token en `token_caja`.
+
+| Caso (token = `{{token_caja}}`) | Método / Endpoint | HTTP | Resultado / error_code |
+|---|---|---|---|
+| Ver facturas | `GET {{base_url}}/invoices` | 200 | — |
+| Resumen de caja | `GET {{base_url}}/payments/summary` | 200 | — |
+| Ver recepciones | `GET {{base_url}}/receptions` | 403 | `FORBIDDEN` |
+| Crear timbrado | `POST {{base_url}}/invoice-stamps` | 403 | `FORBIDDEN` |
+
+> Mismo procedimiento para `recepcionista` (clientes, recepciones, presupuestos, entregas), `jefe-taller` (OT, mecánicos, diagnóstico) y `deposito` (repuestos, proveedores, inventario). Qué puede hacer cada rol: sección 2.3 del `CLAUDE.md`.
 
 ---
 

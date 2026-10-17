@@ -773,9 +773,26 @@ Roles principales:
 ```text
 administrador
 mechanic
+recepcionista
+jefe-taller
+cajero
+deposito
 ```
 
 (El rol del mecánico se llama `mechanic` en el seeder y en el código; no `mecanico`.)
+
+| Rol | Función | Accesos principales |
+|---|---|---|
+| `administrador` | Todo (`Gate::before`) | Exclusivo: usuarios/roles/permisos, `work-orders.view-economics`, liquidar comisiones, anular entregas, timbrados |
+| `mechanic` | Ejecuta la OT | Diagnóstico, iniciar/completar OT e ítems, consumir/devolver repuestos, cargar sus horas, ver sus comisiones |
+| `recepcionista` | Atiende al cliente | Clientes, vehículos, recepciones, checklist, presupuestos completos, registrar entregas; consulta OT, facturas y stock |
+| `jefe-taller` | Organiza el trabajo | OT completas, ítems, repuestos en OT, asignación y horas de todos, diagnóstico, comisiones (consulta) |
+| `cajero` | Cobra | Facturas, pagos, resumen de caja; consulta OT, presupuestos y timbrados |
+| `deposito` | Maneja el stock | Repuestos, proveedores, inventario, repuestos en OT |
+
+Los cuatro últimos se definen en `RolesAndPermissionsSeeder::workshopRoles()` (se sincronizan al volver a ejecutar el
+seeder). `tests/Feature/Access/WorkshopRolesTest` verifica que todos sus permisos existan y qué puede y qué no puede
+hacer cada rol. Ningún usuario del seeder tiene estos roles: se asignan desde `PATCH /api/users/{id}` (`role`).
 
 Guard:
 

@@ -32,7 +32,7 @@ Cliente → Vehículo → Recepción → Diagnóstico → Presupuesto → Aproba
 | Módulo | Qué cubre |
 |---|---|
 | Autenticación | Login / logout con token Sanctum |
-| Usuarios, roles y permisos | Roles `administrador` y `mechanic`; permisos por operación |
+| Usuarios, roles y permisos | Roles `administrador`, `mechanic`, `recepcionista`, `jefe-taller`, `cajero` y `deposito`; permisos por operación |
 | Clientes y vehículos | Clientes, marcas, modelos, vehículos (también anidados por cliente) |
 | Recepción | Ingreso del vehículo, categorías de servicio, checklist y fotos |
 | Diagnóstico | Diagnóstico técnico con ítems y fotos |
@@ -106,6 +106,9 @@ La API queda disponible en `http://127.0.0.1:8000/api`.
 | `cgomez@mail.com.py` | mechanic | MEC-002 (comisión 8,5%, costo/hora 35.000) |
 
 Todos usan la contraseña definida en `ADMIN_PASSWORD`.
+
+El seeder también crea los roles `recepcionista`, `jefe-taller`, `cajero` y `deposito` (sin usuarios asignados). Qué
+puede hacer cada uno está en la sección 2.3 de [`CLAUDE.md`](CLAUDE.md).
 
 > Después de agregar permisos nuevos (por ejemplo al pasar a una fase nueva) hay que volver a ejecutar
 > `php artisan db:seed --class=RolesAndPermissionsSeeder`.
