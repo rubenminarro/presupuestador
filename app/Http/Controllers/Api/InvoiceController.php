@@ -46,6 +46,7 @@ class InvoiceController extends Controller implements HasMiddleware
 
         $invoices = Invoice::query()
             ->with('workOrder')
+            ->withSum(['payments as paid_total' => fn ($q) => $q->registered()], 'amount')
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->when($request->filled('client_id'), fn ($q) => $q->where('client_id', $request->client_id))
             ->when($request->filled('search'), function ($q) use ($search) {
@@ -79,7 +80,7 @@ class InvoiceController extends Controller implements HasMiddleware
     {
         return $this->successResponse(
             'Factura obtenida correctamente.',
-            new ShowInvoiceResource($invoice->load(['items', 'workOrder'])),
+            new ShowInvoiceResource($invoice->load(['items', 'workOrder', 'payments'])),
             200
         );
     }

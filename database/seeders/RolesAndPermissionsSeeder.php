@@ -223,6 +223,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'invoices.cancel',
             'invoices.destroy',
 
+            /* payment permissions */
+            'payments.index',
+            'payments.show',
+            'payments.store',
+            'payments.cancel',
+            'payments.summary',
+
             /* inventory permissions */
             'inventory.index',
             'inventory.show',

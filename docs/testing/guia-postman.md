@@ -1,6 +1,6 @@
 # Guía de pruebas con Postman — Presupuestador
 
-**Alcance:** API al cierre de la FASE 15 (facturación con timbrado e IVA incluido), con la FASE 14 (cierre económico de la OT y liquidación de comisiones), incluidos los ajustes posteriores a la FASE 12 (rutas de vehículos por cliente, permisos de ítems de presupuesto, `error_code` del login y validaciones de texto) y la corrección de `roles/permissions-grouped-by-module`.
+**Alcance:** API al cierre de la FASE 16 (pagos, recibos y resumen de caja), con la FASE 15 (facturación con timbrado e IVA incluido), la FASE 14 (cierre económico de la OT y liquidación de comisiones), incluidos los ajustes posteriores a la FASE 12 (rutas de vehículos por cliente, permisos de ítems de presupuesto, `error_code` del login y validaciones de texto) y la corrección de `roles/permissions-grouped-by-module`.
 **Uso:** ejecutar los requests en el orden indicado; cada sección parte de los datos creados en las anteriores.
 
 ---
@@ -19,7 +19,7 @@
 | `token_admin` | (vacío) |
 | `token_mec` | (vacío) |
 
-Variables de IDs que se irán completando con las respuestas: `client_id`, `client2_id`, `brand_id`, `model_id`, `vehicle_id`, `vehicle2_id`, `reception_id`, `budget_id`, `budget_item_id`, `mechanic_id`, `work_order_id`, `work_order_item_id`, `category_id`, `supplier_id`, `part_id`, `part_unit_id`, `part_status_id`, `movement_id`, `budget2_id`, `work_order2_id`, `work_order3_id`, `work_order4_id`, `line_id`, `extra_line_id`, `pending_line_id`, `mec1_id`, `mec2_id`, `service_category_id`, `service_id`, `service_unused_id`, `budget5_id`, `work_order5_id`, `labor_item_id`, `service_item_id`, `work_order6_id`, `work_order7_id`, `stamp_id`, `invoice_id`, `invoice_service_item_id`, `invoice_labor_item_id`, `invoice2_id`, `invoice3_id`.
+Variables de IDs que se irán completando con las respuestas: `client_id`, `client2_id`, `brand_id`, `model_id`, `vehicle_id`, `vehicle2_id`, `reception_id`, `budget_id`, `budget_item_id`, `mechanic_id`, `work_order_id`, `work_order_item_id`, `category_id`, `supplier_id`, `part_id`, `part_unit_id`, `part_status_id`, `movement_id`, `budget2_id`, `work_order2_id`, `work_order3_id`, `work_order4_id`, `line_id`, `extra_line_id`, `pending_line_id`, `mec1_id`, `mec2_id`, `service_category_id`, `service_id`, `service_unused_id`, `budget5_id`, `work_order5_id`, `labor_item_id`, `service_item_id`, `work_order6_id`, `work_order7_id`, `stamp_id`, `invoice_id`, `invoice_service_item_id`, `invoice_labor_item_id`, `invoice2_id`, `invoice3_id`, `invoice4_id`, `payment1_id`, `payment2_id`, `payment3_id`, `payment4_id`.
 
 ### 0.2 Headers comunes
 
@@ -1689,6 +1689,164 @@ Con un borrador (por ejemplo, generar uno nuevo para otra OT completada): `DELET
 | Generar | `POST {{base_url}}/work-orders/{{work_order5_id}}/invoice` | 403 | `FORBIDDEN` |
 | Timbrados | `GET {{base_url}}/invoice-stamps` | 403 | `FORBIDDEN` |
 | Ver la OT | `GET {{base_url}}/work-orders/{{work_order5_id}}` | 200 | Sin la clave `invoice` |
+
+---
+
+## FASE 16 — Pagos
+
+Token: administrador salvo indicación.
+
+> Se paga **solo una factura emitida**, en uno o varios pagos (contado o crédito), hasta cubrir su total. Montos en **guaraníes enteros**.
+> Medios: `cash` (efectivo), `card` (tarjeta), `transfer` (transferencia), `check` (cheque). Tarjeta, transferencia y cheque exigen `reference`; el cheque también `bank`.
+> Los pagos de facturas **a crédito** llevan recibo numerado (`REC-000001`…). Un pago no se edita: **se anula** (con motivo) y el saldo vuelve a estar disponible.
+> La factura muestra `payment_summary`: `paid_total`, `balance` y `status` (`unpaid`, `partial`, `paid`).
+
+### 16.1 Pagos parciales al contado
+
+Sobre `{{invoice_id}}` (15.5: contado, emitida, total `"352000.00"`).
+
+Casos de error (antes de pagar):
+
+| Caso | Body | HTTP | error_code |
+|---|---|---|---|
+| Body vacío | `{}` | 422 | `VALIDATION_ERROR` (`amount`, `method`) |
+| Monto con decimales | `{ "amount": 1000.5, "method": "cash" }` | 422 | `VALIDATION_ERROR` (`errors.amount`) |
+| Monto cero | `{ "amount": 0, "method": "cash" }` | 422 | `VALIDATION_ERROR` (`errors.amount`) |
+| Medio inválido | `{ "amount": 1000, "method": "bitcoin" }` | 422 | `VALIDATION_ERROR` (`errors.method`) |
+| Tarjeta sin referencia | `{ "amount": 1000, "method": "card" }` | 422 | `VALIDATION_ERROR` (`errors.reference`) |
+| Cheque sin banco | `{ "amount": 1000, "method": "check", "reference": "0012345" }` | 422 | `VALIDATION_ERROR` (`errors.bank`) |
+| Fecha futura | `{ "amount": 1000, "method": "cash", "payment_date": "<mañana>" }` | 422 | `VALIDATION_ERROR` (`errors.payment_date`) |
+| Fecha anterior a la emisión | `{ "amount": 1000, "method": "cash", "payment_date": "<día anterior a issue_date>" }` | 422 | `PAYMENT_DATE_BEFORE_ISSUE` |
+| Supera el saldo | `{ "amount": 352001, "method": "cash" }` | 422 | `PAYMENT_EXCEEDS_BALANCE` |
+
+**Primer pago (efectivo):**
+
+`POST {{base_url}}/invoices/{{invoice_id}}/payments`
+
+```json
+{ "amount": 100000, "method": "cash" }
+```
+
+Esperado: `201` → `payment1_id`.
+
+| Campo | Valor esperado |
+|---|---|
+| `status.value` / `method.value` | `registered` / `cash` |
+| `payment_date` | hoy (si no se informa) |
+| `receipt_number` | `null` (al contado la factura es el comprobante) |
+| `invoice.paid_total` / `invoice.balance` | `"100000.00"` / `"252000.00"` |
+| `invoice.payment_status` | `partial` |
+
+**Segundo pago (tarjeta, el resto):**
+
+```json
+{ "amount": 252000, "method": "card", "reference": "VOUCHER-123" }
+```
+
+Esperado: `201`, `reference` `"VOUCHER-123"`, `invoice.balance` `"0.00"`, `invoice.payment_status` `paid` → `payment2_id`.
+
+| Caso | Body | HTTP | error_code |
+|---|---|---|---|
+| Pagar una factura ya pagada | `{ "amount": 1, "method": "cash" }` | 422 | `INVOICE_ALREADY_PAID` |
+
+Verificar `GET {{base_url}}/invoices/{{invoice_id}}`: `payment_summary` → `paid_total` `"352000.00"`, `balance` `"0.00"`, `status` `paid`; `payments` con 2 pagos.
+
+> En efectivo la `reference` se descarta (queda `null`) aunque se envíe.
+
+### 16.2 Facturas que no admiten pagos
+
+| Caso | Método / Endpoint | Body | HTTP | error_code |
+|---|---|---|---|---|
+| Factura anulada | `POST {{base_url}}/invoices/{{invoice2_id}}/payments` (15.7) | `{ "amount": 1000, "method": "cash" }` | 422 | `INVOICE_NOT_PAYABLE` |
+| Factura en borrador | `POST {{base_url}}/invoices/{id de un borrador}/payments` | `{ "amount": 1000, "method": "cash" }` | 422 | `INVOICE_NOT_PAYABLE` |
+| Factura inexistente | `POST {{base_url}}/invoices/999999/payments` | `{ "amount": 1000, "method": "cash" }` | 404 | `RESOURCE_NOT_FOUND` |
+
+### 16.3 Factura a crédito con recibos
+
+1. `POST {{base_url}}/work-orders/{{work_order_id}}/invoice` (OT de la fase base: mano de obra 500) → `201` → `invoice4_id`, `totals.total` `"550.00"`.
+2. `PATCH {{base_url}}/invoices/{{invoice4_id}}` con `{ "condition": "credit", "due_date": "<hoy + 30 días>" }` → `200`.
+3. `POST {{base_url}}/invoices/{{invoice4_id}}/issue` → `200`, `number` `"001-001-0000004"`, `payment_summary.status` `unpaid`.
+
+`POST {{base_url}}/invoices/{{invoice4_id}}/payments`
+
+```json
+{ "amount": 200, "method": "cash" }
+```
+
+Esperado: `201`, `receipt_number` `"REC-000001"`, `invoice.balance` `"350.00"`, `invoice.payment_status` `partial` → `payment3_id`.
+
+```json
+{ "amount": 350, "method": "transfer", "reference": "OP-998", "bank": "Banco Continental" }
+```
+
+Esperado: `201`, `receipt_number` `"REC-000002"`, `bank` `"Banco Continental"`, `invoice.payment_status` `paid` → `payment4_id`.
+
+### 16.4 Anular un pago
+
+`POST {{base_url}}/payments/{{payment4_id}}/cancel`
+
+```json
+{ "reason": "Transferencia rechazada" }
+```
+
+Esperado: `200`, `status.value` `cancelled`, `cancellation_reason` informado, `receipt_number` `"REC-000002"` (se conserva), `invoice.balance` `"350.00"`, `invoice.payment_status` `partial`.
+
+| Caso | Body | HTTP | error_code |
+|---|---|---|---|
+| Sin motivo | `{}` | 422 | `VALIDATION_ERROR` (`errors.reason`) |
+| Anular otra vez | `{ "reason": "x" }` | 422 | `PAYMENT_NOT_CANCELLABLE` |
+| Pago inexistente | `POST {{base_url}}/payments/999999/cancel` con `{ "reason": "x" }` | 404 | `RESOURCE_NOT_FOUND` |
+
+Volver a pagar el saldo: `POST {{base_url}}/invoices/{{invoice4_id}}/payments` con `{ "amount": 350, "method": "cash" }` → `201`, `receipt_number` `"REC-000003"` (el recibo anulado no se reutiliza), `invoice.payment_status` `paid`.
+
+### 16.5 Anular una factura con pagos
+
+| Caso | Método / Endpoint | Body | HTTP | error_code |
+|---|---|---|---|---|
+| Factura con pagos vigentes | `POST {{base_url}}/invoices/{{invoice_id}}/cancel` | `{ "reason": "Error" }` | 422 | `INVOICE_HAS_PAYMENTS` |
+
+> Para anularla primero hay que anular sus pagos (16.4) y después la factura (15.7).
+
+### 16.6 Listado y resumen de caja
+
+| Caso | Método / Endpoint | HTTP | Resultado / error_code |
+|---|---|---|---|
+| Todos | `GET {{base_url}}/payments` | 200 | 5 pagos con `meta.pagination` |
+| Por factura | `GET {{base_url}}/payments?invoice_id={{invoice4_id}}` | 200 | 3 pagos |
+| Por medio | `GET {{base_url}}/payments?method=card` | 200 | 1 pago |
+| Anulados | `GET {{base_url}}/payments?status=cancelled` | 200 | 1 pago (`REC-000002`) |
+| Por recibo o factura | `GET {{base_url}}/payments?search=REC-000001` | 200 | Filtrado |
+| Detalle | `GET {{base_url}}/payments/{{payment4_id}}` | 200 | `bank`, `notes`, `invoice` (con `balance`), datos de anulación |
+| Medio inválido | `GET {{base_url}}/payments?method=bitcoin` | 422 | `VALIDATION_ERROR` |
+| Facturas con saldo | `GET {{base_url}}/invoices` | 200 | Cada factura con `balance` y `payment_status` |
+
+**Resumen de caja** (por defecto, el día de hoy; acepta `date_from` y `date_to`):
+
+`GET {{base_url}}/payments/summary`
+
+| Campo | Valor esperado |
+|---|---|
+| `payments_count` / `total` | `4` / `"352550.00"` (sin el pago anulado) |
+| `by_method` efectivo | `payments_count` `3`, `total` `"100550.00"` (100.000 + 200 + 350) |
+| `by_method` tarjeta | `payments_count` `1`, `total` `"252000.00"` |
+| `by_method` transferencia / cheque | `"0.00"` / `"0.00"` |
+| `cancelled_count` | `1` |
+
+| Caso | Método / Endpoint | HTTP | Resultado / error_code |
+|---|---|---|---|
+| Período sin pagos | `GET {{base_url}}/payments/summary?date_from=2020-01-01&date_to=2020-01-31` | 200 | `total` `"0.00"` |
+| Rango invertido | `GET {{base_url}}/payments/summary?date_from=2026-02-01&date_to=2026-01-01` | 422 | `VALIDATION_ERROR` |
+
+> Los totales asumen que no hubo otros pagos ese día.
+
+### 16.7 Permisos del mecánico (token = `{{token_mec}}`)
+
+| Caso | Método / Endpoint | HTTP | error_code |
+|---|---|---|---|
+| Registrar pago | `POST {{base_url}}/invoices/{{invoice4_id}}/payments` | 403 | `FORBIDDEN` |
+| Listar pagos | `GET {{base_url}}/payments` | 403 | `FORBIDDEN` |
+| Resumen de caja | `GET {{base_url}}/payments/summary` | 403 | `FORBIDDEN` |
+| Anular pago | `POST {{base_url}}/payments/{{payment1_id}}/cancel` | 403 | `FORBIDDEN` |
 
 ---
 

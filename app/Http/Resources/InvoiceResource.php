@@ -28,6 +28,8 @@ class InvoiceResource extends JsonResource
             'issue_date' => $this->issue_date?->toDateString(),
             'due_date' => $this->due_date?->toDateString(),
             'total' => $this->total,
+            'balance' => $this->balance(),
+            'payment_status' => $this->paymentStatus()?->value,
             'created_at' => $this->created_at,
         ];
     }

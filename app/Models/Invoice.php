@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Enums\InvoiceCondition;
+use App\Enums\InvoicePaymentStatus;
 use App\Enums\InvoiceStatus;
+use App\Enums\PaymentStatus;
 use App\Exceptions\InvoiceException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -126,6 +128,49 @@ class Invoice extends Model
     public function items(): HasMany
     {
         return $this->hasMany(InvoiceItem::class)->orderBy('id');
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class)->orderBy('id');
+    }
+
+    /**
+     * Total cobrado (pagos no anulados). Usa paid_total si vino de withSum
+     * o la relación si está cargada.
+     */
+    public function paidTotal(): string
+    {
+        if (array_key_exists('paid_total', $this->attributes)) {
+            return bcadd((string) ($this->attributes['paid_total'] ?? '0'), '0', 2);
+        }
+
+        $payments = $this->relationLoaded('payments')
+            ? $this->payments->where('status', PaymentStatus::REGISTERED)
+            : $this->payments()->registered()->get();
+
+        return $payments->reduce(fn (string $sum, Payment $p) => bcadd($sum, $p->amount, 2), '0.00');
+    }
+
+    public function balance(): string
+    {
+        return bcsub((string) $this->total, $this->paidTotal(), 2);
+    }
+
+    /**
+     * Estado de cobro: solo aplica a facturas emitidas.
+     */
+    public function paymentStatus(): ?InvoicePaymentStatus
+    {
+        if ($this->status !== InvoiceStatus::ISSUED) {
+            return null;
+        }
+
+        return match (true) {
+            bccomp($this->balance(), '0', 2) <= 0 => InvoicePaymentStatus::PAID,
+            bccomp($this->paidTotal(), '0', 2) > 0 => InvoicePaymentStatus::PARTIAL,
+            default => InvoicePaymentStatus::UNPAID,
+        };
     }
 
     public function creator(): BelongsTo

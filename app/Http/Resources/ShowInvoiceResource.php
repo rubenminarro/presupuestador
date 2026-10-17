@@ -46,6 +46,12 @@ class ShowInvoiceResource extends JsonResource
                 'discount' => $this->discount_total,
                 'total' => $this->total,
             ],
+            'payment_summary' => [
+                'paid_total' => $this->paidTotal(),
+                'balance' => $this->balance(),
+                'status' => $this->paymentStatus()?->value,
+            ],
+            'payments' => PaymentResource::collection($this->whenLoaded('payments')),
             'issued_at' => $this->issued_at,
             'issued_by' => $this->issued_by,
             'cancelled_at' => $this->cancelled_at,

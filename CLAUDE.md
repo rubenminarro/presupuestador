@@ -368,6 +368,7 @@ También se completaron:
 * **FASE 13 — Servicios y mano de obra (comisiones):** ver sección 2.26.
 * **FASE 14 — Cierre económico de WorkOrder:** ver sección 2.27.
 * **FASE 15 — Facturación:** ver sección 2.28.
+* **FASE 16 — Pagos:** ver sección 2.29.
 
 ---
 
@@ -616,6 +617,52 @@ Endpoints: `GET|POST invoice-stamps`, `PATCH invoice-stamps/{invoiceStamp}`, `PO
 `POST invoices/{invoice}/issue|cancel`.
 Permisos (solo administrador): `invoice-stamps.index|store|update`,
 `invoices.index|show|store|update|issue|cancel|destroy`.
+
+---
+
+# 2.29 Pagos (FASE 16)
+
+Componentes:
+
+```text
+Payment               (payments: invoice_id, payment_date, amount, method, reference, bank, notes, status,
+                       receipt_sequence/receipt_number, created_by, datos de anulación)
+PaymentMethod         (cash, card, transfer, check)
+PaymentStatus         (registered, cancelled)
+InvoicePaymentStatus  (unpaid, partial, paid; calculado, no se persiste)
+PaymentService        (register, cancel, summary)
+PaymentException
+Invoice               (+ payments, paidTotal, balance, paymentStatus)
+```
+
+Ciclo:
+
+```text
+factura issued --registrar--> registered   (no supera el saldo; bloquea la factura)
+registered     --anular-->    cancelled    (motivo obligatorio; el saldo vuelve a estar disponible)
+```
+
+Reglas:
+
+* Solo facturas `issued` admiten pagos (`INVOICE_NOT_PAYABLE`). Varios pagos por factura, al contado o a crédito,
+  hasta cubrir el total. Saldo = total − pagos `registered`.
+* Monto en guaraníes enteros (`integer`, > 0). Supera el saldo → `PAYMENT_EXCEEDS_BALANCE`; saldo 0 → `INVOICE_ALREADY_PAID`.
+  Sin vuelto: se registra el monto aplicado.
+* `payment_date` opcional (hoy por defecto), no futura (validación) ni anterior a `issue_date` (`PAYMENT_DATE_BEFORE_ISSUE`).
+* `reference` obligatoria para tarjeta, transferencia y cheque (se descarta en efectivo); `bank` obligatorio en cheque
+  (se guarda solo en cheque y transferencia).
+* Recibo `REC-000001` correlativo solo para pagos de facturas a crédito (`receipt_sequence` único); un recibo anulado
+  no se reutiliza. Al contado, la factura es el comprobante.
+* El pago no se edita ni se elimina (`PAYMENT_NOT_EDITABLE`, a nivel de modelo); anular uno ya anulado →
+  `PAYMENT_NOT_CANCELLABLE`.
+* Una factura con pagos vigentes no se anula (`INVOICE_HAS_PAYMENTS`): primero se anulan los pagos.
+* `ShowInvoiceResource` incluye `payment_summary` (`paid_total`, `balance`, `status`) y `payments`; el listado de
+  facturas incluye `balance` y `payment_status` (con `withSum`).
+* Resumen de caja: pagos `registered` del período (por defecto, hoy) agrupados por medio, más la cantidad de anulados.
+
+Endpoints: `POST invoices/{invoice}/payments`, `GET payments`, `GET payments/summary?date_from&date_to`,
+`GET payments/{payment}`, `POST payments/{payment}/cancel`.
+Permisos (solo administrador): `payments.index|show|store|cancel|summary`.
 
 ---
 
@@ -2884,13 +2931,13 @@ La arquitectura objetivo es:
 El proyecto actualmente se encuentra en:
 
 ```text
-FASE 15 — FACTURACIÓN — CERRADA
+FASE 16 — PAGOS — CERRADA
 ```
 
 El siguiente gran paso recomendado es:
 
 ```text
-FASE 16 — PAGOS (Payment contra facturas emitidas; contado/crédito, pagos parciales, saldo)
+FASE 17 — ENTREGA DEL VEHÍCULO (VehicleDelivery tras OT completada, factura y pago)
 ```
 
 El orden de trabajo de abajo se usó para las FASES 10 a 13 y sigue siendo la referencia.
@@ -2993,13 +3040,13 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 [✓] Tiempo estimado, horas reales y costo del mecánico — opcionales (FASE 13)
 [✓] Cierre económico, margen y liquidación de comisiones (FASE 14)
 [✓] Facturación con timbrado e IVA incluido (FASE 15)
+[✓] Pagos, recibos y resumen de caja (FASE 16)
 ```
 
 ## Próximo
 
 ```text
 [ ] Compras
-[ ] Pagos
 [ ] Entrega
 [ ] Historial del vehículo
 [ ] Mantenimiento preventivo

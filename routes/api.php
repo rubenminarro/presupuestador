@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\ServiceCategoryController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\InvoiceStampController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PartCategoryController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\PartController;
@@ -145,6 +146,17 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::post('invoices/{invoice}/issue', [InvoiceController::class, 'issue'])->name('invoices.issue');
 
     Route::post('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
+
+    Route::post('invoices/{invoice}/payments', [PaymentController::class, 'store'])->name('invoices.payments.store');
+
+    // Antes de payments/{payment}: si no, la ruta con parámetro captura "summary".
+    Route::get('payments/summary', [PaymentController::class, 'summary'])->name('payments.summary');
+
+    Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
+
+    Route::get('payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
+
+    Route::post('payments/{payment}/cancel', [PaymentController::class, 'cancel'])->name('payments.cancel');
 
     Route::get('service-categories', [ServiceCategoryController::class, 'index'])->name('service-categories.index');
 

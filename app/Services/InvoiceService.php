@@ -208,6 +208,14 @@ class InvoiceService
                 );
             }
 
+            if ($invoice->payments()->registered()->exists()) {
+                throw new InvoiceException(
+                    'La factura tiene pagos registrados: anúlelos antes de anular la factura.',
+                    422,
+                    'INVOICE_HAS_PAYMENTS'
+                );
+            }
+
             $invoice->update([
                 'status' => InvoiceStatus::CANCELLED,
                 'cancelled_at' => now(),
