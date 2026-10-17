@@ -19,7 +19,8 @@ class WorkOrderService
     public function __construct(
         protected WorkOrderPartService $workOrderPartService,
         protected WorkOrderCommissionService $commissionService,
-        protected WorkOrderClosingService $closingService
+        protected WorkOrderClosingService $closingService,
+        protected MaintenanceService $maintenanceService
     ) {
     }
 
@@ -258,6 +259,9 @@ class WorkOrderService
 
             // Cierre económico: congela venta, costos, margen y comisiones.
             $this->closingService->close($workOrder, $closedBy);
+
+            // Mantenimiento preventivo: los servicios hechos actualizan los planes del vehículo.
+            $this->maintenanceService->registerFromWorkOrder($workOrder);
 
             return $workOrder->load([
                 'reception',

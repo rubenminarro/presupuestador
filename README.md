@@ -45,8 +45,9 @@ Cliente → Vehículo → Recepción → Diagnóstico → Presupuesto → Aproba
 | Pagos | Pagos parciales, medios de pago, vuelto en efectivo, recibos para crédito, saldo y resumen de caja |
 | Entrega del vehículo | Comprobante `ENT-000001`, kilometraje final, quién retira, conformidad y firma; exige factura emitida y pagada si es al contado |
 | Historial del vehículo | Resumen, visitas (diagnóstico, OT, repuestos, factura, entrega), repuestos usados y lecturas de kilometraje |
+| Mantenimiento preventivo | Planes por km y/o días, registro automático desde la OT, km actual estimado por uso y alertas de vencimiento |
 
-Próximas fases: mantenimiento preventivo, compras, reportes.
+Próximas fases: reportes y dashboard, compras, notificaciones.
 
 ---
 

@@ -4,8 +4,8 @@
 
 **Versión del handoff:** 1.1
 **Fecha:** 2026-10-17
-**Estado:** Backend/API funcional — FASES 10 a 18 cerradas (repuestos, inventario, servicios, cierre económico,
-facturación, pagos, entrega e historial del vehículo); 6 roles; todos los módulos con tests
+**Estado:** Backend/API funcional — FASES 10 a 19 cerradas (repuestos, inventario, servicios, cierre económico,
+facturación, pagos, entrega, historial del vehículo y mantenimiento preventivo); 6 roles; todos los módulos con tests
 **Stack principal:** Laravel 12 + React 19 + MySQL
 **Entorno local:** Laragon / Windows
 **Base de datos:** `presupuestador`
@@ -381,6 +381,7 @@ También se completaron:
 * **FASE 16 — Pagos:** ver sección 2.29.
 * **FASE 17 — Entrega del vehículo:** ver sección 2.30.
 * **FASE 18 — Historial del vehículo:** ver sección 2.31.
+* **FASE 19 — Mantenimiento preventivo:** ver sección 2.32.
 
 ---
 
@@ -751,6 +752,50 @@ anidadas (como `economics` por OT) se arma el array a mano.
 Endpoints: `GET vehicles/{vehicle}/history?per_page`, `GET vehicles/{vehicle}/history/parts?per_page`,
 `GET vehicles/{vehicle}/history/mileage`.
 Permiso: `vehicle-history.view` (administrador, mecánico, recepcionista, jefe-taller, cajero y depósito).
+
+---
+
+# 2.32 Mantenimiento preventivo (FASE 19)
+
+Componentes:
+
+```text
+MaintenancePlan     (maintenance_plans: name, description, service_id nullable, interval_km, interval_days, is_active)
+VehicleMaintenance  (vehicle_maintenances: vehicle_id + maintenance_plan_id únicos, interval_km/interval_days propios
+                     (null = los del plan), last_done_at, last_done_mileage, work_order_id, next_due_at, next_due_mileage)
+MaintenanceStatus   (unknown, ok, due_soon, overdue; calculado)
+MaintenanceService  (createPlan, updatePlan, deletePlan, recordDone, registerFromWorkOrder, configure,
+                     estimatedMileage, forVehicle, alerts)
+MaintenanceException
+config/maintenance.php (due_soon_km = 1000, due_soon_days = 30)
+MaintenancePlanSeeder  (aceite 5.000 km/180 días, rotación 10.000 km, alineación 10.000 km/365 días)
+```
+
+Reglas:
+
+* Un plan tiene intervalo en km y/o días (al menos uno: validación al crear, `MAINTENANCE_INTERVAL_REQUIRED` al editar).
+  Con seguimiento no se elimina (`MAINTENANCE_PLAN_IN_USE`, 409): se desactiva.
+* Registro **automático**: `WorkOrderService::complete()` llama a `registerFromWorkOrder()`; cada ítem `service`
+  completado cuyo `service_id` es el de un plan activo registra el mantenimiento con la fecha de cierre y el km de la
+  recepción. Un registro más viejo que el último se ignora.
+* Registro **manual** (`POST vehicles/{vehicle}/maintenances`): plan activo (`MAINTENANCE_PLAN_INACTIVE`), fecha no
+  futura, no anterior al último (`MAINTENANCE_DONE_OUT_OF_ORDER`) ni con menos km (`MAINTENANCE_MILEAGE_BELOW_LAST`).
+* Próximo vencimiento = último + intervalo efectivo (propio del vehículo o del plan). Cambiar los intervalos del plan o
+  del vehículo recalcula.
+* Km actual **estimado**: última lectura (historial, sin las marcadas `decreased`) + promedio km/día entre la primera y
+  la última × días desde la última. Con una sola lectura (o el mismo día) se usa la lectura; sin lecturas, `vehicles.mileage`.
+* Estado: vence por km o por fecha, lo que ocurra primero. `overdue` si faltan ≤ 0 km o la fecha pasó; `due_soon`
+  dentro de los umbrales de `config/maintenance.php`; `unknown` si nunca se registró (no genera alerta).
+* Alertas: solo planes activos, vehículos no eliminados y mantenimientos con registro; vencidos primero, con datos de
+  contacto del cliente. Los avisos automáticos (email/WhatsApp) quedan para el módulo de notificaciones.
+* La ruta `PATCH vehicles/{vehicle}/maintenances/{maintenancePlan}` usa `withoutScopedBindings()`: el plan no es una
+  relación del vehículo.
+
+Endpoints: CRUD `maintenance-plans` (PATCH para editar/activar), `GET|POST vehicles/{vehicle}/maintenances`,
+`PATCH vehicles/{vehicle}/maintenances/{maintenancePlan}`, `GET maintenance/alerts?status=overdue|due_soon`.
+Permisos: `maintenance-plans.index|show|store|update|destroy`, `vehicle-maintenances.index|record|configure`,
+`maintenance-alerts.index`. Mecánico: ver planes y el estado del vehículo; recepcionista: además registrar y ver
+alertas; jefe-taller: además configurar intervalos del vehículo; ABM de planes: administrador.
 
 ---
 
@@ -3038,13 +3083,13 @@ La arquitectura objetivo es:
 El proyecto actualmente se encuentra en:
 
 ```text
-FASE 18 — HISTORIAL DEL VEHÍCULO — CERRADA
+FASE 19 — MANTENIMIENTO PREVENTIVO — CERRADA
 ```
 
 El siguiente gran paso recomendado es:
 
 ```text
-FASE 19 — MANTENIMIENTO PREVENTIVO (planes por kilometraje/tiempo usando el historial y las lecturas de km)
+FASE 20 — REPORTES Y DASHBOARD (ventas, rentabilidad, productividad, inventario, clientes y vehículos)
 ```
 
 El orden de trabajo de abajo se usó para las FASES 10 a 13 y sigue siendo la referencia.
@@ -3151,13 +3196,13 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 [✓] Entrega del vehículo con comprobante y conformidad (FASE 17)
 [✓] Roles del taller: recepcionista, jefe-taller, cajero, depósito
 [✓] Historial del vehículo con resumen, visitas, repuestos y kilometraje (FASE 18)
+[✓] Mantenimiento preventivo con planes, km estimado y alertas (FASE 19)
 ```
 
 ## Próximo
 
 ```text
 [ ] Compras
-[ ] Mantenimiento preventivo
 [ ] Notificaciones
 [ ] Reportes
 [ ] Auditoría avanzada

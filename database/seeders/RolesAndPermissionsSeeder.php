@@ -239,6 +239,17 @@ class RolesAndPermissionsSeeder extends Seeder
             /* vehicle history permissions */
             'vehicle-history.view',
 
+            /* preventive maintenance permissions */
+            'maintenance-plans.index',
+            'maintenance-plans.show',
+            'maintenance-plans.store',
+            'maintenance-plans.update',
+            'maintenance-plans.destroy',
+            'vehicle-maintenances.index',
+            'vehicle-maintenances.record',
+            'vehicle-maintenances.configure',
+            'maintenance-alerts.index',
+
             /* inventory permissions */
             'inventory.index',
             'inventory.show',
@@ -319,6 +330,9 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'vehicle-history.view',
 
+            'maintenance-plans.index',
+            'vehicle-maintenances.index',
+
         ];
 
         $mecanico->syncPermissions(
@@ -369,6 +383,8 @@ class RolesAndPermissionsSeeder extends Seeder
                     'invoices.index', 'invoices.show',
                     'vehicle-deliveries.index', 'vehicle-deliveries.show', 'vehicle-deliveries.store',
                     'vehicle-history.view',
+                    'maintenance-plans.index', 'maintenance-plans.show',
+                    'vehicle-maintenances.index', 'vehicle-maintenances.record', 'maintenance-alerts.index',
                 ],
             ],
             'jefe-taller' => [
@@ -397,6 +413,9 @@ class RolesAndPermissionsSeeder extends Seeder
                     'inventory.index', 'inventory.show',
                     'vehicle-deliveries.index', 'vehicle-deliveries.show',
                     'vehicle-history.view',
+                    'maintenance-plans.index', 'maintenance-plans.show',
+                    'vehicle-maintenances.index', 'vehicle-maintenances.record', 'vehicle-maintenances.configure',
+                    'maintenance-alerts.index',
                 ],
             ],
             'cajero' => [

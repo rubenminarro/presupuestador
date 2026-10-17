@@ -32,6 +32,8 @@ use App\Http\Controllers\Api\InvoiceStampController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\VehicleDeliveryController;
 use App\Http\Controllers\Api\VehicleHistoryController;
+use App\Http\Controllers\Api\MaintenancePlanController;
+use App\Http\Controllers\Api\VehicleMaintenanceController;
 use App\Http\Controllers\Api\PartCategoryController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\PartController;
@@ -173,6 +175,21 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::get('vehicles/{vehicle}/history/parts', [VehicleHistoryController::class, 'parts'])->name('vehicles.history.parts');
 
     Route::get('vehicles/{vehicle}/history/mileage', [VehicleHistoryController::class, 'mileage'])->name('vehicles.history.mileage');
+
+    Route::apiResource('maintenance-plans', MaintenancePlanController::class)->except(['update']);
+
+    Route::patch('maintenance-plans/{maintenancePlan}', [MaintenancePlanController::class, 'update'])->name('maintenance-plans.update');
+
+    Route::get('vehicles/{vehicle}/maintenances', [VehicleMaintenanceController::class, 'index'])->name('vehicles.maintenances.index');
+
+    Route::post('vehicles/{vehicle}/maintenances', [VehicleMaintenanceController::class, 'record'])->name('vehicles.maintenances.record');
+
+    // El plan no es una relación del vehículo: sin scoped binding.
+    Route::patch('vehicles/{vehicle}/maintenances/{maintenancePlan}', [VehicleMaintenanceController::class, 'configure'])
+        ->withoutScopedBindings()
+        ->name('vehicles.maintenances.configure');
+
+    Route::get('maintenance/alerts', [VehicleMaintenanceController::class, 'alerts'])->name('maintenance.alerts');
 
     Route::get('service-categories', [ServiceCategoryController::class, 'index'])->name('service-categories.index');
 

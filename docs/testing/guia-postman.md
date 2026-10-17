@@ -1,6 +1,6 @@
 # Guía de pruebas con Postman — Presupuestador
 
-**Alcance:** API al cierre de la FASE 18 (historial del vehículo), con los roles del taller, la FASE 17 (entrega del vehículo), la FASE 16 (pagos, vuelto, recibos y resumen de caja), la FASE 15 (facturación con timbrado e IVA incluido), la FASE 14 (cierre económico de la OT y liquidación de comisiones), incluidos los ajustes posteriores a la FASE 12 (rutas de vehículos por cliente, permisos de ítems de presupuesto, `error_code` del login y validaciones de texto) y la corrección de `roles/permissions-grouped-by-module`.
+**Alcance:** API al cierre de la FASE 19 (mantenimiento preventivo), con la FASE 18 (historial del vehículo), los roles del taller, la FASE 17 (entrega del vehículo), la FASE 16 (pagos, vuelto, recibos y resumen de caja), la FASE 15 (facturación con timbrado e IVA incluido), la FASE 14 (cierre económico de la OT y liquidación de comisiones), incluidos los ajustes posteriores a la FASE 12 (rutas de vehículos por cliente, permisos de ítems de presupuesto, `error_code` del login y validaciones de texto) y la corrección de `roles/permissions-grouped-by-module`.
 **Uso:** ejecutar los requests en el orden indicado; cada sección parte de los datos creados en las anteriores.
 
 ---
@@ -20,7 +20,7 @@
 | `token_mec` | (vacío) |
 | `token_caja` | (vacío; B.6) |
 
-Variables de IDs que se irán completando con las respuestas: `client_id`, `client2_id`, `brand_id`, `model_id`, `vehicle_id`, `vehicle2_id`, `reception_id`, `budget_id`, `budget_item_id`, `mechanic_id`, `work_order_id`, `work_order_item_id`, `category_id`, `supplier_id`, `part_id`, `part_unit_id`, `part_status_id`, `movement_id`, `budget2_id`, `work_order2_id`, `work_order3_id`, `work_order4_id`, `line_id`, `extra_line_id`, `pending_line_id`, `mec1_id`, `mec2_id`, `service_category_id`, `service_id`, `service_unused_id`, `budget5_id`, `work_order5_id`, `labor_item_id`, `service_item_id`, `work_order6_id`, `work_order7_id`, `stamp_id`, `invoice_id`, `invoice_service_item_id`, `invoice_labor_item_id`, `invoice2_id`, `invoice3_id`, `invoice4_id`, `payment1_id`, `payment2_id`, `payment3_id`, `payment4_id`, `reception2_id`, `budget8_id`, `work_order8_id`, `work_order8_item_id`, `invoice5_id`, `delivery_id`, `delivery2_id`.
+Variables de IDs que se irán completando con las respuestas: `client_id`, `client2_id`, `brand_id`, `model_id`, `vehicle_id`, `vehicle2_id`, `reception_id`, `budget_id`, `budget_item_id`, `mechanic_id`, `work_order_id`, `work_order_item_id`, `category_id`, `supplier_id`, `part_id`, `part_unit_id`, `part_status_id`, `movement_id`, `budget2_id`, `work_order2_id`, `work_order3_id`, `work_order4_id`, `line_id`, `extra_line_id`, `pending_line_id`, `mec1_id`, `mec2_id`, `service_category_id`, `service_id`, `service_unused_id`, `budget5_id`, `work_order5_id`, `labor_item_id`, `service_item_id`, `work_order6_id`, `work_order7_id`, `stamp_id`, `invoice_id`, `invoice_service_item_id`, `invoice_labor_item_id`, `invoice2_id`, `invoice3_id`, `invoice4_id`, `payment1_id`, `payment2_id`, `payment3_id`, `payment4_id`, `reception2_id`, `budget8_id`, `work_order8_id`, `work_order8_item_id`, `invoice5_id`, `delivery_id`, `delivery2_id`, `maint_plan_id`, `brakes_plan_id`, `reception3_id`, `budget9_id`, `work_order9_id`.
 
 ### 0.2 Headers comunes
 
@@ -2082,6 +2082,117 @@ Esperado: `200`, 1 línea: aceite de `{{work_order2_id}}` con `quantity` `"1.500
 | Mecánico | `{{token_mec}}` | `GET {{base_url}}/vehicles/{{vehicle2_id}}/history` | 200 | Sin `summary.economics` ni `economics` por OT; sí `invoiced_total` |
 | Mecánico, repuestos | `{{token_mec}}` | `GET {{base_url}}/vehicles/{{vehicle_id}}/history/parts` | 200 | Sin `unit_cost` ni `total_cost` |
 | Cajero | `{{token_caja}}` (B.6) | `GET {{base_url}}/vehicles/{{vehicle2_id}}/history` | 200 | Sin costos |
+
+---
+
+## FASE 19 — Mantenimiento preventivo
+
+Token: administrador salvo indicación. Vehículo de referencia: `{{vehicle2_id}}` (`QAB456`, FASE 17).
+
+> Un **plan** define cada cuántos km y/o días se hace un mantenimiento. Vence por km o por fecha, lo que ocurra primero.
+> Se registra **solo** al completar una OT con el servicio del plan, o **a mano**. El km actual se **estima** con el promedio km/día entre lecturas.
+> Estados: `unknown` (sin registro), `ok`, `due_soon` (faltan ≤ 1.000 km o ≤ 30 días), `overdue`.
+> Si la base se sembró con `MaintenancePlanSeeder` ya existen 3 planes de ejemplo (aceite, rotación, alineación).
+
+### 19.1 Crear planes
+
+`POST {{base_url}}/maintenance-plans`
+
+```json
+{
+  "name": "Alineacion periodica",
+  "description": "Alineacion y balanceo preventivo.",
+  "service_id": {{service_id}},
+  "interval_km": 10000,
+  "interval_days": 365
+}
+```
+
+Esperado: `201`, `is_active` `true`, `service.name` `"Alineacion QA"` (FASE 13) → `maint_plan_id`.
+
+Plan solo por tiempo: `{ "name": "Revision de frenos", "interval_days": 30 }` → `201` → `brakes_plan_id`.
+
+| Caso | Método / Body | HTTP | error_code |
+|---|---|---|---|
+| Sin intervalos | `POST` `{ "name": "Plan QA" }` | 422 | `VALIDATION_ERROR` (`interval_km`, `interval_days`) |
+| Nombre repetido | `POST` `{ "name": "Revision de frenos", "interval_days": 10 }` | 422 | `VALIDATION_ERROR` (`errors.name`) |
+| Días fuera de rango | `POST` `{ "name": "Plan QA", "interval_days": 5000 }` | 422 | `VALIDATION_ERROR` (`errors.interval_days`) |
+| Servicio inexistente | `POST` `{ "name": "Plan QA", "interval_km": 1000, "service_id": 999999 }` | 422 | `VALIDATION_ERROR` (`errors.service_id`) |
+| Dejar el plan sin intervalos | `PATCH {{base_url}}/maintenance-plans/{{brakes_plan_id}}` `{ "interval_days": null }` | 422 | `MAINTENANCE_INTERVAL_REQUIRED` |
+
+Listado: `GET {{base_url}}/maintenance-plans` (filtros `search`, `is_active`).
+
+### 19.2 Estado del vehículo antes de registrar
+
+`GET {{base_url}}/vehicles/{{vehicle2_id}}/maintenances`
+
+Esperado: `200`, `current_mileage.mileage` `30150` (última lectura: entrega de 17.3; `estimated` `false` porque las lecturas son del mismo día) y cada plan activo con `status.value` `unknown`.
+
+### 19.3 Registro manual
+
+`POST {{base_url}}/vehicles/{{vehicle2_id}}/maintenances`
+
+```json
+{
+  "maintenance_plan_id": {{maint_plan_id}},
+  "done_at": "<hoy>",
+  "mileage": 30150,
+  "notes": "Hecho en otro taller"
+}
+```
+
+Esperado: `201`, `last_done_mileage` `30150`, `next_due_mileage` `40150`, `next_due_at` hoy + 365 días, `status.value` `ok`, `remaining_km` `10000`.
+
+| Caso | Body | HTTP | error_code |
+|---|---|---|---|
+| Fecha anterior al último registro | `{ ..., "done_at": "<ayer>" }` | 422 | `MAINTENANCE_DONE_OUT_OF_ORDER` |
+| Menos km que el último registro | `{ ..., "mileage": 30000 }` | 422 | `MAINTENANCE_MILEAGE_BELOW_LAST` |
+| Fecha futura | `{ ..., "done_at": "<mañana>" }` | 422 | `VALIDATION_ERROR` (`errors.done_at`) |
+| Sin plan | `{ "done_at": "<hoy>" }` | 422 | `VALIDATION_ERROR` (`errors.maintenance_plan_id`) |
+
+Frenos hechos hace 35 días: `{ "maintenance_plan_id": {{brakes_plan_id}}, "done_at": "<hoy − 35 días>" }` → `201`, `status.value` `overdue`, `remaining_days` `-5`.
+
+### 19.4 Registro automático desde la OT
+
+1. `POST {{base_url}}/receptions` con el body de M.6 cambiando `"vehicle_id": {{vehicle2_id}}` y `"mileage": 31000` → `reception3_id`.
+2. Presupuesto con `{ "reception_id": {{reception3_id}} }` → `budget9_id`; ítem `{ "type": "service", "service_id": {{service_id}}, "description": "Alineacion", "quantity": 1 }`; enviar y aprobar.
+3. OT con `{ "budget_id": {{budget9_id}}, "mechanic_id": {{mec1_id}} }` → `work_order9_id`; iniciar, iniciar y completar el ítem, completar la OT.
+4. `GET {{base_url}}/vehicles/{{vehicle2_id}}/maintenances` → "Alineacion periodica": `last_done_mileage` `31000`, `work_order_id` `{{work_order9_id}}`, `next_due_mileage` `41000`.
+
+> Las OT completadas **antes** de crear el plan no se registran retroactivamente.
+
+### 19.5 Intervalo propio del vehículo
+
+`PATCH {{base_url}}/vehicles/{{vehicle2_id}}/maintenances/{{maint_plan_id}}`
+
+```json
+{ "interval_km": 20000 }
+```
+
+Esperado: `200`, `is_custom_interval` `true`, `next_due_mileage` `51000`. Con `{ "interval_km": null }` vuelve al intervalo del plan (`next_due_mileage` `41000`, `is_custom_interval` `false`).
+
+### 19.6 Alertas
+
+`GET {{base_url}}/maintenance/alerts`
+
+Esperado: `200`; incluye "Revision de frenos" de `QAB456` con `status.value` `overdue`, `client.phone` del cliente y `vehicle.estimated_mileage`. `meta.counts` con la cantidad de `overdue` y `due_soon`. Los vencidos aparecen primero.
+
+| Caso | Endpoint | HTTP | Resultado / error_code |
+|---|---|---|---|
+| Solo por vencer | `GET {{base_url}}/maintenance/alerts?status=due_soon` | 200 | Filtrado |
+| Estado inválido | `GET {{base_url}}/maintenance/alerts?status=ok` | 422 | `VALIDATION_ERROR` |
+| Plan desactivado | `PATCH .../maintenance-plans/{{brakes_plan_id}}` `{ "is_active": false }` y repetir | 200 | La alerta de frenos ya no aparece |
+| Eliminar plan con seguimiento | `DELETE {{base_url}}/maintenance-plans/{{brakes_plan_id}}` | 409 | `MAINTENANCE_PLAN_IN_USE` |
+
+### 19.7 Permisos
+
+| Caso | Token | Endpoint | HTTP |
+|---|---|---|---|
+| Estado del vehículo | `{{token_mec}}` | `GET {{base_url}}/vehicles/{{vehicle2_id}}/maintenances` | 200 |
+| Registrar | `{{token_mec}}` | `POST {{base_url}}/vehicles/{{vehicle2_id}}/maintenances` | 403 `FORBIDDEN` |
+| Alertas | `{{token_mec}}` | `GET {{base_url}}/maintenance/alerts` | 403 `FORBIDDEN` |
+| Alertas | `{{token_caja}}` | `GET {{base_url}}/maintenance/alerts` | 403 `FORBIDDEN` |
+| Crear plan | `{{token_mec}}` | `POST {{base_url}}/maintenance-plans` | 403 `FORBIDDEN` |
 
 ---
 
