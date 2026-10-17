@@ -236,6 +236,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'vehicle-deliveries.store',
             'vehicle-deliveries.cancel',
 
+            /* vehicle history permissions */
+            'vehicle-history.view',
+
             /* inventory permissions */
             'inventory.index',
             'inventory.show',
@@ -314,6 +317,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'inventory.index',
             'inventory.show',
 
+            'vehicle-history.view',
+
         ];
 
         $mecanico->syncPermissions(
@@ -363,6 +368,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'work-orders.index', 'work-orders.show',
                     'invoices.index', 'invoices.show',
                     'vehicle-deliveries.index', 'vehicle-deliveries.show', 'vehicle-deliveries.store',
+                    'vehicle-history.view',
                 ],
             ],
             'jefe-taller' => [
@@ -390,6 +396,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'parts.index', 'parts.show', 'part-categories.index',
                     'inventory.index', 'inventory.show',
                     'vehicle-deliveries.index', 'vehicle-deliveries.show',
+                    'vehicle-history.view',
                 ],
             ],
             'cajero' => [
@@ -403,6 +410,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'invoices.issue', 'invoices.cancel', 'invoices.destroy',
                     'payments.index', 'payments.show', 'payments.store', 'payments.cancel', 'payments.summary',
                     'vehicle-deliveries.index', 'vehicle-deliveries.show',
+                    'vehicle-history.view',
                 ],
             ],
             'deposito' => [
@@ -417,6 +425,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'work-orders.index', 'work-orders.show',
                     'work-order-parts.index', 'work-order-parts.store', 'work-order-parts.update', 'work-order-parts.reserve',
                     'work-order-parts.consume', 'work-order-parts.return', 'work-order-parts.cancel',
+                    'vehicle-history.view',
                 ],
             ],
         ];

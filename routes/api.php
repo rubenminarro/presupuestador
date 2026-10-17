@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\InvoiceStampController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\VehicleDeliveryController;
+use App\Http\Controllers\Api\VehicleHistoryController;
 use App\Http\Controllers\Api\PartCategoryController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\PartController;
@@ -166,6 +167,12 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::get('vehicle-deliveries/{delivery}', [VehicleDeliveryController::class, 'show'])->name('vehicle-deliveries.show');
 
     Route::post('vehicle-deliveries/{delivery}/cancel', [VehicleDeliveryController::class, 'cancel'])->name('vehicle-deliveries.cancel');
+
+    Route::get('vehicles/{vehicle}/history', [VehicleHistoryController::class, 'show'])->name('vehicles.history.show');
+
+    Route::get('vehicles/{vehicle}/history/parts', [VehicleHistoryController::class, 'parts'])->name('vehicles.history.parts');
+
+    Route::get('vehicles/{vehicle}/history/mileage', [VehicleHistoryController::class, 'mileage'])->name('vehicles.history.mileage');
 
     Route::get('service-categories', [ServiceCategoryController::class, 'index'])->name('service-categories.index');
 

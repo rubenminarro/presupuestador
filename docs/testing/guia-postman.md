@@ -1,6 +1,6 @@
 # Guía de pruebas con Postman — Presupuestador
 
-**Alcance:** API al cierre de la FASE 17 (entrega del vehículo), con la FASE 16 (pagos, vuelto, recibos y resumen de caja), la FASE 15 (facturación con timbrado e IVA incluido), la FASE 14 (cierre económico de la OT y liquidación de comisiones), incluidos los ajustes posteriores a la FASE 12 (rutas de vehículos por cliente, permisos de ítems de presupuesto, `error_code` del login y validaciones de texto) y la corrección de `roles/permissions-grouped-by-module`.
+**Alcance:** API al cierre de la FASE 18 (historial del vehículo), con los roles del taller, la FASE 17 (entrega del vehículo), la FASE 16 (pagos, vuelto, recibos y resumen de caja), la FASE 15 (facturación con timbrado e IVA incluido), la FASE 14 (cierre económico de la OT y liquidación de comisiones), incluidos los ajustes posteriores a la FASE 12 (rutas de vehículos por cliente, permisos de ítems de presupuesto, `error_code` del login y validaciones de texto) y la corrección de `roles/permissions-grouped-by-module`.
 **Uso:** ejecutar los requests en el orden indicado; cada sección parte de los datos creados en las anteriores.
 
 ---
@@ -2018,6 +2018,70 @@ Volver a entregar con el body de 17.3 → `201`, `delivery_number` `"ENT-000002"
 | Registrar entrega | `POST {{base_url}}/receptions/{{reception2_id}}/delivery` | 403 | `FORBIDDEN` |
 | Listar entregas | `GET {{base_url}}/vehicle-deliveries` | 403 | `FORBIDDEN` |
 | Anular | `POST {{base_url}}/vehicle-deliveries/{{delivery2_id}}/cancel` | 403 | `FORBIDDEN` |
+
+---
+
+## FASE 18 — Historial del vehículo
+
+Token: administrador salvo indicación.
+
+> Solo lectura: reúne recepciones, diagnósticos, presupuestos, OT, repuestos, facturas y entregas del vehículo.
+> Lo **facturado y los saldos** los ve todo el que tiene el permiso `vehicle-history.view`; los **costos y el margen** (`economics`, `unit_cost`, `total_cost`) solo el administrador.
+
+### 18.1 Historial de un vehículo con una visita
+
+`GET {{base_url}}/vehicles/{{vehicle2_id}}/history` (vehículo `QAB456`, FASE 17)
+
+| Campo | Valor esperado |
+|---|---|
+| `vehicle.plate` | `"QAB456"` |
+| `summary.visits` / `summary.work_orders_completed` | `1` / `1` |
+| `summary.last_mileage` | `30150` (km de la entrega vigente) |
+| `summary.invoiced_total` / `summary.balance_due` | `"1100.00"` / `"0.00"` |
+| `summary.economics` | presente (`sale_total`, `cost_total`, `gross_margin`) |
+| `timeline` | 1 visita: `mileage_in` `30000`, `status` `delivered` |
+| `timeline[0].work_orders[0]` | `code` de `{{work_order8_id}}`, `jobs` con "Revision general", `invoice.payment_status` `paid` |
+| `timeline[0].delivery` | `delivery_number` `"ENT-000002"` (la anulada no aparece), `mileage_out` `30150` |
+
+### 18.2 Vehículo con varias visitas
+
+`GET {{base_url}}/vehicles/{{vehicle_id}}/history` (vehículo `QAA123`, fases base a 16)
+
+Esperado: `200`, `timeline` con la recepción `{{reception_id}}` y todas sus OT de las fases anteriores con su estado actual (completadas, canceladas y abiertas); las OT facturadas muestran su factura con saldo. Paginación: `?per_page=1` → `meta.pagination`.
+
+### 18.3 Repuestos usados
+
+`GET {{base_url}}/vehicles/{{vehicle_id}}/history/parts`
+
+Esperado: `200`, 1 línea: aceite de `{{work_order2_id}}` con `quantity` `"1.500"` (1,7 consumido − 0,2 devuelto), `total_price` `"225.00"`, `total_cost` `"165.00"`. Las líneas canceladas o devueltas por completo no aparecen.
+
+`GET {{base_url}}/vehicles/{{vehicle2_id}}/history/parts` → `200`, `data` vacío (solo mano de obra).
+
+### 18.4 Kilometraje
+
+`GET {{base_url}}/vehicles/{{vehicle2_id}}/history/mileage`
+
+| Lectura | `mileage` | `source` | `decreased` |
+|---|---|---|---|
+| 1 | `30000` | `reception` | `false` |
+| 2 | `30150` | `delivery` | `false` |
+
+> La entrega anulada (`ENT-000001`) no cuenta. `decreased` es `true` cuando una lectura es menor que la anterior (posible error de carga del kilometraje).
+
+### 18.5 Casos de error
+
+| Caso | Método / Endpoint | HTTP | error_code |
+|---|---|---|---|
+| Vehículo inexistente | `GET {{base_url}}/vehicles/999999/history` | 404 | `RESOURCE_NOT_FOUND` |
+| Paginación fuera de rango | `GET {{base_url}}/vehicles/{{vehicle2_id}}/history?per_page=500` | 422 | `VALIDATION_ERROR` |
+
+### 18.6 Permisos
+
+| Caso | Token | Método / Endpoint | HTTP | Resultado |
+|---|---|---|---|---|
+| Mecánico | `{{token_mec}}` | `GET {{base_url}}/vehicles/{{vehicle2_id}}/history` | 200 | Sin `summary.economics` ni `economics` por OT; sí `invoiced_total` |
+| Mecánico, repuestos | `{{token_mec}}` | `GET {{base_url}}/vehicles/{{vehicle_id}}/history/parts` | 200 | Sin `unit_cost` ni `total_cost` |
+| Cajero | `{{token_caja}}` (B.6) | `GET {{base_url}}/vehicles/{{vehicle2_id}}/history` | 200 | Sin costos |
 
 ---
 

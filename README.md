@@ -44,8 +44,9 @@ Cliente → Vehículo → Recepción → Diagnóstico → Presupuesto → Aproba
 | Facturación | Timbrado, numeración `001-001-0000001`, IVA 10% / 5% / exento, contado o crédito |
 | Pagos | Pagos parciales, medios de pago, vuelto en efectivo, recibos para crédito, saldo y resumen de caja |
 | Entrega del vehículo | Comprobante `ENT-000001`, kilometraje final, quién retira, conformidad y firma; exige factura emitida y pagada si es al contado |
+| Historial del vehículo | Resumen, visitas (diagnóstico, OT, repuestos, factura, entrega), repuestos usados y lecturas de kilometraje |
 
-Próximas fases: historial del vehículo, mantenimiento preventivo, compras, reportes.
+Próximas fases: mantenimiento preventivo, compras, reportes.
 
 ---
 

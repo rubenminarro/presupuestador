@@ -4,8 +4,8 @@
 
 **Versión del handoff:** 1.1
 **Fecha:** 2026-10-17
-**Estado:** Backend/API funcional — FASES 10 a 17 cerradas (repuestos, inventario, servicios, cierre económico,
-facturación, pagos y entrega del vehículo); todos los módulos con tests
+**Estado:** Backend/API funcional — FASES 10 a 18 cerradas (repuestos, inventario, servicios, cierre económico,
+facturación, pagos, entrega e historial del vehículo); 6 roles; todos los módulos con tests
 **Stack principal:** Laravel 12 + React 19 + MySQL
 **Entorno local:** Laragon / Windows
 **Base de datos:** `presupuestador`
@@ -380,6 +380,7 @@ También se completaron:
 * **FASE 15 — Facturación:** ver sección 2.28.
 * **FASE 16 — Pagos:** ver sección 2.29.
 * **FASE 17 — Entrega del vehículo:** ver sección 2.30.
+* **FASE 18 — Historial del vehículo:** ver sección 2.31.
 
 ---
 
@@ -718,6 +719,38 @@ Reglas:
 Endpoints: `POST receptions/{reception}/delivery` (JSON o multipart con `signature`), `GET vehicle-deliveries`,
 `GET vehicle-deliveries/{delivery}`, `POST vehicle-deliveries/{delivery}/cancel`.
 Permisos (solo administrador): `vehicle-deliveries.index|show|store|cancel`.
+
+---
+
+# 2.31 Historial del vehículo (FASE 18)
+
+Solo lectura y **sin tablas nuevas**: `VehicleHistoryService` reúne lo que ya existe por vehículo.
+
+```text
+VehicleHistoryService           (summary, timeline, parts, mileage)
+VehicleHistoryController        (show, parts, mileage)
+VehicleHistoryReceptionResource (una visita del timeline)
+VehicleHistoryPartResource
+```
+
+Contenido:
+
+* `summary`: visitas (recepciones), primera y última visita, último kilometraje (última lectura o `vehicles.mileage`),
+  OT completadas, último servicio, total facturado (facturas emitidas) y saldo pendiente. Con
+  `work-orders.view-economics` agrega `economics` (venta, costo y margen de los cierres).
+* `timeline` (paginado, visita más reciente primero): recepción (fecha, km de ingreso, problema, categorías),
+  diagnósticos con hallazgos, presupuestos, OT (trabajos, repuestos usados con cantidad neta, factura con saldo y
+  estado de cobro, `economics` solo con el permiso) y entrega vigente (km de salida).
+* `parts`: líneas de repuestos con cantidad neta > 0 (precio; costo solo con el permiso).
+* `mileage`: lecturas de recepciones y entregas vigentes en orden cronológico (mismo día: por hora de registro);
+  `decreased = true` si una lectura es menor que la anterior (posible error de carga).
+
+Nota técnica: `$this->when()` no se resuelve dentro de colecciones anidadas de un Resource; para claves condicionales
+anidadas (como `economics` por OT) se arma el array a mano.
+
+Endpoints: `GET vehicles/{vehicle}/history?per_page`, `GET vehicles/{vehicle}/history/parts?per_page`,
+`GET vehicles/{vehicle}/history/mileage`.
+Permiso: `vehicle-history.view` (administrador, mecánico, recepcionista, jefe-taller, cajero y depósito).
 
 ---
 
@@ -3005,13 +3038,13 @@ La arquitectura objetivo es:
 El proyecto actualmente se encuentra en:
 
 ```text
-FASE 17 — ENTREGA DEL VEHÍCULO — CERRADA
+FASE 18 — HISTORIAL DEL VEHÍCULO — CERRADA
 ```
 
 El siguiente gran paso recomendado es:
 
 ```text
-FASE 18 — HISTORIAL DEL VEHÍCULO (recepciones, OT, repuestos, servicios, costos y kilometraje por vehículo)
+FASE 19 — MANTENIMIENTO PREVENTIVO (planes por kilometraje/tiempo usando el historial y las lecturas de km)
 ```
 
 El orden de trabajo de abajo se usó para las FASES 10 a 13 y sigue siendo la referencia.
@@ -3116,13 +3149,14 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 [✓] Facturación con timbrado e IVA incluido (FASE 15)
 [✓] Pagos, recibos y resumen de caja (FASE 16)
 [✓] Entrega del vehículo con comprobante y conformidad (FASE 17)
+[✓] Roles del taller: recepcionista, jefe-taller, cajero, depósito
+[✓] Historial del vehículo con resumen, visitas, repuestos y kilometraje (FASE 18)
 ```
 
 ## Próximo
 
 ```text
 [ ] Compras
-[ ] Historial del vehículo
 [ ] Mantenimiento preventivo
 [ ] Notificaciones
 [ ] Reportes
