@@ -26,7 +26,10 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->unique(['stamp_number', 'establishment', 'expedition_point']);
+            $table->unique(
+                ['stamp_number', 'establishment', 'expedition_point'],
+                'inv_stamps_number_est_exp_unique'
+            );
         });
     }
 
