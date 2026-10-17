@@ -2,9 +2,10 @@
 
 ## Presupuestador — Sistema de Gestión para Taller Mecánico
 
-**Versión del handoff:** 1.0
-**Fecha:** 2026-10-07
-**Estado:** Backend/API funcional — Fases iniciales y auditoría de excepciones completadas
+**Versión del handoff:** 1.1
+**Fecha:** 2026-10-17
+**Estado:** Backend/API funcional — FASES 10 a 17 cerradas (repuestos, inventario, servicios, cierre económico,
+facturación, pagos y entrega del vehículo); todos los módulos con tests
 **Stack principal:** Laravel 12 + React 19 + MySQL
 **Entorno local:** Laragon / Windows
 **Base de datos:** `presupuestador`
@@ -221,12 +222,20 @@ Ubicación:
 app/Exceptions/
 ```
 
-Actualmente existe una jerarquía orientada a errores de dominio:
+Actualmente existe una jerarquía orientada a errores de dominio (una excepción por módulo):
 
 ```text
 AppException
 ├── BudgetException
-└── WorkOrderException
+├── WorkOrderException
+├── WorkOrderPartException
+├── PartException
+├── SupplierException
+├── InventoryException
+├── ServiceException
+├── InvoiceException
+├── PaymentException
+└── VehicleDeliveryException
 ```
 
 ---
@@ -280,7 +289,8 @@ app/
 ├── Exceptions/
 │   ├── AppException.php
 │   ├── BudgetException.php
-│   └── WorkOrderException.php
+│   ├── WorkOrderException.php
+│   └── ...                    (una por módulo: ver 1.4)
 │
 ├── Http/
 │   ├── Controllers/
@@ -762,8 +772,10 @@ Roles principales:
 
 ```text
 administrador
-mecanico
+mechanic
 ```
+
+(El rol del mecánico se llama `mechanic` en el seeder y en el código; no `mecanico`.)
 
 Guard:
 
@@ -1296,13 +1308,8 @@ es importante para que el frontend pueda reaccionar programáticamente.
 
 # 2.21 Excepciones
 
-Jerarquía:
-
-```text
-AppException
-├── BudgetException
-└── WorkOrderException
-```
+Jerarquía: ver sección 1.4 (una subclase de `AppException` por módulo: Budget, WorkOrder, WorkOrderPart, Part,
+Supplier, Inventory, Service, Invoice, Payment y VehicleDelivery).
 
 `AppException` recibe:
 
@@ -1824,13 +1831,14 @@ npm install
 
 # 5. Próximos módulos / Roadmap
 
-## Prioridad inmediata: módulo de Repuestos
+> **Nota histórica:** esta sección es el roadmap original del handoff. Los módulos de repuestos, inventario,
+> servicios, cierre económico, facturación, pagos y entrega (5.1–5.15) ya están implementados (FASES 10–17,
+> secciones 2.24–2.30). Lo pendiente empieza en 5.16 (historial del vehículo); el punto exacto está en la sección 11.
 
-Este es el próximo gran módulo recomendado.
+## Diseño original del módulo de Repuestos (implementado en FASES 10–12)
 
-Sin embargo, no debe implementarse simplemente como un CRUD de `repuestos`.
-
-El sistema debe evolucionar hacia un pequeño módulo de inventario integrado con la WorkOrder.
+No debía implementarse simplemente como un CRUD de `repuestos`, sino como un pequeño módulo de inventario
+integrado con la WorkOrder.
 
 ---
 
