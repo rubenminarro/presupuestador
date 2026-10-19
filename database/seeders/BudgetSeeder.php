@@ -4,56 +4,47 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Budget;
+use App\Models\Reception;
 use App\Models\User;
-use App\Enums\BudgetStatus;
+use App\Services\BudgetService;
 
 class BudgetSeeder extends Seeder
 {
+    /**
+     * Placa del vehículo => notas del presupuesto. BudgetItemSeeder carga sus ítems.
+     */
+    public const BUDGETS = [
+        'AAA111' => 'Presupuesto inicial para reparación de suspensión.',
+        'BBB222' => 'Trabajo de chapa y pintura aprobado por el cliente.',
+        'CCC333' => 'Mantenimiento de amortiguadores.',
+    ];
+
     public function run(): void
     {
+        $budgetService = app(BudgetService::class);
+
         $adminId = User::where('email', 'admin@mail.com.py')->value('id') ?? 1;
 
-        $budgets = [
-            [
-                'id' => 1,
-                'reception_id' => 1,
-                'created_by' => $adminId,
-                'code' => 'BUD-000001',
-                'status' => BudgetStatus::DRAFT,
-                'subtotal' => 0,
-                'tax' => 0,
-                'total' => 0,
-                'notes' => 'Presupuesto inicial para reparación de suspensión.',
-                'approved_at' => null,
-            ],
-            [
-                'id' => 2,
-                'reception_id' => 2,
-                'created_by' => $adminId,
-                'code' => 'BUD-000002',
-                'status' => BudgetStatus::DRAFT,
-                'subtotal' => 0,
-                'tax' => 0,
-                'total' => 0,
-                'notes' => 'Trabajo de chapa y pintura aprobado por el cliente.',
-                'approved_at' => null,
-            ],
-            [
-                'id' => 3,
-                'reception_id' => 3,
-                'created_by' => $adminId,
-                'code' => 'BUD-000003',
-                'status' => BudgetStatus::DRAFT,
-                'subtotal' => 0,
-                'tax' => 0,
-                'total' => 0,
-                'notes' => 'Mantenimiento de amortiguadores.',
-                'approved_at' => null,
-            ],
-        ];
+        foreach (self::BUDGETS as $plate => $notes) {
+            $reception = self::receptionOf($plate);
 
-        foreach ($budgets as $budgetData) {
-            Budget::create($budgetData);
+            // Idempotente: una recepción que ya tiene presupuestos (incluso eliminados) se omite.
+            if (!$reception || Budget::withTrashed()->where('reception_id', $reception->id)->exists()) {
+                continue;
+            }
+
+            // Por el Service: genera el código y pone la recepción "en proceso".
+            $budgetService->create(['reception_id' => $reception->id, 'notes' => $notes], $adminId);
         }
+    }
+
+    /**
+     * Primera recepción del vehículo de ejemplo.
+     */
+    public static function receptionOf(string $plate): ?Reception
+    {
+        return Reception::whereHas('vehicle', fn ($query) => $query->where('plate', $plate))
+            ->orderBy('id')
+            ->first();
     }
 }

@@ -62,8 +62,8 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 
 | Estado | Qué |
 |---|---|
-| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20) más los módulos base. 191 rutas API y 250 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
-| Implementado con limitaciones conocidas | algunos seeders de ejemplo no idempotentes. Detalle en [`docs/handoff.md`](docs/handoff.md), sección 14 |
+| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20) más los módulos base. 191 rutas API y 252 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
+| Limitaciones conocidas | Los tests de usuarios y clientes necesitan red. Detalle en [`docs/handoff.md`](docs/handoff.md), sección 14 |
 | No verificable desde este repositorio | El frontend (ver [Frontend](#frontend)) |
 | Pendiente, sin diseño | Compras (con ingreso de stock), notificaciones, exportación de reportes (CSV/PDF) y comprobantes imprimibles, auditoría avanzada |
 
@@ -130,15 +130,13 @@ La API queda disponible en `http://127.0.0.1:8000/api`.
 - `php artisan migrate` (sin `--seed`) es lo que corresponde después de traer cambios: aplica solo las migraciones nuevas.
 - `migrate:fresh`, `migrate:refresh` y `db:wipe` **borran todos los datos**. No usarlos sobre una base con datos que
   interesen.
-- `php artisan db:seed` completo sobre una base ya sembrada **duplica datos o falla**: `BrandSeeder`,
-  `VehicleModelSeeder`, `ClientsSeeder`, `VehiclesSeeder`, `ReceptionSeeder`, `DiagnosticItemSeeder`, `BudgetSeeder` y
-  `BudgetItemSeeder` insertan sin verificar si los datos ya existen.
-- Se pueden volver a ejecutar sin riesgo: `RolesAndPermissionsSeeder` (sincroniza roles y permisos; correrlo después de
-  cada fase que agregue permisos), `AdminUserSeeder`, `MechanicSeeder`, `ServiceCategorySeeder`, `CheckListItemSeeder`,
-  `CheckListItemServiceCategorySeeder`, `PartCategorySeeder`, `SupplierSeeder`, `MaintenancePlanSeeder` e
-  `InvoiceStampSeeder` (usan `firstOrCreate`/`updateOrCreate`/`sync`). `ServiceSeeder`, `PartSeeder` e
-  `InventorySeeder` también: omiten lo que ya existe (por nombre, SKU o movimientos previos). `DiagnosticSeeder` y
-  `DiagnosticItemPhotoSeeder` no duplican, pero dependen de los datos de ejemplo anteriores:
+- Todos los seeders son **idempotentes**: `php artisan db:seed` sobre una base ya sembrada no duplica ni falla
+  (`tests/Feature/Seeders/DatabaseSeederTest`). Omiten lo que ya existe por clave natural: marca y modelo por nombre,
+  cliente por documento, vehículo por placa, recepción si el vehículo ya tiene una, presupuesto si la recepción ya
+  tiene uno, ítems si el presupuesto ya tiene, repuestos por SKU, etc. Igual **agregan** los datos de ejemplo que
+  falten (por ejemplo, la recepción de un vehículo de ejemplo sin recepciones), así que sobre una base con datos reales
+  conviene correr solo los seeders necesarios.
+- `RolesAndPermissionsSeeder` sincroniza roles y permisos; correrlo después de cada fase que agregue permisos:
 
 ```bash
 php artisan db:seed --class=RolesAndPermissionsSeeder
@@ -241,7 +239,7 @@ vendor/bin/phpunit
 composer test
 ```
 
-250 tests en `tests/Feature`, uno o más archivos por módulo. Los de usuarios y clientes necesitan internet
+252 tests en `tests/Feature`, uno o más archivos por módulo. Los de usuarios y clientes necesitan internet
 (validación `email:rfc,dns`).
 
 Si `pdo_sqlite` no está habilitado en el `php.ini` de Laragon:

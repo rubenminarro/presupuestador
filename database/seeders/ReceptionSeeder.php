@@ -4,7 +4,9 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Reception;
+use App\Models\ServiceCategory;
 use App\Models\User;
+use App\Models\Vehicle;
 use App\Models\ReceptionCheckList;
 use App\Enums\FuelLevel;
 use App\Services\ReceptionChecklistService;
@@ -14,16 +16,15 @@ class ReceptionSeeder extends Seeder
 {
     public function run(): void
     {
-        
+
         $checklistService = app(ReceptionChecklistService::class);
-        
+
         $adminId = User::where('email', 'admin@mail.com.py')->value('id') ?? 1;
-    
+
         $data = [
             [
-                'client_id' => 1,
-                'vehicle_id' => 1,
-                'service_category_id' => [1, 2],
+                'plate' => 'AAA111',
+                'service_categories' => ['general', 'mechanical'],
                 'reception_date' => now()->subDays(10),
                 'estimated_delivery_date' => now()->addDays(2),
                 'mileage' => 125000,
@@ -32,9 +33,8 @@ class ReceptionSeeder extends Seeder
                 'observations' => 'Cliente solicita revisión completa.',
             ],
             [
-                'client_id' => 2,
-                'vehicle_id' => 2,
-                'service_category_id' => [1,3],
+                'plate' => 'BBB222',
+                'service_categories' => ['general', 'bodywork'],
                 'reception_date' => now()->subDays(8),
                 'estimated_delivery_date' => now()->addDays(5),
                 'mileage' => 89000,
@@ -43,9 +43,8 @@ class ReceptionSeeder extends Seeder
                 'observations' => 'Requiere presupuesto para pintura.',
             ],
             [
-                'client_id' => 3,
-                'vehicle_id' => 3,
-                'service_category_id' => [4],
+                'plate' => 'CCC333',
+                'service_categories' => ['electrical'],
                 'reception_date' => now()->subDays(7),
                 'estimated_delivery_date' => now()->addDays(7),
                 'mileage' => 156000,
@@ -54,9 +53,8 @@ class ReceptionSeeder extends Seeder
                 'observations' => null,
             ],
             [
-                'client_id' => 4,
-                'vehicle_id' => 4,
-                'service_category_id' => [3,4],
+                'plate' => 'DDD444',
+                'service_categories' => ['bodywork', 'electrical'],
                 'reception_date' => now()->subDays(6),
                 'estimated_delivery_date' => now()->addDays(3),
                 'mileage' => 74000,
@@ -65,9 +63,8 @@ class ReceptionSeeder extends Seeder
                 'observations' => 'Vehículo llegó en grúa.',
             ],
             [
-                'client_id' => 5,
-                'vehicle_id' => 5,
-                'service_category_id' => [1,5],
+                'plate' => 'EEE555',
+                'service_categories' => ['general', 'tires'],
                 'reception_date' => now()->subDays(5),
                 'estimated_delivery_date' => now()->addDays(10),
                 'mileage' => 45000,
@@ -78,11 +75,22 @@ class ReceptionSeeder extends Seeder
         ];
 
         foreach ($data as $receptionData) {
-            DB::transaction(function () use ($receptionData, $adminId, $checklistService) {
-                
-                $serviceCategoryIds = $receptionData['service_category_id'];
-                unset($receptionData['service_category_id']);
+            $vehicle = Vehicle::where('plate', $receptionData['plate'])->first();
 
+            // Idempotente: un vehículo que ya tiene recepciones (incluso eliminadas) se omite.
+            if (!$vehicle || Reception::withTrashed()->where('vehicle_id', $vehicle->id)->exists()) {
+                continue;
+            }
+
+            DB::transaction(function () use ($receptionData, $vehicle, $adminId, $checklistService) {
+
+                $serviceCategoryIds = ServiceCategory::whereIn('code', $receptionData['service_categories'])
+                    ->pluck('id')
+                    ->all();
+                unset($receptionData['plate'], $receptionData['service_categories']);
+
+                $receptionData['client_id'] = $vehicle->client_id;
+                $receptionData['vehicle_id'] = $vehicle->id;
                 $receptionData['created_by'] = $adminId;
 
                 $reception = Reception::create($receptionData);

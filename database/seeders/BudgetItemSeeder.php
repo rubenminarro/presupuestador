@@ -17,7 +17,8 @@ class BudgetItemSeeder extends Seeder
         $budgetService = app(BudgetService::class);
 
         $budgetsPayload = [
-            1 => [
+            // Placa del vehículo (ver BudgetSeeder::BUDGETS).
+            'AAA111' => [
                 'target_status' => 'DRAFT',
                 'items' => [
                     [
@@ -36,7 +37,7 @@ class BudgetItemSeeder extends Seeder
                     ],
                 ],
             ],
-            2 => [
+            'BBB222' => [
                 'target_status' => 'APPROVED',
                 'items' => [
                     [
@@ -55,7 +56,7 @@ class BudgetItemSeeder extends Seeder
                     ],
                 ],
             ],
-            3 => [
+            'CCC333' => [
                 'target_status' => 'SENT',
                 'items' => [
                     [
@@ -77,10 +78,13 @@ class BudgetItemSeeder extends Seeder
         ];
 
         DB::transaction(function () use ($budgetsPayload, $budgetService) {
-            foreach ($budgetsPayload as $budgetId => $payload) {
-                $budget = Budget::find($budgetId);
+            foreach ($budgetsPayload as $plate => $payload) {
+                $budget = Budget::where('reception_id', BudgetSeeder::receptionOf($plate)?->id)
+                    ->orderBy('id')
+                    ->first();
 
-                if (! $budget) {
+                // Idempotente: solo carga ítems en el presupuesto de ejemplo si sigue vacío.
+                if (! $budget || $budget->items()->exists()) {
                     continue;
                 }
 

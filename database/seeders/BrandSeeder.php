@@ -10,19 +10,16 @@ class BrandSeeder extends Seeder
     public function run(): void
     {
         $brands = [
-            'Toyota', 'Hyundai', 'Kia', 'Chevrolet', 'Volkswagen', 
-            'BYD', 'Changan', 'Isuzu', 'Nissan', 'Mitsubishi', 
-            'Ford', 'Mercedes-Benz', 'BMW', 'GWM', 'Chery', 
-            'Jeep', 'JAC Motors', 'Audi', 'Fiat', 'Honda', 
+            'Toyota', 'Hyundai', 'Kia', 'Chevrolet', 'Volkswagen',
+            'BYD', 'Changan', 'Isuzu', 'Nissan', 'Mitsubishi',
+            'Ford', 'Mercedes-Benz', 'BMW', 'GWM', 'Chery',
+            'Jeep', 'JAC Motors', 'Audi', 'Fiat', 'Honda',
             'Suzuki', 'Mazda', 'Geely', 'Land Rover', 'Renault'
         ];
 
-        $data = array_map(fn($brand) => [
-            'name' => $brand,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ], $brands);
-
-        Brand::insert($data);
+        // Idempotente: omite las marcas que ya existen.
+        foreach ($brands as $brand) {
+            Brand::firstOrCreate(['name' => $brand]);
+        }
     }
 }

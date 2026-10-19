@@ -17,14 +17,17 @@ class ClientsSeeder extends Seeder
             ['document_number' => '56789012', 'first_name' => 'Luis', 'last_name' => 'Rodríguez', 'phone' => '0985555666', 'email' => 'luis@example.com'],
         ];
 
+        // Idempotente: omite los clientes cuyo documento ya existe.
         foreach ($clients as $client) {
-            Client::create([
-                'document_number' => $client['document_number'],
-                'first_name' => $client['first_name'],
-                'last_name' => $client['last_name'],
-                'phone' => $client['phone'],
-                'email' => $client['email']
-            ]);
+            Client::firstOrCreate(
+                ['document_number' => $client['document_number']],
+                [
+                    'first_name' => $client['first_name'],
+                    'last_name' => $client['last_name'],
+                    'phone' => $client['phone'],
+                    'email' => $client['email'],
+                ]
+            );
         }
     }
 }

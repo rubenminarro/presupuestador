@@ -12,7 +12,7 @@ class DiagnosticItemSeeder extends Seeder
 {
     public function run(): void
     {
-        $diagnosticIds = Diagnostic::query()->pluck('id');
+        $diagnosticIds = Diagnostic::query()->orderBy('id')->pluck('id');
 
         $items = [
             [
@@ -215,12 +215,23 @@ class DiagnosticItemSeeder extends Seeder
             ],
         ];
 
+        // Solo los primeros diagnósticos, para que el reparto no cambie si después se crean más.
+        $diagnosticIds = $diagnosticIds->take(count($items))->values();
+
+        if ($diagnosticIds->isEmpty()) {
+            return;
+        }
+
+        // Idempotente: omite el ítem si el diagnóstico ya tiene uno con ese título.
         foreach ($items as $index => $item) {
 
-            DiagnosticItem::create([
-                'diagnostic_id' => $diagnosticIds[$index % $diagnosticIds->count()],
-                ...$item,
-            ]);
+            DiagnosticItem::firstOrCreate(
+                [
+                    'diagnostic_id' => $diagnosticIds[$index % $diagnosticIds->count()],
+                    'title' => $item['title'],
+                ],
+                $item
+            );
         }
     }
 }
