@@ -42,7 +42,7 @@ class UpdateClientRequest extends FormRequest
             ],
             'email' => [
                 'sometimes', 
-                'email:rfc,dns', 
+                config('validation.email_dns') ? 'email:rfc,dns' : 'email:rfc',
                 'max:50', 
                 'lowercase',
                 Rule::unique('clients', 'email')->ignore($clientId)

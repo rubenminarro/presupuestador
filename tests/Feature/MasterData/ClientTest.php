@@ -68,6 +68,19 @@ class ClientTest extends PartsTestCase
         $this->postJson('/api/clients', $this->payload([...$other, 'document_number' => 'QA 2003!']))->assertJsonValidationErrors(['document_number']);
     }
 
+    public function test_email_domain_check_follows_the_configuration(): void
+    {
+        // ".invalid" está reservado y nunca resuelve: el resultado no depende de la red.
+        $payload = $this->payload(['email' => 'qa.lucia@dominio.invalid']);
+
+        config(['validation.email_dns' => true]);
+        $this->postJson('/api/clients', $payload)->assertStatus(422)->assertJsonValidationErrors(['email']);
+
+        // phpunit.xml lo desactiva (EMAIL_DNS_CHECK=false): solo se valida el formato.
+        config(['validation.email_dns' => false]);
+        $this->postJson('/api/clients', $payload)->assertCreated();
+    }
+
     public function test_mechanic_cannot_manage_clients(): void
     {
         $this->actingAsMechanic();

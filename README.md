@@ -62,9 +62,7 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 
 | Estado | Qué |
 |---|---|
-| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20) más los módulos base. 191 rutas API y 252 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
-| Limitaciones conocidas | Los tests de usuarios y clientes necesitan red. Detalle en [`docs/handoff.md`](docs/handoff.md), sección 14 |
-| No verificable desde este repositorio | El frontend (ver [Frontend](#frontend)) |
+| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20) más los módulos base. 191 rutas API y 253 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
 | Pendiente, sin diseño | Compras (con ingreso de stock), notificaciones, exportación de reportes (CSV/PDF) y comprobantes imprimibles, auditoría avanzada |
 
 ---
@@ -74,7 +72,6 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 - PHP 8.2 o superior con las extensiones `pdo_mysql`, `bcmath` y `mbstring` (y `pdo_sqlite` para los tests)
 - Composer
 - MySQL 8 (Laragon trae MySQL; en desarrollo se usa 8.4)
-- Acceso a internet al correr los tests (la validación `email:rfc,dns` resuelve dominios)
 - Node.js y npm: **opcionales**; solo los usan los scripts `npm run dev|build` del scaffold de Vite, que la API no necesita
 
 ---
@@ -110,6 +107,9 @@ DB_PASSWORD=
 
 # Contraseña que el seeder asigna a los usuarios de prueba
 ADMIN_PASSWORD=
+
+# Validar que el dominio de los emails exista (DNS); false solo sin red
+EMAIL_DNS_CHECK=true
 ```
 
 ### Base de datos (MySQL en Laragon)
@@ -239,8 +239,8 @@ vendor/bin/phpunit
 composer test
 ```
 
-252 tests en `tests/Feature`, uno o más archivos por módulo. Los de usuarios y clientes necesitan internet
-(validación `email:rfc,dns`).
+253 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
+consulta DNS de los emails (`EMAIL_DNS_CHECK=false`).
 
 Si `pdo_sqlite` no está habilitado en el `php.ini` de Laragon:
 

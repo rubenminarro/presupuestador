@@ -39,7 +39,7 @@ class StoreClientRequest extends FormRequest
             ],
             'email' => [
                 'required', 
-                'email:rfc,dns', 
+                config('validation.email_dns') ? 'email:rfc,dns' : 'email:rfc',
                 'max:50', 
                 'lowercase',
                 Rule::unique('clients', 'email')
