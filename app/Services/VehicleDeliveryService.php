@@ -130,6 +130,23 @@ class VehicleDeliveryService
                 );
             }
 
+            $restoredStatus = ReceptionStatus::from($delivery->previous_reception_status);
+
+            // Reabrir esta recepción dejaría dos abiertas si el vehículo ya reingresó.
+            if (
+                $restoredStatus->isOpen() &&
+                Reception::where('vehicle_id', $reception->vehicle_id)
+                    ->whereKeyNot($reception->id)
+                    ->whereIn('status', ReceptionStatus::openStatuses())
+                    ->exists()
+            ) {
+                throw new VehicleDeliveryException(
+                    'No se puede anular la entrega: el vehículo ya tiene otra recepción abierta.',
+                    409,
+                    'DELIVERY_VEHICLE_HAS_OPEN_RECEPTION'
+                );
+            }
+
             $delivery->update([
                 'status' => VehicleDeliveryStatus::CANCELLED,
                 'cancelled_at' => now(),
@@ -137,7 +154,7 @@ class VehicleDeliveryService
                 'cancellation_reason' => $reason,
             ]);
 
-            $reception->update(['status' => ReceptionStatus::from($delivery->previous_reception_status)]);
+            $reception->update(['status' => $restoredStatus]);
 
             return $this->load($delivery);
         });

@@ -22,4 +22,18 @@ enum ReceptionStatus: string
             self::CANCELLED => 'Cancelado',
         };
     }
+
+    /**
+     * Recepción abierta: el vehículo sigue en el taller (todo salvo entregada o
+     * cancelada). Un vehículo no puede tener dos recepciones abiertas.
+     */
+    public static function openStatuses(): array
+    {
+        return [self::PENDING, self::IN_PROGRESS, self::REPAIR, self::COMPLETED];
+    }
+
+    public function isOpen(): bool
+    {
+        return in_array($this, self::openStatuses(), true);
+    }
 }

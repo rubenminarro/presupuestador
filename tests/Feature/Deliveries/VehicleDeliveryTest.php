@@ -200,6 +200,36 @@ class VehicleDeliveryTest extends InvoiceTestCase
         $this->getJson('/api/vehicle-deliveries?status=cancelled')->assertOk()->assertJsonCount(1, 'data');
     }
 
+    public function test_cancelling_is_blocked_when_the_vehicle_has_another_open_reception(): void
+    {
+        ['reception_id' => $receptionId] = $this->invoicedReception();
+
+        $delivery = $this->deliver($receptionId)->assertCreated()->json('data');
+        $delivered = Reception::findOrFail($receptionId);
+
+        // El vehículo vuelve a ingresar al taller.
+        $returned = Reception::create([
+            'client_id' => $delivered->client_id,
+            'vehicle_id' => $delivered->vehicle_id,
+            'reception_date' => now()->toDateString(),
+        ]);
+
+        $this->postJson("/api/vehicle-deliveries/{$delivery['id']}/cancel", ['reason' => 'Se registró por error'])
+            ->assertStatus(409)
+            ->assertJsonPath('error_code', 'DELIVERY_VEHICLE_HAS_OPEN_RECEPTION');
+
+        // Nada cambió: la entrega sigue vigente y la recepción entregada.
+        $this->assertSame('delivered', VehicleDelivery::findOrFail($delivery['id'])->status->value);
+        $this->assertSame('delivered', $delivered->fresh()->status->value);
+
+        // Cancelada la nueva recepción, la entrega se puede anular.
+        $returned->update(['status' => 'cancelled']);
+
+        $this->postJson("/api/vehicle-deliveries/{$delivery['id']}/cancel", ['reason' => 'Se registró por error'])
+            ->assertOk()
+            ->assertJsonPath('data.reception.status', 'pending');
+    }
+
     public function test_deliveries_are_immutable(): void
     {
         ['reception_id' => $receptionId] = $this->invoicedReception();

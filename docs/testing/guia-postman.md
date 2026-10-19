@@ -329,7 +329,10 @@ Esperado: `201` → `reception_id`.
 |---|---|---|---|
 | Sin categorías | `"service_category_ids": []` | 422 | `VALIDATION_ERROR` |
 | Entrega anterior al ingreso | `"estimated_delivery_date": "2026-10-01"` | 422 | `VALIDATION_ERROR` |
+| Vehículo con recepción abierta | repetir el mismo body (el vehículo ya tiene `{{reception_id}}` abierta) | 422 | `VALIDATION_ERROR` (`errors.vehicle_id`: "El vehículo ya tiene una recepción activa.") |
 | Recepción inexistente | `GET {{base_url}}/receptions/999999` | 404 | `RESOURCE_NOT_FOUND` |
+
+> Recepción **abierta** = cualquier estado salvo `delivered` y `cancelled` (`pending`, `in_progress`, `repair`, `completed`). Un vehículo no puede tener dos abiertas.
 
 ### M.7 Obtener mecánico
 
@@ -1982,6 +1985,14 @@ Casos de error:
 > Los casos de validación conviene probarlos **antes** de la entrega válida (después, la recepción ya está entregada).
 
 ### 17.4 Anular la entrega
+
+**Caso borde (antes de anular): el vehículo ya reingresó.**
+
+1. Crear una recepción nueva para el mismo vehículo de la entrega (body de M.6 con ese `client_id` y `vehicle_id`) → `201` → `returned_reception_id`. Se permite porque la recepción anterior está `delivered`.
+2. `POST {{base_url}}/vehicle-deliveries/{{delivery_id}}/cancel` con `{ "reason": "Se registro por error" }` → `409 DELIVERY_VEHICLE_HAS_OPEN_RECEPTION` (anular reabriría la recepción anterior y el vehículo tendría dos abiertas). La entrega sigue vigente.
+3. `DELETE {{base_url}}/receptions/{{returned_reception_id}}` → `200` (se puede eliminar porque está `pending`).
+
+Ahora sí, anular:
 
 `POST {{base_url}}/vehicle-deliveries/{{delivery_id}}/cancel`
 

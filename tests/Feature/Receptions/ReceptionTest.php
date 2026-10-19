@@ -61,6 +61,63 @@ class ReceptionTest extends ReceptionTestCase
         $this->postJson('/api/receptions', $this->receptionPayload())->assertJsonValidationErrors(['vehicle_id']);
     }
 
+    public function test_every_open_status_blocks_a_new_reception_of_the_vehicle(): void
+    {
+        $reception = $this->createReception();
+
+        foreach (ReceptionStatus::openStatuses() as $status) {
+            $this->markAs($reception, $status);
+
+            $this->postJson('/api/receptions', $this->receptionPayload())
+                ->assertStatus(422)
+                ->assertJsonPath('error_code', 'VALIDATION_ERROR')
+                ->assertJsonPath('errors.vehicle_id.0', 'El vehículo ya tiene una recepción activa.');
+        }
+
+        // Entregada o cancelada: el vehículo puede volver a ingresar.
+        $this->markAs($reception, ReceptionStatus::DELIVERED);
+        $second = $this->createReception();
+
+        $this->markAs($second, ReceptionStatus::CANCELLED);
+        $this->createReception();
+
+        $this->assertSame(3, Reception::where('vehicle_id', $this->vehicle->id)->count());
+    }
+
+    public function test_update_cannot_move_an_open_reception_to_a_vehicle_with_another_open_one(): void
+    {
+        $otherVehicle = $this->makeVehicle($this->client, 'QAR222');
+
+        $first = $this->createReception();
+        $second = $this->createReception(['vehicle_id' => $otherVehicle->id]);
+
+        $this->markAs($second, ReceptionStatus::COMPLETED);
+
+        $this->patchJson("/api/receptions/{$first['id']}", ['vehicle_id' => $otherVehicle->id])
+            ->assertStatus(422)
+            ->assertJsonPath('errors.vehicle_id.0', 'El vehículo ya tiene otra recepción activa.');
+
+        // Con la otra recepción entregada, sí se puede.
+        $this->markAs($second, ReceptionStatus::DELIVERED);
+
+        $this->patchJson("/api/receptions/{$first['id']}", ['vehicle_id' => $otherVehicle->id])
+            ->assertOk()
+            ->assertJsonPath('data.vehicle.id', $otherVehicle->id);
+    }
+
+    public function test_a_closed_reception_can_be_edited_after_the_vehicle_returns(): void
+    {
+        $old = $this->createReception();
+        $this->markAs($old, ReceptionStatus::DELIVERED);
+
+        // El vehículo reingresa con una recepción nueva (abierta).
+        $this->createReception();
+
+        // Corregir datos de la recepción entregada no abre una segunda recepción.
+        $this->patchJson("/api/receptions/{$old['id']}", ['observations' => 'Corrección posterior'])
+            ->assertOk();
+    }
+
     public function test_changing_categories_regenerates_the_checklist_only_while_pending(): void
     {
         $reception = $this->createReception();

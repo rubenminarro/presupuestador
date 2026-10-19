@@ -9,6 +9,7 @@ use Illuminate\Validation\Validator;
 use App\Models\Reception;
 use App\Models\Vehicle;
 use App\Enums\FuelLevel;
+use App\Enums\ReceptionStatus;
 
 class UpdateReceptionRequest extends FormRequest
 {
@@ -153,16 +154,11 @@ class UpdateReceptionRequest extends FormRequest
                 );
             }
 
-            $hasOpenReception = Reception::query()
+            // Editar una recepción cerrada no puede dejar dos abiertas.
+            $hasOpenReception = $reception->status->isOpen() && Reception::query()
                 ->where('vehicle_id', $vehicleId)
                 ->where('id', '!=', $reception->id)
-                ->whereIn('status', [
-                    'pending',
-                    'diagnosis',
-                    'approved',
-                    'in_progress',
-                    'waiting_parts',
-                ])
+                ->whereIn('status', ReceptionStatus::openStatuses())
                 ->exists();
 
             if ($hasOpenReception) {

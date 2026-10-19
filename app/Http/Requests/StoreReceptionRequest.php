@@ -9,6 +9,7 @@ use Illuminate\Validation\Validator;
 use App\Models\Reception;
 use App\Models\Vehicle;
 use App\Enums\FuelLevel;
+use App\Enums\ReceptionStatus;
 
 class StoreReceptionRequest extends FormRequest
 {
@@ -149,13 +150,7 @@ class StoreReceptionRequest extends FormRequest
 
             $hasOpenReception = Reception::query()
                 ->where('vehicle_id', $vehicleId)
-                ->whereIn('status', [
-                    'pending',
-                    'diagnosis',
-                    'approved',
-                    'in_progress',
-                    'waiting_parts',
-                ])
+                ->whereIn('status', ReceptionStatus::openStatuses())
                 ->exists();
 
             if ($hasOpenReception) {

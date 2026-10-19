@@ -740,6 +740,8 @@ Reglas:
   económico y la facturación dependen de `completed`.
 * La entrega no se edita ni se elimina (`DELIVERY_NOT_EDITABLE`, a nivel de modelo); anular una anulada →
   `DELIVERY_NOT_CANCELLABLE`. Anular no revierte el kilometraje del vehículo.
+* *(2026-10-19)* Si anular reabriría la recepción y el vehículo ya reingresó con otra recepción abierta, la anulación
+  se rechaza (`DELIVERY_VEHICLE_HAS_OPEN_RECEPTION`, 409): un vehículo nunca tiene dos recepciones abiertas.
 
 Endpoints: `POST receptions/{reception}/delivery` (JSON o multipart con `signature`), `GET vehicle-deliveries`,
 `GET vehicle-deliveries/{delivery}`, `POST vehicle-deliveries/{delivery}/cancel`.
@@ -3359,7 +3361,7 @@ cada una necesita una decisión antes de tocar el código.
 
 | # | Tema | Evidencia | Efecto |
 |---|---|---|---|
-| 1 | Validación de "recepción abierta" con estados inexistentes | `StoreReceptionRequest` (≈ línea 150) y `UpdateReceptionRequest` (≈ línea 157) buscan `pending, diagnosis, approved, in_progress, waiting_parts`; `ReceptionStatus` no tiene `diagnosis`, `approved` ni `waiting_parts`, y la lista omite `repair` y `completed` | Hoy solo detecta recepciones `pending` (las únicas que existen antes de la entrega); si en el futuro se asignan `repair` o `completed`, un vehículo podría tener dos recepciones abiertas |
+| 1 | ~~Validación de "recepción abierta" con estados inexistentes~~ **Resuelto el 2026-10-19** | Las Requests buscaban `pending, diagnosis, approved, in_progress, waiting_parts` (strings; tres no existen en `ReceptionStatus`, faltaban `repair` y `completed`) | Ahora usan `ReceptionStatus::openStatuses()` (todo salvo `delivered`/`cancelled`). Al editar solo se valida si la recepción editada está abierta. Además, anular una entrega que reabriría la recepción cuando el vehículo ya tiene otra abierta → `DELIVERY_VEHICLE_HAS_OPEN_RECEPTION` (409) |
 | 2 | Estados de recepción sin transiciones | Ningún endpoint asigna `in_progress`, `repair`, `completed` ni `cancelled` (solo `VehicleDeliveryService` asigna `delivered`) | Las reglas "recepción procesada" (2.7) solo se disparan con datos cargados por fuera de la API; `DELIVERY_RECEPTION_CANCELLED` no puede ocurrir por la API |
 | 3 | Estados de OT sin uso | `WorkOrderStatus::WAITING_PARTS` y `::DELIVERED` no se asignan en ningún Service | Sin efecto; documentado en 2.15 |
 | 4 | Errores sin `error_code` | `ReceptionController` (categorías de recepción procesada, eliminar recepción procesada), `ReceptionCheckListController` (checklist de recepción procesada) y `DiagnosticItemPhotoController` (actualizar sin datos) llaman a `errorResponse(mensaje, 422)` sin código | Responden `422` con `error_code: null`, contra el contrato de 3.11/3.12 |

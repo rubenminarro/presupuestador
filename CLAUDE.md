@@ -176,7 +176,10 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 
 ### 6.2 Recepción y checklist
 
-* El vehículo debe pertenecer al cliente; no puede haber otra recepción abierta del vehículo (ver deuda técnica #1).
+* El vehículo debe pertenecer al cliente; no puede haber otra recepción **abierta** del vehículo:
+  `ReceptionStatus::openStatuses()` = todo salvo `delivered` y `cancelled` (`pending`, `in_progress`, `repair`,
+  `completed`; mismo criterio que "vehículos en taller" del dashboard). Al editar, solo se valida si la recepción
+  editada está abierta.
 * Al menos una categoría de servicio; el checklist se genera con los ítems de esas categorías (sin repetir).
 * Cambiar categorías solo con la recepción `pending` (regenera el checklist).
 * Recepción "procesada" (`in_progress`, `completed`, `delivered`): no se cambian categorías ni checklist, no se elimina.
@@ -290,7 +293,8 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   cada completada con factura emitida y, si es al contado, sin saldo.
 * Km final ≥ km de la recepción; conformidad obligatoria; firma opcional (imagen). Comprobante `ENT-000001`.
 * La recepción pasa a `delivered`; `vehicles.mileage` solo avanza; la OT sigue `completed`. Anular con motivo devuelve
-  la recepción a su estado anterior.
+  la recepción a su estado anterior; si eso la reabre y el vehículo ya tiene otra recepción abierta, se rechaza
+  (`DELIVERY_VEHICLE_HAS_OPEN_RECEPTION`, 409).
 
 ### 6.13 Historial y mantenimiento preventivo
 
@@ -314,6 +318,6 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 
 ## 7. Deuda técnica conocida
 
-Ver `docs/handoff.md`, sección 14 (estados de recepción sin transiciones, validación de recepción abierta con estados
-inexistentes, errores sin `error_code`, IVA del presupuesto con `float`, middleware `EnsureJsonResponse` sin
-registrar, seeders no idempotentes, entre otros). No corregir sin decisión previa del usuario.
+Ver `docs/handoff.md`, sección 14 (estados de recepción sin transiciones, errores sin `error_code`, IVA del
+presupuesto con `float`, middleware `EnsureJsonResponse` sin registrar, seeders no idempotentes, entre otros). No
+corregir sin decisión previa del usuario.
