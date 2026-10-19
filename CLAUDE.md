@@ -222,7 +222,7 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 * Un `WorkOrderItem` por `BudgetItem`. `WorkOrderItem` es ejecución, no inventario ni precios (los precios están en
   `BudgetItem`; los repuestos usados en `WorkOrderPart`).
 * Estados: `pending → in_progress ⇄ paused`, `in_progress → completed`, `pending → cancelled`. Nunca vuelve atrás.
-  `waiting_parts` y `delivered` existen en el enum pero no se usan.
+  No hay estado de entrega: la OT entregada sigue `completed`.
 * Editar (`mechanic_id`, `notes`) solo en `pending` (`WORK_ORDER_NOT_EDITABLE`); cambiar el responsable reasigna sus
   trabajos al 100%.
 * Cancelar solo en `pending`: cancela ítems y líneas de repuestos abiertas (libera reservas).

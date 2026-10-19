@@ -36,7 +36,6 @@ class ReportService
         WorkOrderStatus::PENDING,
         WorkOrderStatus::IN_PROGRESS,
         WorkOrderStatus::PAUSED,
-        WorkOrderStatus::WAITING_PARTS,
     ];
 
     public function __construct(

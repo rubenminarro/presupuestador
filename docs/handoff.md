@@ -730,13 +730,13 @@ delivered --anular-->   cancelled   (motivo; la recepción vuelve a previous_rec
 Reglas:
 
 * Una entrega vigente por recepción (`DELIVERY_ALREADY_REGISTERED`, 409); recepción cancelada → `DELIVERY_RECEPTION_CANCELLED`.
-* Ninguna OT de la recepción abierta (`pending|in_progress|paused|waiting_parts` → `DELIVERY_WORK_ORDERS_OPEN`) y al
+* Ninguna OT de la recepción abierta (`pending|in_progress|paused` → `DELIVERY_WORK_ORDERS_OPEN`) y al
   menos una completada (`DELIVERY_WITHOUT_COMPLETED_WORK_ORDER`).
 * Cada OT completada con factura vigente **emitida** (`DELIVERY_WORK_ORDER_NOT_INVOICED`); si es al contado, sin saldo
   (`DELIVERY_INVOICE_NOT_PAID`). A crédito se entrega con saldo.
 * `final_mileage` ≥ kilometraje de la recepción (`DELIVERY_MILEAGE_BELOW_RECEPTION`). `customer_accepted` debe ser `true`
   (validación). Quién retira (nombre y documento) es obligatorio; la firma es una imagen opcional (disco `public`).
-* La OT no cambia de estado al entregar (sigue `completed`): `WorkOrderStatus::DELIVERED` no se usa, porque el cierre
+* La OT no cambia de estado al entregar (sigue `completed`; `WorkOrderStatus` no tiene estado de entrega), porque el cierre
   económico y la facturación dependen de `completed`.
 * La entrega no se edita ni se elimina (`DELIVERY_NOT_EDITABLE`, a nivel de modelo); anular una anulada →
   `DELIVERY_NOT_CANCELLABLE`. Anular no revierte el kilometraje del vehículo.
@@ -1318,10 +1318,11 @@ paused → in_progress
 
 El sistema evita transiciones inválidas.
 
-> **Verificado (v1.2):** `WorkOrderStatus` también define `waiting_parts` y `delivered`, pero ninguna operación los
-> asigna. La entrega del vehículo (FASE 17) no cambia la OT: queda `completed`, porque el cierre económico, la
-> facturación y los reportes dependen de ese estado. `waiting_parts` sí se considera "OT abierta" en la entrega y en
-> el dashboard.
+> **Verificado (v1.2):** `WorkOrderStatus` definía también `waiting_parts` y `delivered`, pero ninguna operación los
+> asignaba. **Eliminados el 2026-10-19** (deuda técnica #3): el enum queda `pending`, `in_progress`, `paused`,
+> `completed` y `cancelled`. La entrega del vehículo (FASE 17) no cambia la OT: queda `completed`, porque el cierre
+> económico, la facturación y los reportes dependen de ese estado. Si "esperando repuestos" se necesita, se diseña
+> como transición propia (hoy lo cubren la pausa y las líneas de repuestos `pending`).
 
 ---
 
@@ -3386,7 +3387,7 @@ cada una necesita una decisión antes de tocar el código.
 |---|---|---|---|
 | 1 | ~~Validación de "recepción abierta" con estados inexistentes~~ **Resuelto el 2026-10-19** | Las Requests buscaban `pending, diagnosis, approved, in_progress, waiting_parts` (strings; tres no existen en `ReceptionStatus`, faltaban `repair` y `completed`) | Ahora usan `ReceptionStatus::openStatuses()` (todo salvo `delivered`/`cancelled`). Al editar solo se valida si la recepción editada está abierta. Además, anular una entrega que reabriría la recepción cuando el vehículo ya tiene otra abierta → `DELIVERY_VEHICLE_HAS_OPEN_RECEPTION` (409) |
 | 2 | ~~Estados de recepción sin transiciones~~ **Resuelto el 2026-10-19** | Ningún endpoint asignaba `in_progress`, `repair`, `completed` ni `cancelled` | Ahora el estado se deriva de presupuestos y OT (`ReceptionStatusService::sync()`) y existe la cancelación manual (`POST receptions/{reception}/cancel`). Ver 2.7 |
-| 3 | Estados de OT sin uso | `WorkOrderStatus::WAITING_PARTS` y `::DELIVERED` no se asignan en ningún Service | Sin efecto; documentado en 2.15 |
+| 3 | ~~Estados de OT sin uso~~ **Resuelto el 2026-10-19** | `WorkOrderStatus::WAITING_PARTS` y `::DELIVERED` no se asignaban en ningún Service | Eliminados del enum y de las listas de "OT abierta" de la entrega y los reportes. La columna es `string` y nunca guardó esos valores: sin migración. Ver 2.15 |
 | 4 | Errores sin `error_code` | `ReceptionController` (categorías de recepción procesada, eliminar recepción procesada), `ReceptionCheckListController` (checklist de recepción procesada) y `DiagnosticItemPhotoController` (actualizar sin datos) llaman a `errorResponse(mensaje, 422)` sin código | Responden `422` con `error_code: null`, contra el contrato de 3.11/3.12 |
 | 5 | IVA del presupuesto con `float` | `BudgetService::recalculateBudget()`: `$tax = $subtotal * $taxRate` con `config('budget.tax_rate') = 0.10` | Contradice la regla BCMath; posibles centavos de diferencia. Además hay dos fuentes de IVA: `config/budget.php` (0.10) y `config/invoice.php` (`default_tax_rate = 10`) |
 | 6 | Middleware sin registrar | `App\Http\Middleware\EnsureJsonResponse` no aparece en `bootstrap/app.php` ni en las rutas | El cliente debe enviar `Accept: application/json`; sin ese header los errores no usan el contrato JSON |

@@ -28,7 +28,6 @@ class VehicleDeliveryService
         WorkOrderStatus::PENDING,
         WorkOrderStatus::IN_PROGRESS,
         WorkOrderStatus::PAUSED,
-        WorkOrderStatus::WAITING_PARTS,
     ];
 
     public function deliver(Reception $reception, array $data, ?UploadedFile $signature, User $user): VehicleDelivery
