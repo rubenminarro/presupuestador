@@ -33,6 +33,9 @@ Configurar a nivel **colección**:
 | `Authorization` | `Bearer {{token}}` |
 
 > El login es el único request **sin** `Authorization`.
+>
+> Sin `Accept` la API también responde JSON (por ejemplo, `GET {{base_url}}/receptions` sin header ni token →
+> `401 UNAUTHENTICATED` en JSON, no HTML).
 > Para actuar como mecánico, asignar `token = {{token_mec}}`; para volver, `token = {{token_admin}}`.
 
 ### 0.3 Formato de respuesta a verificar

@@ -16,7 +16,7 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 ## 1. Estado actual (verificado el 2026-10-17, `main` @ `8b3027a`; reverificado el 2026-10-19 @ `4ad9466`, sin cambios de código)
 
-* **Backend/API:** Laravel 12.56, roadmap original completo (FASES 10–20). 191 rutas API, 247 tests en verde.
+* **Backend/API:** Laravel 12.56, roadmap original completo (FASES 10–20). 191 rutas API, 250 tests en verde.
 * **Frontend:** **no está en este repositorio.** El handoff prevé React 19, pero no hay código que lo confirme; solo
   CORS y Sanctum están configurados para `http://localhost:5173`. `package.json` y `resources/` son el scaffold de
   Laravel (Vite + Tailwind) sin uso. No asumir tecnología ni estructura del frontend.
@@ -133,7 +133,8 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 * `bootstrap/app.php` mapea: 400 `BAD_REQUEST`, 401 `UNAUTHENTICATED`, 403 `FORBIDDEN`, 404 `RESOURCE_NOT_FOUND`,
   405 `METHOD_NOT_ALLOWED`, 406 `NOT_ACCEPTABLE`, 415 `UNSUPPORTED_MEDIA_TYPE`, 422 `VALIDATION_ERROR`,
   429 `TOO_MANY_REQUESTS`, 500 `INTERNAL_SERVER_ERROR`, 503 `SERVICE_UNAVAILABLE`, y cualquier `AppException` con su
-  propio `status` y `error_code`. Solo si el request espera JSON (`Accept: application/json`).
+  propio `status` y `error_code`. Solo si el request espera JSON: el middleware global `EnsureJsonResponse` fija
+  `Accept: application/json` en toda ruta `api/*` (también 404/405), así que la API nunca responde HTML.
 * Excepciones de dominio: `BudgetException`, `WorkOrderException`, `WorkOrderPartException`, `PartException`,
   `SupplierException`, `InventoryException`, `ServiceException`, `InvoiceException`, `PaymentException`,
   `VehicleDeliveryException`, `MaintenanceException`, `ReceptionException` (todas extienden `AppException(message, status, errorCode, errors)`).
@@ -331,5 +332,5 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 
 ## 7. Deuda técnica conocida
 
-Ver `docs/handoff.md`, sección 14 (middleware `EnsureJsonResponse` sin registrar, seeders no idempotentes, entre otros). No
+Ver `docs/handoff.md`, sección 14 (seeders no idempotentes, entre otros). No
 corregir sin decisión previa del usuario.

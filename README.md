@@ -62,7 +62,7 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 
 | Estado | Qué |
 |---|---|
-| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20) más los módulos base. 191 rutas API y 247 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
+| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20) más los módulos base. 191 rutas API y 250 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
 | Implementado con limitaciones conocidas | algunos seeders de ejemplo no idempotentes. Detalle en [`docs/handoff.md`](docs/handoff.md), sección 14 |
 | No verificable desde este repositorio | El frontend (ver [Frontend](#frontend)) |
 | Pendiente, sin diseño | Compras (con ingreso de stock), notificaciones, exportación de reportes (CSV/PDF) y comprobantes imprimibles, auditoría avanzada |
@@ -183,8 +183,9 @@ la usa. Si el frontend corre en otro origen, agregarlo en `config/cors.php`.
 
 ## Uso de la API
 
-Todas las rutas (salvo `POST /api/login`) requieren el header `Authorization: Bearer {token}`. Enviar siempre
-`Accept: application/json`: sin ese header los errores no se devuelven con el formato JSON de la API.
+Todas las rutas (salvo `POST /api/login`) requieren el header `Authorization: Bearer {token}`. Todo `/api`
+responde JSON con el formato de la API aunque no se envíe `Accept: application/json` (middleware global
+`EnsureJsonResponse`); se recomienda enviarlo igual.
 
 Autenticación con Sanctum: `POST /api/login` devuelve `data.token` y `data.user` (con roles); `POST /api/logout` revoca
 el token actual. Los tokens no expiran. Cada endpoint exige un permiso (`recurso.acción`) asignado al rol del usuario.
@@ -240,7 +241,7 @@ vendor/bin/phpunit
 composer test
 ```
 
-247 tests en `tests/Feature`, uno o más archivos por módulo. Los de usuarios y clientes necesitan internet
+250 tests en `tests/Feature`, uno o más archivos por módulo. Los de usuarios y clientes necesitan internet
 (validación `email:rfc,dns`).
 
 Si `pdo_sqlite` no está habilitado en el `php.ini` de Laragon:
