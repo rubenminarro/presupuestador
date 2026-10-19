@@ -50,7 +50,7 @@ class BudgetItemController extends Controller implements HasMiddleware
 
         $data = $this->budgetService->prepareCatalogItem($request->validated());
 
-        $data['total'] = $data['quantity'] * $data['unit_price'];
+        $data['total'] = $this->budgetService->itemTotal($data['quantity'], $data['unit_price']);
 
         $item = $budget->items()->create($data);
 
@@ -82,7 +82,7 @@ class BudgetItemController extends Controller implements HasMiddleware
         $quantity = $data['quantity'] ?? $item->quantity;
         $unitPrice = $data['unit_price'] ?? $item->unit_price;
 
-        $data['total'] = $quantity * $unitPrice;
+        $data['total'] = $this->budgetService->itemTotal($quantity, $unitPrice);
 
         $item->update($data);
 

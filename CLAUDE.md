@@ -16,7 +16,7 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 ## 1. Estado actual (verificado el 2026-10-17, `main` @ `8b3027a`; reverificado el 2026-10-19 @ `4ad9466`, sin cambios de código)
 
-* **Backend/API:** Laravel 12.56, roadmap original completo (FASES 10–20). 191 rutas API, 246 tests en verde.
+* **Backend/API:** Laravel 12.56, roadmap original completo (FASES 10–20). 191 rutas API, 247 tests en verde.
 * **Frontend:** **no está en este repositorio.** El handoff prevé React 19, pero no hay código que lo confirme; solo
   CORS y Sanctum están configurados para `http://localhost:5173`. `package.json` y `resources/` son el scaffold de
   Laravel (Vite + Tailwind) sin uso. No asumir tecnología ni estructura del frontend.
@@ -120,7 +120,7 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 | `app/Support/Decimal.php` | Redondeo BCMath |
 | `app/Traits/ApiResponse.php` | `successResponse` / `errorResponse` |
 | `bootstrap/app.php` | Mapeo de excepciones a JSON |
-| `config/budget.php`, `invoice.php`, `maintenance.php` | Parámetros de negocio |
+| `config/invoice.php`, `maintenance.php` | Parámetros de negocio (`invoice.default_tax_rate` es el IVA de presupuestos y facturas) |
 
 ### Contrato de respuesta
 
@@ -211,7 +211,9 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   cancelar desde `draft` o `sent`.
 * Solo `draft` es editable (cabecera e ítems): `BUDGET_NOT_EDITABLE`. Enviar y aprobar exigen ítems
   (`BUDGET_WITHOUT_ITEMS`). Transición inválida: `BUDGET_NOT_SENDABLE|APPROVABLE|REJECTABLE|CANCELLABLE|REOPENABLE`.
-* Totales: `subtotal` = suma de ítems; `tax` = subtotal × `config('budget.tax_rate')` (0.10); precios sin IVA.
+* Totales con BCMath (`BudgetService::itemTotal()` y `recalculateBudget()`), redondeo half-up a 2 decimales: ítem =
+  cantidad × precio; `subtotal` = suma de ítems; `tax` = subtotal × `config('invoice.default_tax_rate')` (10) / 100;
+  precios sin IVA.
 * Ítems `labor | service | part`. `part_id` solo en `part` (repuesto `inactive` → `PART_NOT_USABLE`; unidades enteras
   → `INVENTORY_FRACTIONAL_QUANTITY_NOT_ALLOWED`). `service_id` solo en `service` (sin `unit_price` toma
   `standard_price`; inactivo → `SERVICE_NOT_USABLE`). `estimated_hours`: service = catálogo × cantidad si no se informa;
@@ -329,5 +331,5 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 
 ## 7. Deuda técnica conocida
 
-Ver `docs/handoff.md`, sección 14 (IVA del presupuesto con `float`, middleware `EnsureJsonResponse` sin registrar, seeders no idempotentes, entre otros). No
+Ver `docs/handoff.md`, sección 14 (middleware `EnsureJsonResponse` sin registrar, seeders no idempotentes, entre otros). No
 corregir sin decisión previa del usuario.

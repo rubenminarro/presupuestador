@@ -97,7 +97,7 @@ class BudgetItemSeeder extends Seeder
                         'description' => $item['description'],
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['unit_price'],
-                        'total' => $item['quantity'] * $item['unit_price'],
+                        'total' => $budgetService->itemTotal($item['quantity'], $item['unit_price']),
                         'notes' => $item['notes'],
                     ]);
                 }

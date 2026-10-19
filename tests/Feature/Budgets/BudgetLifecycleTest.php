@@ -88,6 +88,26 @@ class BudgetLifecycleTest extends WorkOrderPartsTestCase
             ->assertJsonPath('data.total', '0.00');
     }
 
+    public function test_totals_use_exact_decimals_with_half_up_rounding(): void
+    {
+        $budgetId = $this->createBudgetWithItems([]);
+
+        // 1.15 × 100.10 = 115.115 (en float da 115.11499…).
+        $this->postJson("/api/budgets/{$budgetId}/items", ['type' => 'labor', 'description' => 'Ajuste', 'quantity' => 1.15, 'unit_price' => 100.10])
+            ->assertCreated()
+            ->assertJsonPath('data.total', '115.12');
+
+        $this->postJson("/api/budgets/{$budgetId}/items", ['type' => 'labor', 'description' => 'Limpieza', 'quantity' => 3, 'unit_price' => 0.15])
+            ->assertCreated()
+            ->assertJsonPath('data.total', '0.45');
+
+        // Subtotal 115.57; IVA 10% = 11.557 → 11.56.
+        $this->getJson("/api/budgets/{$budgetId}")
+            ->assertJsonPath('data.subtotal', '115.57')
+            ->assertJsonPath('data.tax', '11.56')
+            ->assertJsonPath('data.total', '127.13');
+    }
+
     public function test_reject_reopen_and_cancel(): void
     {
         $budgetId = $this->draftWithItem();

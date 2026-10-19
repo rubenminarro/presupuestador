@@ -21,15 +21,25 @@ class BudgetService
     ) {
     }
 
+    /**
+     * Total del ítem (cantidad × precio, sin IVA) con BCMath.
+     */
+    public function itemTotal(int|float|string $quantity, int|float|string $unitPrice): string
+    {
+        return Decimal::round(bcmul(Decimal::of($quantity, 2), Decimal::of($unitPrice, 2), 4), 2);
+    }
+
     public function recalculateBudget(Budget $budget): Budget
     {
-        $subtotal = $budget->items()->sum('total');
+        $subtotal = $budget->items()->pluck('total')
+            ->reduce(fn (string $sum, $total) => bcadd($sum, Decimal::of($total, 2), 2), '0.00');
 
-        $taxRate = config('budget.tax_rate');
+        // Misma tasa con la que nacen las líneas de la factura (porcentaje entero).
+        $taxRate = (string) (int) config('invoice.default_tax_rate', 10);
 
-        $tax = $subtotal * $taxRate;
+        $tax = Decimal::round(bcdiv(bcmul($subtotal, $taxRate, 4), '100', 4), 2);
 
-        $total = $subtotal + $tax;
+        $total = bcadd($subtotal, $tax, 2);
 
         $budget->update([
             'subtotal' => $subtotal,

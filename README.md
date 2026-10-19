@@ -62,8 +62,8 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 
 | Estado | Qué |
 |---|---|
-| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20) más los módulos base. 191 rutas API y 246 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
-| Implementado con limitaciones conocidas | IVA del presupuesto calculado con `float`, algunos seeders de ejemplo no idempotentes. Detalle en [`docs/handoff.md`](docs/handoff.md), sección 14 |
+| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20) más los módulos base. 191 rutas API y 247 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
+| Implementado con limitaciones conocidas | algunos seeders de ejemplo no idempotentes. Detalle en [`docs/handoff.md`](docs/handoff.md), sección 14 |
 | No verificable desde este repositorio | El frontend (ver [Frontend](#frontend)) |
 | Pendiente, sin diseño | Compras (con ingreso de stock), notificaciones, exportación de reportes (CSV/PDF) y comprobantes imprimibles, auditoría avanzada |
 
@@ -240,7 +240,7 @@ vendor/bin/phpunit
 composer test
 ```
 
-246 tests en `tests/Feature`, uno o más archivos por módulo. Los de usuarios y clientes necesitan internet
+247 tests en `tests/Feature`, uno o más archivos por módulo. Los de usuarios y clientes necesitan internet
 (validación `email:rfc,dns`).
 
 Si `pdo_sqlite` no está habilitado en el `php.ini` de Laragon:
@@ -280,7 +280,7 @@ API Resource (Resource para listados, ShowResource para detalle)
 | `app/Support/Decimal.php` | Redondeo con BCMath |
 | `app/Traits/ApiResponse.php` | Respuestas estándar |
 | `bootstrap/app.php` | Middlewares de permisos y mapeo de excepciones a JSON |
-| `config/budget.php`, `config/invoice.php`, `config/maintenance.php` | Parámetros de negocio (IVA, decimales, umbrales de mantenimiento) |
+| `config/invoice.php`, `config/maintenance.php` | Parámetros de negocio (IVA de presupuestos y facturas, decimales, umbrales de mantenimiento) |
 | `routes/api.php` | Rutas de la API (191) |
 | `database/migrations`, `database/seeders` | Esquema y datos iniciales/de ejemplo |
 | `tests/Feature` | Tests por módulo |
