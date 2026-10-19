@@ -6,7 +6,8 @@
 **Fecha:** 2026-10-17
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes); 6 roles; 235 tests
-en verde (verificado el 2026-10-17 sobre `main` @ `8b3027a`)
+en verde (verificado el 2026-10-17 sobre `main` @ `8b3027a`; reverificado el 2026-10-19 sobre `main` @ `4ad9466`, sin
+cambios de código desde `8b3027a`)
 **Stack principal:** Laravel 12.56 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -1885,6 +1886,10 @@ Si una implementación funciona y respeta las convenciones actuales, debe manten
 
 Nunca migrar secretos reales dentro del handoff.
 
+> **Nota (verificado el 2026-10-19):** esta sección es una plantilla histórica. Los valores de referencia vigentes están
+> en `.env.example` (por ejemplo `APP_URL=http://127.0.0.1:8000` y `ADMIN_PASSWORD`, la contraseña de los usuarios del
+> seeder). `VITE_API_URL` pertenece al repositorio del frontend: este repositorio no la usa.
+
 El nuevo entorno debe disponer de variables equivalentes a:
 
 ```env
@@ -1990,6 +1995,10 @@ y:
 ```bash
 npm install
 ```
+
+> **Nota (verificado el 2026-10-19):** `npm install` es **opcional** en este repositorio: `package.json` solo trae el
+> scaffold de Vite + Tailwind de Laravel, que la API no usa (`composer setup` y `composer dev` sí lo invocan). Ver
+> README, "Requisitos".
 
 ---
 
@@ -3343,7 +3352,7 @@ mantenga integridad de datos, reglas de negocio claras y una API consistente dur
 
 ---
 
-# 14. Discrepancias conocidas y deuda técnica (verificado el 2026-10-17)
+# 14. Discrepancias conocidas y deuda técnica (verificado el 2026-10-17; reverificado el 2026-10-19)
 
 Registradas durante la revisión documental de la v1.2. **No se corrigieron** (la revisión fue solo documental);
 cada una necesita una decisión antes de tocar el código.
@@ -3356,7 +3365,7 @@ cada una necesita una decisión antes de tocar el código.
 | 4 | Errores sin `error_code` | `ReceptionController` (categorías de recepción procesada, eliminar recepción procesada), `ReceptionCheckListController` (checklist de recepción procesada) y `DiagnosticItemPhotoController` (actualizar sin datos) llaman a `errorResponse(mensaje, 422)` sin código | Responden `422` con `error_code: null`, contra el contrato de 3.11/3.12 |
 | 5 | IVA del presupuesto con `float` | `BudgetService::recalculateBudget()`: `$tax = $subtotal * $taxRate` con `config('budget.tax_rate') = 0.10` | Contradice la regla BCMath; posibles centavos de diferencia. Además hay dos fuentes de IVA: `config/budget.php` (0.10) y `config/invoice.php` (`default_tax_rate = 10`) |
 | 6 | Middleware sin registrar | `App\Http\Middleware\EnsureJsonResponse` no aparece en `bootstrap/app.php` ni en las rutas | El cliente debe enviar `Accept: application/json`; sin ese header los errores no usan el contrato JSON |
-| 7 | Seeders no idempotentes | `BrandSeeder`, `VehicleModelSeeder`, `ServiceSeeder`, `ClientsSeeder`, `VehiclesSeeder`, `ReceptionSeeder`, `DiagnosticItemSeeder`, `BudgetSeeder`, `BudgetItemSeeder` y `PartSeeder` usan `create()` | `php artisan db:seed` sobre una base ya sembrada duplica o falla por únicos; volver a ejecutar solo los seeders idempotentes (roles/permisos, usuarios, mecánicos, categorías, proveedores, planes, timbrado) |
+| 7 | Seeders no idempotentes | `BrandSeeder` (`insert`), `VehicleModelSeeder`, `ClientsSeeder`, `VehiclesSeeder`, `ReceptionSeeder`, `DiagnosticItemSeeder`, `BudgetSeeder` y `BudgetItemSeeder` crean sin verificar si el dato existe. *Corregido el 2026-10-19:* `ServiceSeeder` y `PartSeeder` figuraban en esta lista, pero omiten los registros existentes (por nombre y por SKU), igual que `InventorySeeder` (por movimientos previos) | `php artisan db:seed` sobre una base ya sembrada duplica o falla por únicos; volver a ejecutar solo los seeders idempotentes (lista en el README, sección "Base de datos") |
 | 8 | Tests que dependen de la red | `Store/UpdateUserRequest` y `Store/UpdateClientRequest` usan `email:rfc,dns`; los de usuario además `Password::uncompromised()` (simulado con `Http::fake` en los tests) | Los tests de usuarios y clientes necesitan resolver DNS (`gmail.com`) |
 | 9 | Frontend no verificable | No hay código React en el repositorio ni en `C:\laragon\www`; solo CORS/Sanctum apuntan a `http://localhost:5173` | La versión de React y su arquitectura no pudieron verificarse |
 | 10 | ~~Rama remota antigua~~ **Resuelto el 2026-10-17** | `origin/feature/diagnostic-item-seeders-controllers-migrations-models` (commit `795d830519b28d1abc22ba7fee92da04e50af4a5`, 2026-08-12) sin mergear | Eliminada a pedido del usuario: sus archivos existían en `main` en versiones posteriores. Ese día también se eliminaron todas las ramas ya integradas en `main` (locales y remotas); su contenido sigue en el historial de `main` |

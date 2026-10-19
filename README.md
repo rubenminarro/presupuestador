@@ -21,7 +21,7 @@ Cliente → Vehículo → Recepción → Diagnóstico → Presupuesto → Aproba
 
 ## Stack
 
-Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17):
+Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reverificadas el 2026-10-19):
 
 | Capa | Tecnología |
 |---|---|
@@ -58,12 +58,12 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17):
 | Mantenimiento preventivo | Planes por km y/o días, registro automático desde la OT, km actual estimado por uso y alertas de vencimiento |
 | Reportes y dashboard | Dashboard por permisos; reportes de ventas, presupuestos, rentabilidad, productividad, inventario y clientes |
 
-### Estado real (verificado el 2026-10-17)
+### Estado real (verificado el 2026-10-17; reverificado el 2026-10-19 sin cambios de código)
 
 | Estado | Qué |
 |---|---|
 | Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20) más los módulos base. 190 rutas API y 235 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
-| Implementado con limitaciones conocidas | Estados de la recepción (solo la entrega los cambia), algunos errores sin `error_code`, IVA del presupuesto calculado con `float`, seeders de ejemplo no idempotentes. Detalle en [`docs/handoff.md`](docs/handoff.md), sección 14 |
+| Implementado con limitaciones conocidas | Estados de la recepción (solo la entrega los cambia), algunos errores sin `error_code`, IVA del presupuesto calculado con `float`, algunos seeders de ejemplo no idempotentes. Detalle en [`docs/handoff.md`](docs/handoff.md), sección 14 |
 | No verificable desde este repositorio | El frontend (ver [Frontend](#frontend)) |
 | Pendiente, sin diseño | Compras (con ingreso de stock), notificaciones, exportación de reportes (CSV/PDF) y comprobantes imprimibles, auditoría avanzada |
 
@@ -130,11 +130,15 @@ La API queda disponible en `http://127.0.0.1:8000/api`.
 - `php artisan migrate` (sin `--seed`) es lo que corresponde después de traer cambios: aplica solo las migraciones nuevas.
 - `migrate:fresh`, `migrate:refresh` y `db:wipe` **borran todos los datos**. No usarlos sobre una base con datos que
   interesen.
-- `php artisan db:seed` completo sobre una base ya sembrada **duplica datos o falla**: los seeders de datos de ejemplo
-  (marcas, modelos, servicios, clientes, vehículos, recepciones, diagnósticos, presupuestos, repuestos) usan `create()`.
+- `php artisan db:seed` completo sobre una base ya sembrada **duplica datos o falla**: `BrandSeeder`,
+  `VehicleModelSeeder`, `ClientsSeeder`, `VehiclesSeeder`, `ReceptionSeeder`, `DiagnosticItemSeeder`, `BudgetSeeder` y
+  `BudgetItemSeeder` insertan sin verificar si los datos ya existen.
 - Se pueden volver a ejecutar sin riesgo: `RolesAndPermissionsSeeder` (sincroniza roles y permisos; correrlo después de
-  cada fase que agregue permisos), `AdminUserSeeder`, `MechanicSeeder`, `ServiceCategorySeeder`, `PartCategorySeeder`,
-  `SupplierSeeder`, `MaintenancePlanSeeder` e `InvoiceStampSeeder`:
+  cada fase que agregue permisos), `AdminUserSeeder`, `MechanicSeeder`, `ServiceCategorySeeder`, `CheckListItemSeeder`,
+  `CheckListItemServiceCategorySeeder`, `PartCategorySeeder`, `SupplierSeeder`, `MaintenancePlanSeeder` e
+  `InvoiceStampSeeder` (usan `firstOrCreate`/`updateOrCreate`/`sync`). `ServiceSeeder`, `PartSeeder` e
+  `InventorySeeder` también: omiten lo que ya existe (por nombre, SKU o movimientos previos). `DiagnosticSeeder` y
+  `DiagnosticItemPhotoSeeder` no duplican, pero dependen de los datos de ejemplo anteriores:
 
 ```bash
 php artisan db:seed --class=RolesAndPermissionsSeeder

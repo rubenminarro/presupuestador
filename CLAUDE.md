@@ -14,7 +14,7 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 ---
 
-## 1. Estado actual (verificado el 2026-10-17, `main` @ `8b3027a`)
+## 1. Estado actual (verificado el 2026-10-17, `main` @ `8b3027a`; reverificado el 2026-10-19 @ `4ad9466`, sin cambios de código)
 
 * **Backend/API:** Laravel 12.56, roadmap original completo (FASES 10–20). 190 rutas API, 235 tests en verde.
 * **Frontend:** **no está en este repositorio.** El handoff prevé React 19, pero no hay código que lo confirme; solo
