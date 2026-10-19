@@ -63,7 +63,7 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 | Estado | Qué |
 |---|---|
 | Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20) más los módulos base. 191 rutas API y 246 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
-| Implementado con limitaciones conocidas | Estados de la recepción (solo la entrega los cambia), algunos errores sin `error_code`, IVA del presupuesto calculado con `float`, algunos seeders de ejemplo no idempotentes. Detalle en [`docs/handoff.md`](docs/handoff.md), sección 14 |
+| Implementado con limitaciones conocidas | IVA del presupuesto calculado con `float`, algunos seeders de ejemplo no idempotentes. Detalle en [`docs/handoff.md`](docs/handoff.md), sección 14 |
 | No verificable desde este repositorio | El frontend (ver [Frontend](#frontend)) |
 | Pendiente, sin diseño | Compras (con ingreso de stock), notificaciones, exportación de reportes (CSV/PDF) y comprobantes imprimibles, auditoría avanzada |
 

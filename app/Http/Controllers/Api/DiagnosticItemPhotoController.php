@@ -103,7 +103,8 @@ class DiagnosticItemPhotoController extends Controller implements HasMiddleware
         ) {
             return $this->errorResponse(
                 'No se proporcionaron datos para actualizar.',
-                422
+                422,
+                'DIAGNOSTIC_ITEM_PHOTO_NOTHING_TO_UPDATE'
             );
         }
 

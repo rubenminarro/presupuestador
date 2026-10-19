@@ -381,7 +381,7 @@ Token: administrador.
 
 Esperado: `201`, `status` `draft`, código `BUD-XXXXXX` → `budget_id`.
 
-Estado de la recepción: `GET {{base_url}}/receptions/{{reception_id}}` → `status.value` `in_progress` ("En proceso"). Desde ahora la recepción está procesada: `PATCH {{base_url}}/receptions/{{reception_id}}` con `{ "service_category_ids": [1] }` → `422`.
+Estado de la recepción: `GET {{base_url}}/receptions/{{reception_id}}` → `status.value` `in_progress` ("En proceso"). Desde ahora la recepción está procesada: `PATCH {{base_url}}/receptions/{{reception_id}}` con `{ "service_category_ids": [1] }` → `422` `RECEPTION_CATEGORIES_NOT_EDITABLE`; `DELETE {{base_url}}/receptions/{{reception_id}}` → `422` `RECEPTION_NOT_DELETABLE` (no lo ejecutes si no es procesada: la eliminaría).
 
 ### P.2 Agregar ítem de mano de obra
 

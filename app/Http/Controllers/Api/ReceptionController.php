@@ -188,7 +188,8 @@ class ReceptionController extends Controller implements HasMiddleware
         ) {
             return $this->errorResponse(
                 'No se pueden modificar las categorías de servicio una vez procesada la recepción.',
-                422
+                422,
+                'RECEPTION_CATEGORIES_NOT_EDITABLE'
             );
         }
 
@@ -265,7 +266,8 @@ class ReceptionController extends Controller implements HasMiddleware
         if ($reception->status->isProcessed()) {
             return $this->errorResponse(
                 'No se puede eliminar una recepción procesada.',
-                422
+                422,
+                'RECEPTION_NOT_DELETABLE'
             );
         }
 

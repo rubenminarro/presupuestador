@@ -46,7 +46,8 @@ class ReceptionCheckListController extends Controller implements HasMiddleware
         if ($receptionCheckList->reception->status->isProcessed()) {
             return $this->errorResponse(
                 'No se puede modificar el checklist de una recepción procesada.',
-                422
+                422,
+                'RECEPTION_CHECKLIST_NOT_EDITABLE'
             );
         }
 

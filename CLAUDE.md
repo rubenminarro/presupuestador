@@ -183,7 +183,9 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   editada está abierta.
 * Al menos una categoría de servicio; el checklist se genera con los ítems de esas categorías (sin repetir).
 * Cambiar categorías solo con la recepción `pending` (regenera el checklist).
-* Recepción "procesada" (`isProcessed()` = todo salvo `pending`): no se cambian categorías ni checklist, no se elimina.
+* Recepción "procesada" (`isProcessed()` = todo salvo `pending`): no se cambian categorías
+  (`RECEPTION_CATEGORIES_NOT_EDITABLE`) ni checklist (`RECEPTION_CHECKLIST_NOT_EDITABLE`), no se elimina
+  (`RECEPTION_NOT_DELETABLE`); todos `422`.
 * Valor del checklist según el tipo del ítem: `boolean` → booleano, `number` → numérico, `text` → `good|bad|na`.
   El estado del checklist se calcula (`pending`, `in_progress`, `completed`).
 * **Estado derivado del flujo** (`ReceptionStatusService::sync()`, nunca se asigna a mano salvo entrega y cancelación):
@@ -327,6 +329,5 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 
 ## 7. Deuda técnica conocida
 
-Ver `docs/handoff.md`, sección 14 (errores sin `error_code`, IVA del
-presupuesto con `float`, middleware `EnsureJsonResponse` sin registrar, seeders no idempotentes, entre otros). No
+Ver `docs/handoff.md`, sección 14 (IVA del presupuesto con `float`, middleware `EnsureJsonResponse` sin registrar, seeders no idempotentes, entre otros). No
 corregir sin decisión previa del usuario.

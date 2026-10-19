@@ -132,7 +132,8 @@ class ReceptionTest extends ReceptionTestCase
         $this->markAs($reception, ReceptionStatus::IN_PROGRESS);
 
         $this->patchJson("/api/receptions/{$reception['id']}", ['service_category_ids' => [$this->mechanical->id]])
-            ->assertStatus(422);
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'RECEPTION_CATEGORIES_NOT_EDITABLE');
 
         // Los demás datos sí se pueden actualizar.
         $this->patchJson("/api/receptions/{$reception['id']}", ['observations' => 'Cliente espera'])
@@ -149,7 +150,9 @@ class ReceptionTest extends ReceptionTestCase
         $processed = $this->createReception();
         $this->markAs($processed, ReceptionStatus::IN_PROGRESS);
 
-        $this->deleteJson("/api/receptions/{$processed['id']}")->assertStatus(422);
+        $this->deleteJson("/api/receptions/{$processed['id']}")
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'RECEPTION_NOT_DELETABLE');
         $this->assertNotSoftDeleted('receptions', ['id' => $processed['id']]);
     }
 
@@ -187,7 +190,8 @@ class ReceptionTest extends ReceptionTestCase
         $this->markAs($reception, ReceptionStatus::COMPLETED);
 
         $this->patchJson("/api/reception-check-lists/{$checkList->id}", ['items' => [['id' => $item->id, 'value' => null, 'observation' => 'x']]])
-            ->assertStatus(422);
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'RECEPTION_CHECKLIST_NOT_EDITABLE');
     }
 
     public function test_reception_photos(): void

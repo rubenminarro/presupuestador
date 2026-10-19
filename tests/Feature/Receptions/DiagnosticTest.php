@@ -158,7 +158,9 @@ class DiagnosticTest extends ReceptionTestCase
         $this->patchJson("{$url}/{$photo['id']}", ['description' => 'Pastilla al limite'])
             ->assertOk()
             ->assertJsonPath('data.description', 'Pastilla al limite');
-        $this->patchJson("{$url}/{$photo['id']}", [])->assertStatus(422);
+        $this->patchJson("{$url}/{$photo['id']}", [])
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'DIAGNOSTIC_ITEM_PHOTO_NOTHING_TO_UPDATE');
 
         // Foto de otro ítem en la URL.
         $other = $this->postJson('/api/diagnostic-items', $this->itemPayload($diagnostic['id'], ['title' => 'Discos']))->json('data');

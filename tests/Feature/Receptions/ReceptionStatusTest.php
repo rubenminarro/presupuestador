@@ -4,6 +4,7 @@ namespace Tests\Feature\Receptions;
 
 use App\Models\Budget;
 use App\Models\Reception;
+use App\Models\ServiceCategory;
 use Tests\Feature\WorkOrderParts\WorkOrderPartsTestCase;
 
 /**
@@ -173,8 +174,14 @@ class ReceptionStatusTest extends WorkOrderPartsTestCase
         $budgetId = $this->createBudgetWithItems([$this->labor()]);
         $reception = $this->receptionOf($budgetId);
 
-        $this->patchJson("/api/receptions/{$reception->id}", ['service_category_ids' => [1]])->assertStatus(422);
-        $this->deleteJson("/api/receptions/{$reception->id}")->assertStatus(422);
+        $category = ServiceCategory::create(['code' => 'mechanical', 'name' => 'Mecánica']);
+
+        $this->patchJson("/api/receptions/{$reception->id}", ['service_category_ids' => [$category->id]])
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'RECEPTION_CATEGORIES_NOT_EDITABLE');
+        $this->deleteJson("/api/receptions/{$reception->id}")
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'RECEPTION_NOT_DELETABLE');
     }
 
     public function test_mechanic_cannot_cancel_receptions(): void
