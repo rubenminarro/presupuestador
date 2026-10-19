@@ -74,6 +74,8 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
     Route::apiResource('receptions', ReceptionController::class);
 
+    Route::post('receptions/{reception}/cancel', [ReceptionController::class, 'cancel'])->name('receptions.cancel');
+
     Route::get('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'show'])->name('reception-check-lists.show');
         
     Route::patch('/reception-check-lists/{receptionCheckList}', [ReceptionCheckListController::class, 'update'])->name('reception-check-lists.update');

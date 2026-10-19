@@ -188,7 +188,8 @@ class VehicleDeliveryTest extends InvoiceTestCase
             ->assertOk()
             ->assertJsonPath('data.status.value', 'cancelled')
             ->assertJsonPath('data.cancellation_reason', 'Se registró por error')
-            ->assertJsonPath('data.reception.status', 'pending');
+            // Vuelve a su estado anterior: terminada (todas sus OT completadas), lista para entregar.
+            ->assertJsonPath('data.reception.status', 'completed');
 
         $this->postJson("/api/vehicle-deliveries/{$delivery['id']}/cancel", ['reason' => 'Otra vez'])
             ->assertStatus(422)
@@ -227,7 +228,8 @@ class VehicleDeliveryTest extends InvoiceTestCase
 
         $this->postJson("/api/vehicle-deliveries/{$delivery['id']}/cancel", ['reason' => 'Se registró por error'])
             ->assertOk()
-            ->assertJsonPath('data.reception.status', 'pending');
+            // Vuelve a su estado anterior: terminada (todas sus OT completadas), lista para entregar.
+            ->assertJsonPath('data.reception.status', 'completed');
     }
 
     public function test_deliveries_are_immutable(): void

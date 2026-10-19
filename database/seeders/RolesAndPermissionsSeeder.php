@@ -87,6 +87,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'receptions.show',
             'receptions.update',
             'receptions.destroy',
+            'receptions.cancel',
 
             /* reception checklist permissions */
             'reception-check-lists.show',
@@ -380,6 +381,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'vehicles.index', 'vehicles.store', 'vehicles.show', 'vehicles.update',
                     'checklists.index', 'checklists.show',
                     'receptions.index', 'receptions.store', 'receptions.show', 'receptions.update', 'receptions.destroy',
+                    'receptions.cancel',
                     'reception-check-lists.show', 'reception-check-lists.update',
                     'receptions-photos.index', 'receptions-photos.store', 'receptions-photos.update', 'receptions-photos.destroy',
                     'diagnostics.index', 'diagnostics.show',

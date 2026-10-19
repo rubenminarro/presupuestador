@@ -12,9 +12,15 @@ use App\Exceptions\BudgetException;
 use App\Exceptions\PartException;
 use App\Exceptions\ServiceException;
 use App\Support\Decimal;
+use Illuminate\Support\Facades\DB;
 
 class BudgetService
 {
+    public function __construct(
+        protected ReceptionStatusService $receptionStatusService
+    ) {
+    }
+
     public function recalculateBudget(Budget $budget): Budget
     {
         $subtotal = $budget->items()->sum('total');
@@ -262,16 +268,26 @@ class BudgetService
 
     public function create(array $data, int $userId): Budget
     {
-        return Budget::create([
-            'reception_id' => $data['reception_id'],
-            'created_by' => $userId,
-            'code' => $this->generateCode(),
-            'status' => BudgetStatus::DRAFT,
-            'subtotal' => 0,
-            'tax' => 0,
-            'total' => 0,
-            'notes' => $data['notes'] ?? null,
-        ]);
+        return DB::transaction(function () use ($data, $userId) {
+
+            $this->receptionStatusService->ensureOpen((int) $data['reception_id']);
+
+            $budget = Budget::create([
+                'reception_id' => $data['reception_id'],
+                'created_by' => $userId,
+                'code' => $this->generateCode(),
+                'status' => BudgetStatus::DRAFT,
+                'subtotal' => 0,
+                'tax' => 0,
+                'total' => 0,
+                'notes' => $data['notes'] ?? null,
+            ]);
+
+            // Presupuestar pone la recepción "en proceso".
+            $this->receptionStatusService->sync($budget->reception_id);
+
+            return $budget;
+        });
     }
 
     public function update(Budget $budget, array $data): Budget
@@ -287,7 +303,11 @@ class BudgetService
     {
         $this->ensureEditable($budget);
 
-        $budget->delete();
+        DB::transaction(function () use ($budget) {
+            $budget->delete();
+
+            $this->receptionStatusService->sync($budget->reception_id);
+        });
     }
 
     private function generateCode(): string

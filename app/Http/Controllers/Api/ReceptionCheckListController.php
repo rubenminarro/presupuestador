@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\ReceptionStatus;
 use App\Http\Controllers\Controller;
 use App\Models\ReceptionCheckList;
 use App\Http\Requests\UpdateReceptionCheckListRequest;
@@ -43,18 +42,8 @@ class ReceptionCheckListController extends Controller implements HasMiddleware
         ReceptionCheckList $receptionCheckList,
         ReceptionCheckListItemService $service
     ) {
-        // status es un enum: comparar contra los casos, no contra strings.
-        if (
-            in_array(
-                $receptionCheckList->reception->status,
-                [
-                    ReceptionStatus::IN_PROGRESS,
-                    ReceptionStatus::COMPLETED,
-                    ReceptionStatus::DELIVERED,
-                ],
-                true
-            )
-        ) {
+        // Procesada = ya avanzó en el flujo (todo salvo pending).
+        if ($receptionCheckList->reception->status->isProcessed()) {
             return $this->errorResponse(
                 'No se puede modificar el checklist de una recepción procesada.',
                 422

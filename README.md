@@ -44,7 +44,7 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 | Autenticación | Login / logout con token Sanctum |
 | Usuarios, roles y permisos | Roles `administrador`, `mechanic`, `recepcionista`, `jefe-taller`, `cajero` y `deposito`; permisos por operación |
 | Clientes y vehículos | Clientes, marcas, modelos, vehículos (también anidados por cliente) |
-| Recepción | Ingreso del vehículo, categorías de servicio, checklist y fotos |
+| Recepción | Ingreso del vehículo, categorías de servicio, checklist y fotos; estado derivado del flujo (en proceso, en reparación, terminado) y cancelación con motivo |
 | Diagnóstico | Diagnóstico técnico con ítems y fotos |
 | Presupuestos | Ítems de mano de obra, servicio y repuesto; estados `draft → sent → approved` |
 | Órdenes de trabajo | Nace de un presupuesto aprobado; estados, ítems, mecánico responsable |
@@ -62,7 +62,7 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 
 | Estado | Qué |
 |---|---|
-| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20) más los módulos base. 190 rutas API y 235 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
+| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20) más los módulos base. 191 rutas API y 246 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
 | Implementado con limitaciones conocidas | Estados de la recepción (solo la entrega los cambia), algunos errores sin `error_code`, IVA del presupuesto calculado con `float`, algunos seeders de ejemplo no idempotentes. Detalle en [`docs/handoff.md`](docs/handoff.md), sección 14 |
 | No verificable desde este repositorio | El frontend (ver [Frontend](#frontend)) |
 | Pendiente, sin diseño | Compras (con ingreso de stock), notificaciones, exportación de reportes (CSV/PDF) y comprobantes imprimibles, auditoría avanzada |
@@ -240,7 +240,7 @@ vendor/bin/phpunit
 composer test
 ```
 
-235 tests en `tests/Feature`, uno o más archivos por módulo. Los de usuarios y clientes necesitan internet
+246 tests en `tests/Feature`, uno o más archivos por módulo. Los de usuarios y clientes necesitan internet
 (validación `email:rfc,dns`).
 
 Si `pdo_sqlite` no está habilitado en el `php.ini` de Laragon:
@@ -272,7 +272,7 @@ API Resource (Resource para listados, ShowResource para detalle)
 |---|---|
 | `app/Http/Controllers/Api` | Endpoints (41 controllers) |
 | `app/Http/Requests` | Validación |
-| `app/Services` | Lógica de negocio (18 services) |
+| `app/Services` | Lógica de negocio (19 services) |
 | `app/Models` | Modelos Eloquent |
 | `app/Http/Resources` | Contrato JSON público |
 | `app/Enums` | Estados y tipos |
@@ -281,7 +281,7 @@ API Resource (Resource para listados, ShowResource para detalle)
 | `app/Traits/ApiResponse.php` | Respuestas estándar |
 | `bootstrap/app.php` | Middlewares de permisos y mapeo de excepciones a JSON |
 | `config/budget.php`, `config/invoice.php`, `config/maintenance.php` | Parámetros de negocio (IVA, decimales, umbrales de mantenimiento) |
-| `routes/api.php` | Rutas de la API (190) |
+| `routes/api.php` | Rutas de la API (191) |
 | `database/migrations`, `database/seeders` | Esquema y datos iniciales/de ejemplo |
 | `tests/Feature` | Tests por módulo |
 | `docs/` | Handoff y guía de Postman |

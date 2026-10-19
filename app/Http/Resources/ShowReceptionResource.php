@@ -25,6 +25,13 @@ class ShowReceptionResource extends JsonResource
                 'value' => $fuelEnum?->value,
                 'label' => $fuelEnum?->label()
             ],
+            'status' => [
+                'value' => $this->status?->value,
+                'label' => $this->status?->label(),
+            ],
+            'cancelled_at' => $this->cancelled_at,
+            'cancelled_by' => $this->cancelled_by,
+            'cancellation_reason' => $this->cancellation_reason,
             'created_by' => $this->whenLoaded('createdBy', function () {
                 return [
                     'id' => optional($this->createdBy)->id,

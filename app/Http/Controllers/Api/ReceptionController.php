@@ -14,7 +14,8 @@ use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Services\ReceptionChecklistService;
-use App\Enums\ReceptionStatus;
+use App\Services\ReceptionStatusService;
+use App\Http\Requests\CancelReceptionRequest;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -30,6 +31,7 @@ class ReceptionController extends Controller implements HasMiddleware
             new Middleware('permission:receptions.show', only: ['show']),
             new Middleware('permission:receptions.update', only: ['update']),
             new Middleware('permission:receptions.destroy', only: ['destroy']),
+            new Middleware('permission:receptions.cancel', only: ['cancel']),
         ];
     }
 
@@ -182,7 +184,7 @@ class ReceptionController extends Controller implements HasMiddleware
 
         if (
             $hasServiceCategories
-            && $reception->status !== ReceptionStatus::PENDING
+            && $reception->status->isProcessed()
         ) {
             return $this->errorResponse(
                 'No se pueden modificar las categorías de servicio una vez procesada la recepción.',
@@ -235,15 +237,32 @@ class ReceptionController extends Controller implements HasMiddleware
         );
     }
 
+    /**
+     * Cancelación manual (por ejemplo, el cliente desiste): solo sin OT vigentes.
+     */
+    public function cancel(
+        CancelReceptionRequest $request,
+        Reception $reception,
+        ReceptionStatusService $receptionStatusService
+    ) {
+        $reception = $receptionStatusService->cancel(
+            $reception,
+            $request->validated('reason'),
+            $request->user()
+        );
+
+        return $this->successResponse(
+            'Recepción cancelada correctamente.',
+            new ShowReceptionResource(
+                $reception->load(['client', 'vehicle', 'createdBy', 'approvedBy', 'serviceCategories'])
+            )
+        );
+    }
+
     public function destroy(Reception $reception)
     {
-        if (
-            in_array($reception->status, [
-                ReceptionStatus::IN_PROGRESS,
-                ReceptionStatus::COMPLETED,
-                ReceptionStatus::DELIVERED,
-            ], true)
-        ) {
+        // Procesada = ya avanzó en el flujo (todo salvo pending).
+        if ($reception->status->isProcessed()) {
             return $this->errorResponse(
                 'No se puede eliminar una recepción procesada.',
                 422

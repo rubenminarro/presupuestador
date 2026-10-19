@@ -12,6 +12,7 @@ use App\Models\Diagnostic;
 use App\Traits\ApiResponse;
 use App\Enums\DiagnosticStatus;
 use Illuminate\Support\Facades\DB;
+use App\Services\ReceptionStatusService;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -217,9 +218,12 @@ class DiagnosticController extends Controller implements HasMiddleware
         );
     }
 
-    public function store(StoreDiagnosticRequest $request)
+    public function store(StoreDiagnosticRequest $request, ReceptionStatusService $receptionStatusService)
     {
         $data = $request->validated();
+
+        // No se diagnostica sobre recepciones entregadas o canceladas.
+        $receptionStatusService->ensureOpen((int) $data['reception_id']);
 
         $data['status'] = DiagnosticStatus::PENDING;
         $data['diagnosed_at'] = now();

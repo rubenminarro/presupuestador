@@ -25,6 +25,9 @@ class Reception extends Model
         'problem_description',
         'observations',
         'status',
+        'cancelled_at',
+        'cancelled_by',
+        'cancellation_reason',
         'created_by',
         'approved_by',
     ];
@@ -33,6 +36,7 @@ class Reception extends Model
         'status' => ReceptionStatus::class,
         'reception_date' => 'date',
         'estimated_delivery_date' => 'date',
+        'cancelled_at' => 'datetime',
     ];
 
     public function client(): BelongsTo

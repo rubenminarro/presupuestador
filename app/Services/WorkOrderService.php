@@ -20,7 +20,8 @@ class WorkOrderService
         protected WorkOrderPartService $workOrderPartService,
         protected WorkOrderCommissionService $commissionService,
         protected WorkOrderClosingService $closingService,
-        protected MaintenanceService $maintenanceService
+        protected MaintenanceService $maintenanceService,
+        protected ReceptionStatusService $receptionStatusService
     ) {
     }
 
@@ -66,6 +67,8 @@ class WorkOrderService
                 );
             }
 
+            $this->receptionStatusService->ensureOpen($budget->reception_id);
+
             $workOrder = WorkOrder::create([
                 'reception_id' => $budget->reception_id,
                 'budget_id' => $budget->id,
@@ -104,6 +107,9 @@ class WorkOrderService
                 }
             }
 
+            // El estado de la recepción se deriva de sus OT.
+            $this->receptionStatusService->sync($workOrder->reception_id);
+
             return $workOrder->load([
                 'reception',
                 'budget',
@@ -136,6 +142,9 @@ class WorkOrderService
                 'started_at' => $workOrder->started_at ?? now(),
             ]);
 
+            // El estado de la recepción se deriva de sus OT.
+            $this->receptionStatusService->sync($workOrder->reception_id);
+
             return $workOrder->load([
                 'reception',
                 'budget',
@@ -167,6 +176,9 @@ class WorkOrderService
                 'status' => WorkOrderStatus::PAUSED,
             ]);
 
+            // El estado de la recepción se deriva de sus OT.
+            $this->receptionStatusService->sync($workOrder->reception_id);
+
             return $workOrder->load([
                 'reception',
                 'budget',
@@ -197,6 +209,9 @@ class WorkOrderService
             $workOrder->update([
                 'status' => WorkOrderStatus::IN_PROGRESS,
             ]);
+
+            // El estado de la recepción se deriva de sus OT.
+            $this->receptionStatusService->sync($workOrder->reception_id);
 
             return $workOrder->load([
                 'reception',
@@ -263,6 +278,9 @@ class WorkOrderService
             // Mantenimiento preventivo: los servicios hechos actualizan los planes del vehículo.
             $this->maintenanceService->registerFromWorkOrder($workOrder);
 
+            // El estado de la recepción se deriva de sus OT.
+            $this->receptionStatusService->sync($workOrder->reception_id);
+
             return $workOrder->load([
                 'reception',
                 'budget',
@@ -308,6 +326,9 @@ class WorkOrderService
             $this->workOrderPartService->cancelOpenLines(
                 $workOrder->parts()->open()->get()
             );
+
+            // El estado de la recepción se deriva de sus OT.
+            $this->receptionStatusService->sync($workOrder->reception_id);
 
             return $workOrder->load([
                 'reception',

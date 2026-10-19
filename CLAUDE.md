@@ -16,7 +16,7 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 ## 1. Estado actual (verificado el 2026-10-17, `main` @ `8b3027a`; reverificado el 2026-10-19 @ `4ad9466`, sin cambios de código)
 
-* **Backend/API:** Laravel 12.56, roadmap original completo (FASES 10–20). 190 rutas API, 235 tests en verde.
+* **Backend/API:** Laravel 12.56, roadmap original completo (FASES 10–20). 191 rutas API, 246 tests en verde.
 * **Frontend:** **no está en este repositorio.** El handoff prevé React 19, pero no hay código que lo confirme; solo
   CORS y Sanctum están configurados para `http://localhost:5173`. `package.json` y `resources/` son el scaffold de
   Laravel (Vite + Tailwind) sin uso. No asumir tecnología ni estructura del frontend.
@@ -70,7 +70,8 @@ resultados esperados y casos de error).
 * **Las migraciones no llaman a código de la aplicación** (Services/Models): solo estructura.
 * Dinero y cantidades con **BCMath** sobre strings (`App\Support\Decimal::round`), nunca `float`.
 * Operaciones sobre varios registros en `DB::transaction`; concurrencia con `lockForUpdate`.
-  Orden de bloqueo: OT → línea → `part_stocks`; factura → pago; recepción → entregas.
+  Orden de bloqueo: OT → línea → `part_stocks`; OT → recepción (recálculo de estado); factura → pago;
+  recepción → entregas.
 * Documentos emitidos (cierre económico, factura emitida, pago, entrega, movimiento de inventario) son **inmutables a
   nivel de modelo**: solo se anulan o se corrigen con otro registro.
 * Rutas anidadas con `scopeBindings()` (grupo global en `routes/api.php`); si el parámetro hijo **no** es una relación
@@ -111,7 +112,7 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 |---|---|
 | `app/Http/Controllers/Api` | 41 controllers |
 | `app/Http/Requests` | Validación (mensajes en español) |
-| `app/Services` | Reglas de negocio (18 services) |
+| `app/Services` | Reglas de negocio (19 services) |
 | `app/Models` | Modelos Eloquent (muchos con `SoftDeletes`) |
 | `app/Http/Resources` | Contrato JSON |
 | `app/Enums` | Estados y tipos |
@@ -135,7 +136,7 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
   propio `status` y `error_code`. Solo si el request espera JSON (`Accept: application/json`).
 * Excepciones de dominio: `BudgetException`, `WorkOrderException`, `WorkOrderPartException`, `PartException`,
   `SupplierException`, `InventoryException`, `ServiceException`, `InvoiceException`, `PaymentException`,
-  `VehicleDeliveryException`, `MaintenanceException` (todas extienden `AppException(message, status, errorCode, errors)`).
+  `VehicleDeliveryException`, `MaintenanceException`, `ReceptionException` (todas extienden `AppException(message, status, errorCode, errors)`).
 
 ### Autenticación
 
@@ -182,10 +183,18 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   editada está abierta.
 * Al menos una categoría de servicio; el checklist se genera con los ítems de esas categorías (sin repetir).
 * Cambiar categorías solo con la recepción `pending` (regenera el checklist).
-* Recepción "procesada" (`in_progress`, `completed`, `delivered`): no se cambian categorías ni checklist, no se elimina.
+* Recepción "procesada" (`isProcessed()` = todo salvo `pending`): no se cambian categorías ni checklist, no se elimina.
 * Valor del checklist según el tipo del ítem: `boolean` → booleano, `number` → numérico, `text` → `good|bad|na`.
   El estado del checklist se calcula (`pending`, `in_progress`, `completed`).
-* Estados: hoy solo la entrega cambia la recepción (`delivered`); ver handoff 2.7 y deuda técnica #2.
+* **Estado derivado del flujo** (`ReceptionStatusService::sync()`, nunca se asigna a mano salvo entrega y cancelación):
+  alguna OT `in_progress|paused` → `repair` ("En reparación"); alguna OT `pending` → `in_progress` ("En proceso");
+  OT completadas (resto canceladas) → `completed` ("Terminado"); sin OT vigentes → `in_progress` si tiene presupuesto,
+  si no `pending`. Se recalcula al crear/eliminar presupuestos y al crear, iniciar, pausar, reanudar, completar o
+  cancelar OT. `delivered` y `cancelled` no se recalculan. La migración 000045 repite la regla en SQL.
+* Cancelar (`POST receptions/{reception}/cancel`, motivo obligatorio, permiso `receptions.cancel`): solo sin OT vigentes
+  (`RECEPTION_HAS_ACTIVE_WORK_ORDERS`); cerrada → `RECEPTION_NOT_CANCELLABLE`. Guarda `cancelled_at`, `cancelled_by` y
+  `cancellation_reason`.
+* Recepción cerrada (`delivered|cancelled`): no admite diagnósticos, presupuestos ni OT nuevos (`RECEPTION_CLOSED`).
 * Fotos en el disco `public` (`receptions/`), con scoped binding a la recepción.
 
 ### 6.3 Diagnóstico
@@ -318,6 +327,6 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 
 ## 7. Deuda técnica conocida
 
-Ver `docs/handoff.md`, sección 14 (estados de recepción sin transiciones, errores sin `error_code`, IVA del
+Ver `docs/handoff.md`, sección 14 (errores sin `error_code`, IVA del
 presupuesto con `float`, middleware `EnsureJsonResponse` sin registrar, seeders no idempotentes, entre otros). No
 corregir sin decisión previa del usuario.

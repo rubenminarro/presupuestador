@@ -334,6 +334,31 @@ Esperado: `201` → `reception_id`.
 
 > Recepción **abierta** = cualquier estado salvo `delivered` y `cancelled` (`pending`, `in_progress`, `repair`, `completed`). Un vehículo no puede tener dos abiertas.
 
+> **Estado derivado del flujo:** la recepción nace `pending` y cambia sola: crear un presupuesto → `in_progress` ("En proceso"); iniciar una OT → `repair` ("En reparación"); completar sus OT → `completed` ("Terminado"); entregar → `delivered`. Se verifica en P.1, O.3 y O.4. Ver el estado en `GET {{base_url}}/receptions/{{reception_id}}` → `data.status`.
+
+### M.6b Cancelar una recepción
+
+Crear una recepción descartable con el segundo vehículo del cliente (body de M.6 con `"vehicle_id": {{vehicle2_id}}`) → `201` → `reception_cancel_id`, `status.value` `pending`.
+
+`POST {{base_url}}/receptions/{{reception_cancel_id}}/cancel`
+
+```json
+{ "reason": "El cliente desistio" }
+```
+
+Esperado: `200`, `status.value` `cancelled` ("Cancelado"), `cancellation_reason` informado, `cancelled_at` y `cancelled_by` informados.
+
+| Caso | Método / Endpoint | Body | HTTP | error_code |
+|---|---|---|---|---|
+| Sin motivo | `POST .../receptions/{{reception_cancel_id}}/cancel` | `{}` | 422 | `VALIDATION_ERROR` (`errors.reason`) |
+| Cancelar otra vez | mismo endpoint | `{ "reason": "x" }` | 422 | `RECEPTION_NOT_CANCELLABLE` |
+| Presupuestar sobre la cancelada | `POST {{base_url}}/budgets` | `{ "reception_id": {{reception_cancel_id}} }` | 422 | `RECEPTION_CLOSED` |
+| Diagnosticar sobre la cancelada | `POST {{base_url}}/diagnostics` | `{ "reception_id": {{reception_cancel_id}}, "mechanic_id": {{mechanic_id}}, "requires_parts": false, "requires_repair": true }` | 422 | `RECEPTION_CLOSED` |
+| Con OT vigentes | sobre una recepción con una OT no cancelada (por ejemplo `{{reception_id}}` después de O.1) | `{ "reason": "x" }` | 422 | `RECEPTION_HAS_ACTIVE_WORK_ORDERS` |
+| Mecánico (token = `{{token_mec}}`) | `POST .../receptions/{{reception_id}}/cancel` | `{ "reason": "x" }` | 403 | `FORBIDDEN` |
+
+> Una recepción cancelada no cuenta como abierta: el vehículo puede volver a ingresar.
+
 ### M.7 Obtener mecánico
 
 `GET {{base_url}}/mechanics`
@@ -355,6 +380,8 @@ Token: administrador.
 ```
 
 Esperado: `201`, `status` `draft`, código `BUD-XXXXXX` → `budget_id`.
+
+Estado de la recepción: `GET {{base_url}}/receptions/{{reception_id}}` → `status.value` `in_progress` ("En proceso"). Desde ahora la recepción está procesada: `PATCH {{base_url}}/receptions/{{reception_id}}` con `{ "service_category_ids": [1] }` → `422`.
 
 ### P.2 Agregar ítem de mano de obra
 
@@ -451,7 +478,7 @@ Body vacío en todos los casos.
 |---|---|---|---|
 | Pausar en `pending` | `POST {{base_url}}/work-orders/{{work_order_id}}/pause` | 422 | `WORK_ORDER_NOT_PAUSABLE` |
 | Iniciar ítem con OT `pending` | `POST {{base_url}}/work-orders/{{work_order_id}}/items/{{work_order_item_id}}/start` | 422 | `WORK_ORDER_NOT_IN_PROGRESS` |
-| Iniciar | `POST {{base_url}}/work-orders/{{work_order_id}}/start` | 200 | `in_progress` |
+| Iniciar | `POST {{base_url}}/work-orders/{{work_order_id}}/start` | 200 | `in_progress`; la recepción pasa a `repair` ("En reparación") |
 | Iniciar otra vez | `POST {{base_url}}/work-orders/{{work_order_id}}/start` | 409 | `WORK_ORDER_NOT_STARTABLE` |
 | Cancelar en progreso | `POST {{base_url}}/work-orders/{{work_order_id}}/cancel` | 422 | `WORK_ORDER_NOT_CANCELLABLE` |
 | Reanudar sin pausar | `POST {{base_url}}/work-orders/{{work_order_id}}/resume` | 422 | `WORK_ORDER_NOT_RESUMABLE` |
@@ -475,7 +502,7 @@ Completar todos los ítems y luego:
 
 | Paso | Método / Endpoint | HTTP | Resultado / error_code |
 |---|---|---|---|
-| Completar OT | `POST {{base_url}}/work-orders/{{work_order_id}}/complete` | 200 | `completed`, `completed_at` informado |
+| Completar OT | `POST {{base_url}}/work-orders/{{work_order_id}}/complete` | 200 | `completed`, `completed_at` informado; la recepción pasa a `completed` ("Terminado") si no tiene otras OT vigentes |
 | Iniciar OT completada | `POST {{base_url}}/work-orders/{{work_order_id}}/start` | 409 | `WORK_ORDER_NOT_STARTABLE` |
 | Pausar OT completada | `POST {{base_url}}/work-orders/{{work_order_id}}/pause` | 422 | `WORK_ORDER_NOT_PAUSABLE` |
 
@@ -1990,7 +2017,7 @@ Casos de error:
 
 1. Crear una recepción nueva para el mismo vehículo de la entrega (body de M.6 con ese `client_id` y `vehicle_id`) → `201` → `returned_reception_id`. Se permite porque la recepción anterior está `delivered`.
 2. `POST {{base_url}}/vehicle-deliveries/{{delivery_id}}/cancel` con `{ "reason": "Se registro por error" }` → `409 DELIVERY_VEHICLE_HAS_OPEN_RECEPTION` (anular reabriría la recepción anterior y el vehículo tendría dos abiertas). La entrega sigue vigente.
-3. `DELETE {{base_url}}/receptions/{{returned_reception_id}}` → `200` (se puede eliminar porque está `pending`).
+3. `POST {{base_url}}/receptions/{{returned_reception_id}}/cancel` con `{ "reason": "Ingreso duplicado" }` → `200` (o `DELETE {{base_url}}/receptions/{{returned_reception_id}}`, permitido porque está `pending`).
 
 Ahora sí, anular:
 
@@ -2000,7 +2027,7 @@ Ahora sí, anular:
 { "reason": "Se registro por error" }
 ```
 
-Esperado: `200`, `status.value` `cancelled`, `cancellation_reason` informado, `reception.status` vuelve a `pending`. El kilometraje del vehículo se conserva.
+Esperado: `200`, `status.value` `cancelled`, `cancellation_reason` informado, `reception.status` vuelve a su estado anterior, `completed` ("Terminado": sus OT están completadas). El kilometraje del vehículo se conserva.
 
 | Caso | Body | HTTP | error_code |
 |---|---|---|---|

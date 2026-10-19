@@ -15,7 +15,7 @@ enum ReceptionStatus: string
     public function label(): string {
         return match($this) {
             self::PENDING => 'Pendiente',
-            self::IN_PROGRESS => 'En reparación',
+            self::IN_PROGRESS => 'En proceso',
             self::REPAIR => 'En reparación',
             self::COMPLETED => 'Terminado',
             self::DELIVERED => 'Entregado',
@@ -35,5 +35,22 @@ enum ReceptionStatus: string
     public function isOpen(): bool
     {
         return in_array($this, self::openStatuses(), true);
+    }
+
+    /**
+     * Entregada o cancelada: no admite diagnósticos, presupuestos ni OT nuevos.
+     */
+    public function isClosed(): bool
+    {
+        return !$this->isOpen();
+    }
+
+    /**
+     * Procesada: ya avanzó en el flujo. No se cambian categorías ni checklist
+     * y no se elimina.
+     */
+    public function isProcessed(): bool
+    {
+        return $this !== self::PENDING;
     }
 }

@@ -1060,10 +1060,33 @@ Una recepción que ya avanzó en el flujo no debe permitir modificaciones incomp
 Esta lógica fue revisada durante la auditoría de excepciones.
 
 > **Verificado (v1.2).** `ReceptionStatus` tiene `pending, in_progress, repair, completed, delivered, cancelled`.
-> Ningún endpoint asigna `in_progress`, `repair`, `completed` ni `cancelled`: la recepción nace `pending` y solo la
-> entrega (FASE 17) la pasa a `delivered` (y la anulación de la entrega la devuelve al estado anterior). Las reglas
-> "recepción procesada" (no editar categorías ni checklist, no eliminar) se aplican a `in_progress`, `completed` y
-> `delivered`. Ver sección 14.
+> Ningún endpoint asignaba `in_progress`, `repair`, `completed` ni `cancelled`: la recepción nacía `pending` y solo la
+> entrega (FASE 17) la pasaba a `delivered`. Ver sección 14.
+
+## Estados de la recepción (2026-10-19)
+
+Decisión: el estado **se deriva del flujo** en lugar de asignarse con un endpoint por transición, para que nunca quede
+desincronizado de las OT. Solo la entrega (`delivered`) y la cancelación manual (`cancelled`) lo fijan.
+
+```text
+pending      --crear presupuesto-->        in_progress  (En proceso)
+in_progress  --iniciar/reanudar una OT-->  repair       (En reparación; también con la OT pausada)
+repair       --completar la(s) OT-->       completed    (Terminado: todas completadas o canceladas)
+completed    --nueva OT (trabajo extra)--> in_progress
+completed    --entregar-->                 delivered    (FASE 17; anular la entrega vuelve al estado anterior)
+pending|in_progress|completed --cancelar (sin OT vigentes)--> cancelled
+```
+
+* `ReceptionStatusService::sync()` recalcula: alguna OT `in_progress|paused` → `repair`; alguna `pending` →
+  `in_progress`; completadas (resto canceladas) → `completed`; sin OT vigentes → `in_progress` con presupuesto o
+  `pending` sin él. Se llama al crear/eliminar presupuestos y en cada cambio de estado de una OT.
+* Se eligió **crear el presupuesto** (y no el diagnóstico) como inicio del proceso: el checklist puede completarse
+  durante el diagnóstico; al presupuestar se congela.
+* "Procesada" = todo salvo `pending` (antes `in_progress|completed|delivered`, sin `repair` ni `cancelled`).
+* `IN_PROGRESS` pasó a mostrarse "En proceso" (antes "En reparación", igual que `REPAIR`); el `value` no cambió.
+* Cancelación (`receptions.cancel`, recepcionista y administrador): motivo obligatorio; columnas `cancelled_at`,
+  `cancelled_by`, `cancellation_reason` (migración 000045, que además recalcula en SQL las recepciones existentes).
+* Recepción cerrada: diagnósticos, presupuestos y OT nuevos → `RECEPTION_CLOSED`.
 
 ---
 
@@ -3362,7 +3385,7 @@ cada una necesita una decisión antes de tocar el código.
 | # | Tema | Evidencia | Efecto |
 |---|---|---|---|
 | 1 | ~~Validación de "recepción abierta" con estados inexistentes~~ **Resuelto el 2026-10-19** | Las Requests buscaban `pending, diagnosis, approved, in_progress, waiting_parts` (strings; tres no existen en `ReceptionStatus`, faltaban `repair` y `completed`) | Ahora usan `ReceptionStatus::openStatuses()` (todo salvo `delivered`/`cancelled`). Al editar solo se valida si la recepción editada está abierta. Además, anular una entrega que reabriría la recepción cuando el vehículo ya tiene otra abierta → `DELIVERY_VEHICLE_HAS_OPEN_RECEPTION` (409) |
-| 2 | Estados de recepción sin transiciones | Ningún endpoint asigna `in_progress`, `repair`, `completed` ni `cancelled` (solo `VehicleDeliveryService` asigna `delivered`) | Las reglas "recepción procesada" (2.7) solo se disparan con datos cargados por fuera de la API; `DELIVERY_RECEPTION_CANCELLED` no puede ocurrir por la API |
+| 2 | ~~Estados de recepción sin transiciones~~ **Resuelto el 2026-10-19** | Ningún endpoint asignaba `in_progress`, `repair`, `completed` ni `cancelled` | Ahora el estado se deriva de presupuestos y OT (`ReceptionStatusService::sync()`) y existe la cancelación manual (`POST receptions/{reception}/cancel`). Ver 2.7 |
 | 3 | Estados de OT sin uso | `WorkOrderStatus::WAITING_PARTS` y `::DELIVERED` no se asignan en ningún Service | Sin efecto; documentado en 2.15 |
 | 4 | Errores sin `error_code` | `ReceptionController` (categorías de recepción procesada, eliminar recepción procesada), `ReceptionCheckListController` (checklist de recepción procesada) y `DiagnosticItemPhotoController` (actualizar sin datos) llaman a `errorResponse(mensaje, 422)` sin código | Responden `422` con `error_code: null`, contra el contrato de 3.11/3.12 |
 | 5 | IVA del presupuesto con `float` | `BudgetService::recalculateBudget()`: `$tax = $subtotal * $taxRate` con `config('budget.tax_rate') = 0.10` | Contradice la regla BCMath; posibles centavos de diferencia. Además hay dos fuentes de IVA: `config/budget.php` (0.10) y `config/invoice.php` (`default_tax_rate = 10`) |
