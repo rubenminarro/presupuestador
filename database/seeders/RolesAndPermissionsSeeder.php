@@ -283,6 +283,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'supplier-payments.cancel',
             'supplier-payments.summary',
             'accounts-payable.view',
+
+            /* client notification permissions */
+            'client-notifications.index',
+            'client-notifications.show',
+            'client-notifications.resend',
         ];
 
         foreach ($permissions as $permission) {
@@ -415,6 +420,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'vehicle-history.view',
                     'maintenance-plans.index', 'maintenance-plans.show',
                     'vehicle-maintenances.index', 'vehicle-maintenances.record', 'maintenance-alerts.index',
+                    'client-notifications.index', 'client-notifications.show', 'client-notifications.resend',
                     'dashboard.view', 'reports.budgets',
                 ],
             ],
@@ -467,6 +473,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'supplier-payments.cancel', 'supplier-payments.summary', 'accounts-payable.view',
                     'vehicle-deliveries.index', 'vehicle-deliveries.show',
                     'vehicle-history.view',
+                    'client-notifications.index', 'client-notifications.show', 'client-notifications.resend',
                     'dashboard.view', 'reports.sales', 'reports.clients',
                 ],
             ],

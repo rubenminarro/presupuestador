@@ -2556,6 +2556,93 @@ VALIDATION_ERROR`.
 
 ---
 
+## FASE 23 — Notificaciones
+
+Token: administrador. Los emails salen por cola: en desarrollo, con `MAIL_MAILER=log` y `php artisan queue:work`
+corriendo, cada email aparece en `storage/logs/laravel.log` y el aviso pasa de `pending` a `sent`. Sin `queue:work`
+queda `pending`.
+
+### 23.1 Baja de avisos del cliente
+
+`PATCH {{base_url}}/clients/{{client_id}}` con `{ "notifications_enabled": false }` → `200`,
+`data.notifications_enabled` `false`. Volver a `true` para seguir. Con `"notifications_enabled": "x"` → `422
+VALIDATION_ERROR`.
+
+### 23.2 Presupuesto enviado
+
+Con un presupuesto en borrador con ítems de un cliente con email: `POST {{base_url}}/budgets/{{budget_id}}/send` →
+`200`. Luego `GET {{base_url}}/clients/{{client_id}}/notifications` → `200`, `data.0.type.value` `budget_sent`,
+`recipient` el email del cliente, `status.value` `sent` (o `pending` si la cola no corre). Guardar `data.0.id` →
+`client_notification_id`.
+
+| Caso | Resultado esperado |
+|---|---|
+| Cliente sin email | Aviso `skipped`, `error` "El cliente no tiene email registrado." |
+| Cliente con `notifications_enabled = false` | Aviso `skipped`, `error` "El cliente desactivó los avisos." |
+| Rechazar, reabrir y volver a enviar | Un aviso nuevo por cada envío |
+| Falla el servidor de correo | El envío del presupuesto responde `200`; el aviso queda `failed` con el error |
+
+### 23.3 Vehículo listo
+
+Al completar la última OT vigente de la recepción (`POST work-orders/{{work_order_id}}/complete`), la recepción pasa a
+`completed` y se registra un aviso `vehicle_ready` (`subject.type` `reception`). Uno por recepción: si vuelve a
+reparación y se completa de nuevo, no se repite (usar el reenvío).
+
+### 23.4 Recordatorios diarios
+
+`php artisan notifications:send-reminders` (lo corre el scheduler a la hora de `config/notifications.php`) imprime la
+cantidad de avisos registrados. Se puede ejecutar varias veces: no repite avisos.
+
+| Situación | Aviso |
+|---|---|
+| Factura emitida a crédito con saldo que vence en 0 a 3 días | `invoice_due_soon` (una vez) |
+| Factura vencida con saldo | `invoice_overdue` el primer día y cada 7 días |
+| Mantenimiento por vencer / vencido (ver `GET maintenance/alerts`) | `maintenance_due_soon` / `maintenance_overdue`, uno por estado y ciclo |
+| Compras con saldo vencido | Aviso interno `accounts_payable_overdue` a cada cajero, uno por día |
+
+### 23.5 Listado, detalle y reenvío
+
+| Caso | Método / Endpoint | Body | HTTP | Resultado / error_code |
+|---|---|---|---|---|
+| Todos | `GET {{base_url}}/client-notifications` | — | 200 | `meta.pagination`, con `client_name` |
+| Filtros | `GET {{base_url}}/client-notifications?client_id={{client_id}}&type=budget_sent&status=sent&date_from=2026-10-01&date_to=2026-10-31` | — | 200 | Filtrado |
+| Tipo inválido | `GET {{base_url}}/client-notifications?type=x` | — | 422 | `VALIDATION_ERROR` |
+| Detalle | `GET {{base_url}}/client-notifications/{{client_notification_id}}` | — | 200 | `client` (con `notifications_enabled`), `subject.code`, `attempts`, `error`, `created_by` |
+| Reenviar | `POST {{base_url}}/client-notifications/{{client_notification_id}}/resend` | — | 201 | Aviso nuevo con `resent_from_id` y `created_by` |
+| Reenviar con el cliente sin email | ídem | — | 422 | `CLIENT_WITHOUT_EMAIL` |
+| Reenviar con la baja activada | ídem | — | 422 | `CLIENT_NOTIFICATIONS_DISABLED` |
+| Reenviar un aviso todavía en cola | ídem (aviso `pending`) | — | 409 | `CLIENT_NOTIFICATION_PENDING` |
+| Reenviar con el documento eliminado | ídem | — | 422 | `CLIENT_NOTIFICATION_SUBJECT_UNAVAILABLE` |
+
+### 23.6 Bandeja interna
+
+Los avisos internos llegan a los usuarios de los roles configurados: presupuesto aprobado/rechazado → recepcionista y
+jefe-taller; OT completada → cajero y recepcionista; repuesto sin stock al crear la OT o agregar un repuesto → depósito
+y jefe-taller; cuentas por pagar vencidas → cajero. El administrador no los recibe.
+
+Con `{{token_caja}}` después de completar una OT:
+
+| Caso | Método / Endpoint | HTTP | Resultado |
+|---|---|---|---|
+| Mis avisos | `GET {{base_url}}/me/notifications` | 200 | `type.value` `work_order_completed`, `title`, `message`, `subject` (`type`, `id`, `code`), `read_at` `null`; `meta.unread_count` |
+| Solo no leídos | `GET {{base_url}}/me/notifications?unread=1` | 200 | — |
+| Por tipo | `GET {{base_url}}/me/notifications?type=work_order_completed` | 200 | — |
+| Marcar uno | `PATCH {{base_url}}/me/notifications/{id}/read` | 200 | `read_at` con fecha |
+| Marcar todos | `POST {{base_url}}/me/notifications/read-all` | 200 | `data.marked_count` |
+| Aviso de otro usuario | `PATCH {{base_url}}/me/notifications/{id-ajeno}/read` | 404 | `RESOURCE_NOT_FOUND` |
+
+### 23.7 Permisos
+
+| Token | Puede | 403 `FORBIDDEN` en |
+|---|---|---|
+| `{{token_caja}}` | `client-notifications/*` (listar, ver, reenviar) | — |
+| `{{token_mec}}` | su bandeja `me/notifications` | `client-notifications/*`, `clients/{id}/notifications` |
+
+> La recepcionista tiene los mismos permisos que el cajero sobre los avisos a clientes. La bandeja `me/notifications`
+> no requiere permisos.
+
+---
+
 ## Errores HTTP genéricos
 
 | Caso | Método / Endpoint | Body | HTTP | error_code |

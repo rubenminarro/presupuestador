@@ -51,6 +51,10 @@ class UpdateClientRequest extends FormRequest
                 'sometimes',
                 'regex:/^\+?[1-9]\d{7,14}$/'
             ],
+            'notifications_enabled' => [
+                'sometimes',
+                'boolean',
+            ],
             'notes' => [
                 'sometimes', 
                 'string', 
@@ -90,6 +94,9 @@ class UpdateClientRequest extends FormRequest
             ],
             'phone' => [
                 'regex'    => 'El teléfono debe tener un formato válido (opcionalmente con un + al inicio, seguido de 8 a 15 dígitos).',
+            ],
+            'notifications_enabled' => [
+                'boolean' => 'El campo de avisos debe ser verdadero o falso.',
             ],
             'notes' => [
                 'string' => 'Las notas deben tener el formato correcto.',

@@ -16,6 +16,7 @@ class ShowClientResource extends JsonResource
             'last_name' => $this->last_name,
             'phone' => $this->phone,
             'email' => $this->email,
+            'notifications_enabled' => $this->notifications_enabled,
             'notes' => $this->notes,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

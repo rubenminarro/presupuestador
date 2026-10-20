@@ -6,7 +6,7 @@
 **Fecha:** 2026-10-17
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
-FASE 22 (pagos a proveedores); 6 roles; 268 tests en verde (2026-10-20)
+FASE 22 (pagos a proveedores), FASE 23 (notificaciones); 6 roles; 283 tests en verde (2026-10-20)
 **Stack principal:** Laravel 12.56 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -402,6 +402,9 @@ También se completaron:
 * **FASE 18 — Historial del vehículo:** ver sección 2.31.
 * **FASE 19 — Mantenimiento preventivo:** ver sección 2.32.
 * **FASE 20 — Reportes y dashboard:** ver sección 2.33.
+* **FASE 21 — Compras:** ver sección 2.34.
+* **FASE 22 — Pagos a proveedores:** ver sección 2.35.
+* **FASE 23 — Notificaciones:** ver sección 2.36.
 
 ---
 
@@ -815,7 +818,7 @@ Reglas:
 * Estado: vence por km o por fecha, lo que ocurra primero. `overdue` si faltan ≤ 0 km o la fecha pasó; `due_soon`
   dentro de los umbrales de `config/maintenance.php`; `unknown` si nunca se registró (no genera alerta).
 * Alertas: solo planes activos, vehículos no eliminados y mantenimientos con registro; vencidos primero, con datos de
-  contacto del cliente. Los avisos automáticos (email/WhatsApp) quedan para el módulo de notificaciones.
+  contacto del cliente. Los avisos automáticos por email se agregaron en la FASE 23 (ver 2.36).
 * La ruta `PATCH vehicles/{vehicle}/maintenances/{maintenancePlan}` usa `withoutScopedBindings()`: el plan no es una
   relación del vehículo.
 
@@ -934,6 +937,75 @@ las facturas; el banco es obligatorio solo en cheque, igual que en los cobros.
 
 Tests: `tests/Feature/Purchases/SupplierPaymentTest`. El helper `InventoryTestCase::purchase()` acepta además
 `supplier_document_date`, `condition` y `due_date`.
+
+---
+
+# 2.36 Notificaciones (FASE 23, 2026-10-20)
+
+Avisos a clientes por email y bandeja interna para el personal. Decisiones del usuario:
+
+| Tema | Decisión |
+|---|---|
+| Destinatarios | Clientes (canal externo) y personal (bandeja en la app) |
+| Canal | Email ahora; WhatsApp en otra fase. El canal es un enum (`NotificationChannel::MAIL`) y el contenido se arma aparte del canal (`ClientNotificationService::content()`) |
+| Avisos al cliente | Presupuesto enviado, vehículo listo, factura a crédito por vencer / vencida, mantenimiento próximo / vencido |
+| Avisos internos | Presupuesto aprobado/rechazado (recepcionista, jefe-taller), OT completada (cajero, recepcionista), repuesto sin stock en una OT (depósito, jefe-taller), cuentas por pagar vencidas (cajero) |
+| Disparo | Automático, con reenvío manual; cada envío queda registrado |
+| Facturas | Un aviso hasta 3 días antes del vencimiento; vencida, uno cada 7 días mientras tenga saldo |
+| Mantenimiento | Un aviso al pasar a "por vencer" y otro al vencer, por ciclo (se reinicia al registrar el servicio) |
+| Baja | General por cliente (`clients.notifications_enabled`, por defecto `true`) |
+
+Datos (migración `000048`):
+- `notifications`: tabla estándar de Laravel; `User` usa `Notifiable`.
+- `client_notifications`: campos
+  - `client_id`, `type` (`ClientNotificationType`), `channel`;
+  - el documento de origen como `subject` polimórfico, con los alias `budget`, `reception`, `invoice` y `vehicle_maintenance` agregados al morphMap;
+  - `recipient` (copia del email), `status` (`pending|sent|failed|skipped`, `ClientNotificationStatus`), `error`, `attempts`, `sent_at`;
+  - `dedupe_key` único (nulo en los avisos que pueden repetirse);
+  - `resent_from_id`, `created_by` (quien reenvió).
+- `clients.notifications_enabled`.
+
+Flujo:
+- **Dónde se registran los avisos:** dentro de la transacción del evento.
+  - `BudgetService::send`: un aviso en cada envío, también después de reabrir.
+  - `ReceptionStatusService::sync`: cuando la recepción pasa a `completed`, con la clave `vehicle_ready:{id}` (un aviso por recepción).
+  - `approve`/`reject`, `WorkOrderService::complete` y `WorkOrderPartService::tryReserve` (cuando la reserva falla por falta de stock): avisos internos.
+- **Envío por cola:** `SendClientNotification` se despacha con `afterCommit`, así un rollback no deja correos enviados.
+- **Omitidos:** un cliente sin email o con la baja activada queda `skipped` con el motivo. No es un error.
+- **Fallos:** `ClientNotificationService::deliver()` registra el fallo como `failed` y no lanza excepción, así no rompe la operación que originó el aviso. No hay reintentos: el aviso se reenvía a mano.
+- **Avisos internos:** se guardan sincrónicamente (canal `database`) con `WorkshopNotification`. `notifications.type` guarda `InternalNotificationType` por medio de `databaseType()`. Los destinatarios son los usuarios de los roles definidos en `config/notifications.php`; si un rol no existe, se ignora. El administrador no recibe avisos internos salvo que se agregue su rol a esa configuración.
+- **Tarea diaria:** `notifications:send-reminders` (`NotificationReminderService`) está programada en `routes/console.php` a la hora `notifications.reminders_at`. Revisa:
+  - facturas `issued` a crédito con saldo, con las claves `invoice_due_soon:{id}` e `invoice_overdue:{id}:{período}`;
+  - las alertas de mantenimiento (`MaintenanceService::alerts`), con la clave `{tipo}:{vehicle_maintenance_id}:{last_done_at}`;
+  - cuentas por pagar vencidas (`SupplierPaymentService::accountsPayable`): un aviso interno por usuario y día.
+
+  Se puede correr varias veces por día sin repetir avisos. Para funcionar en el servidor hacen falta `php artisan schedule:run` cada minuto y `php artisan queue:work`.
+
+Reenvío (`POST client-notifications/{id}/resend`): crea otro registro con el contenido actual del documento. Errores:
+- `CLIENT_NOTIFICATION_PENDING` (409): el aviso todavía está en cola.
+- `CLIENT_NOTIFICATION_SUBJECT_UNAVAILABLE` (422): el documento o el cliente fueron eliminados.
+- `CLIENT_NOTIFICATIONS_DISABLED` (422) y `CLIENT_WITHOUT_EMAIL` (422).
+
+Todas las excepciones son `NotificationException`.
+
+Endpoints:
+- `GET client-notifications`, con filtros `client_id`, `type`, `status`, `date_from`, `date_to` y `per_page`.
+- `GET client-notifications/{clientNotification}`.
+- `POST client-notifications/{clientNotification}/resend`.
+- `GET clients/{client}/notifications`.
+- Permisos `client-notifications.index|show|resend`, otorgados a recepcionista y cajero.
+- Bandeja interna, sin permisos y solo con los avisos propios (los ajenos responden 404): `GET me/notifications` (filtros `unread` y `type`; `meta.unread_count`), `PATCH me/notifications/{id}/read` y `POST me/notifications/read-all`.
+- Los recursos de cliente suman `notifications_enabled`, editable en el alta y la edición del cliente.
+
+Componentes:
+- Services: `ClientNotificationService`, `InternalNotificationService`, `NotificationReminderService`.
+- Controllers: `ClientNotificationController`, `UserNotificationController`.
+- Modelo `ClientNotification`, job `SendClientNotification`, mailable `ClientNotificationMail` (vista `mail.client-notification`), notificación `WorkshopNotification`, comando `SendNotificationReminders`.
+- Requests `IndexClientNotificationRequest` e `IndexUserNotificationRequest`; resources `ClientNotificationResource`, `ShowClientNotificationResource` y `UserNotificationResource`.
+
+Fuera de alcance: WhatsApp/SMS, preferencias de aviso por tipo, plantillas editables y reintentos automáticos.
+
+Tests: `tests/Feature/Notifications/ClientNotificationTest`, `InternalNotificationTest` y `NotificationReminderTest`.
 
 ---
 
@@ -3281,14 +3353,14 @@ La arquitectura objetivo es:
 El proyecto actualmente se encuentra en:
 
 ```text
-FASE 22 — PAGOS A PROVEEDORES — IMPLEMENTADA (2026-10-20, ver 2.35)
+FASE 23 — NOTIFICACIONES — IMPLEMENTADA (2026-10-20, ver 2.36)
 ```
 
-Con la FASE 20 se completó el roadmap original (FASES 10–20); después se implementaron compras (FASE 21) y pagos a
-proveedores (FASE 22). Siguen sin fase asignada, a priorizar:
+Con la FASE 20 se completó el roadmap original (FASES 10–20); después se implementaron compras (FASE 21), pagos a
+proveedores (FASE 22) y notificaciones por email y bandeja interna (FASE 23). Siguen sin fase asignada, a priorizar:
 
 ```text
-Notificaciones (presupuesto enviado, vehículo listo, pago pendiente, mantenimiento próximo)
+Notificaciones por WhatsApp (el canal ya está previsto en NotificationChannel)
 Exportación de reportes (CSV / PDF) y comprobantes imprimibles (factura, recibo, entrega)
 Auditoría avanzada (AuditLog de precios, stock, facturación y pagos)
 Frontend React 19 (consumo de esta API)
@@ -3402,12 +3474,13 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 [✓] Reportes y dashboard por área (FASE 20)
 [✓] Compras con IVA incluido e ingreso de stock (FASE 21)
 [✓] Pagos a proveedores y cuentas por pagar (FASE 22)
+[✓] Notificaciones por email y bandeja interna (FASE 23)
 ```
 
 ## Próximo
 
 ```text
-[ ] Notificaciones
+[ ] Notificaciones por WhatsApp
 [ ] Exportación de reportes y comprobantes
 [ ] Auditoría avanzada
 ```

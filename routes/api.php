@@ -44,6 +44,8 @@ use App\Http\Controllers\Api\InventoryMovementController;
 use App\Http\Controllers\Api\InventoryOperationController;
 use App\Http\Controllers\Api\PurchaseController;
 use App\Http\Controllers\Api\SupplierPaymentController;
+use App\Http\Controllers\Api\ClientNotificationController;
+use App\Http\Controllers\Api\UserNotificationController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -306,5 +308,20 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::post('supplier-payments/{supplierPayment}/cancel', [SupplierPaymentController::class, 'cancel'])->name('supplier-payments.cancel');
 
     Route::get('accounts-payable', [SupplierPaymentController::class, 'accountsPayable'])->name('accounts-payable');
+
+    Route::get('client-notifications', [ClientNotificationController::class, 'index'])->name('client-notifications.index');
+
+    Route::get('client-notifications/{clientNotification}', [ClientNotificationController::class, 'show'])->name('client-notifications.show');
+
+    Route::post('client-notifications/{clientNotification}/resend', [ClientNotificationController::class, 'resend'])->name('client-notifications.resend');
+
+    Route::get('clients/{client}/notifications', [ClientNotificationController::class, 'clientNotifications'])->name('clients.notifications.index');
+
+    // Bandeja interna del usuario autenticado (sin permisos: solo sus avisos).
+    Route::get('me/notifications', [UserNotificationController::class, 'index'])->name('me.notifications.index');
+
+    Route::post('me/notifications/read-all', [UserNotificationController::class, 'markAllAsRead'])->name('me.notifications.read-all');
+
+    Route::patch('me/notifications/{notification}/read', [UserNotificationController::class, 'markAsRead'])->name('me.notifications.read');
 
 });

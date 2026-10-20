@@ -59,13 +59,14 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 | Historial del vehículo | Resumen, visitas (diagnóstico, OT, repuestos, factura, entrega), repuestos usados y lecturas de kilometraje |
 | Mantenimiento preventivo | Planes por km y/o días, registro automático desde la OT, km actual estimado por uso y alertas de vencimiento |
 | Reportes y dashboard | Dashboard por permisos; reportes de ventas, presupuestos, rentabilidad, productividad, inventario y clientes |
+| Notificaciones | Emails al cliente (presupuesto enviado, vehículo listo, factura por vencer / vencida, mantenimiento próximo / vencido) con registro, reenvío y baja por cliente; bandeja interna por usuario (presupuesto aprobado/rechazado, OT completada, repuesto sin stock, cuentas por pagar vencidas) |
 
 ### Estado real (verificado el 2026-10-20)
 
 | Estado | Qué |
 |---|---|
-| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22) y los módulos base. 208 rutas API y 268 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
-| Pendiente, sin diseño | Notificaciones, exportación de reportes (CSV/PDF) y comprobantes imprimibles, auditoría avanzada |
+| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22), notificaciones (FASE 23) y los módulos base. 215 rutas API y 283 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
+| Pendiente, sin diseño | Notificaciones por WhatsApp, exportación de reportes (CSV/PDF) y comprobantes imprimibles, auditoría avanzada |
 
 ---
 
@@ -112,7 +113,33 @@ ADMIN_PASSWORD=
 
 # Validar que el dominio de los emails exista (DNS); false solo sin red
 EMAIL_DNS_CHECK=true
+
+# Avisos a clientes: con "log" los emails se escriben en storage/logs/laravel.log
+MAIL_MAILER=smtp
+MAIL_HOST=<servidor SMTP>
+MAIL_PORT=587
+MAIL_USERNAME=<usuario>
+MAIL_PASSWORD=<contraseña>
+MAIL_FROM_ADDRESS=<remitente del taller>
+MAIL_FROM_NAME="${APP_NAME}"
+QUEUE_CONNECTION=database
 ```
+
+### Cola y tareas programadas (notificaciones)
+
+Los emails a clientes se envían por cola y los recordatorios diarios (facturas, mantenimientos, cuentas por pagar) los
+genera el scheduler (`notifications:send-reminders`, a la hora de `config/notifications.php`). En el servidor deben
+correr dos procesos:
+
+```bash
+php artisan queue:work          # envía los avisos registrados (dejarlo corriendo, p. ej. como servicio)
+php artisan schedule:run        # cada minuto; en Windows, con el Programador de tareas
+```
+
+En Windows: Programador de tareas → crear tarea que repita cada 1 minuto la acción
+`php C:\laragon\www\presupuestador\artisan schedule:run`. Sin estos procesos los avisos quedan `pending` y los
+recordatorios no se generan. En desarrollo, `composer dev` ya levanta la cola; los recordatorios se pueden probar a
+mano con `php artisan notifications:send-reminders`.
 
 ### Base de datos (MySQL en Laragon)
 
@@ -241,7 +268,7 @@ vendor/bin/phpunit
 composer test
 ```
 
-268 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
+283 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
 consulta DNS de los emails (`EMAIL_DNS_CHECK=false`).
 
 Si `pdo_sqlite` no está habilitado en el `php.ini` de Laragon:

@@ -21,7 +21,8 @@ class WorkOrderService
         protected WorkOrderCommissionService $commissionService,
         protected WorkOrderClosingService $closingService,
         protected MaintenanceService $maintenanceService,
-        protected ReceptionStatusService $receptionStatusService
+        protected ReceptionStatusService $receptionStatusService,
+        protected InternalNotificationService $internalNotificationService
     ) {
     }
 
@@ -280,6 +281,9 @@ class WorkOrderService
 
             // El estado de la recepción se deriva de sus OT.
             $this->receptionStatusService->sync($workOrder->reception_id);
+
+            // Aviso interno: lista para facturar.
+            $this->internalNotificationService->workOrderCompleted($workOrder);
 
             return $workOrder->load([
                 'reception',

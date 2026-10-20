@@ -16,8 +16,20 @@ class Client extends Model
         'last_name',
         'phone',
         'email',
+        'notifications_enabled',
         'notes',
     ];
+
+    protected $attributes = [
+        'notifications_enabled' => true,
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'notifications_enabled' => 'boolean',
+        ];
+    }
 
     public function vehicles(): HasMany
     {
@@ -27,5 +39,10 @@ class Client extends Model
     public function receptions(): HasMany
     {
         return $this->hasMany(Reception::class);
+    }
+
+    public function clientNotifications(): HasMany
+    {
+        return $this->hasMany(ClientNotification::class);
     }
 }

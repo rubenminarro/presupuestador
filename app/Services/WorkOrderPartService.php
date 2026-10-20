@@ -22,7 +22,8 @@ use Illuminate\Support\Facades\DB;
 class WorkOrderPartService
 {
     public function __construct(
-        protected InventoryService $inventoryService
+        protected InventoryService $inventoryService,
+        protected InternalNotificationService $internalNotificationService
     ) {
     }
 
@@ -260,7 +261,8 @@ class WorkOrderPartService
     }
 
     /**
-     * Reserva si hay stock; si no alcanza, la línea queda pendiente.
+     * Reserva si hay stock; si no alcanza, la línea queda pendiente y se
+     * avisa a depósito.
      */
     private function tryReserve(WorkOrderPart $line, Part $part): void
     {
@@ -270,6 +272,8 @@ class WorkOrderPartService
             if ($e->getErrorCode() !== 'INSUFFICIENT_STOCK') {
                 throw $e;
             }
+
+            $this->internalNotificationService->partOutOfStock($line, $part);
 
             return;
         }

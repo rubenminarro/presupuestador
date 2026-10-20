@@ -48,6 +48,10 @@ class StoreClientRequest extends FormRequest
                 'required',
                 'regex:/^\+?[1-9]\d{7,14}$/'
             ],
+            'notifications_enabled' => [
+                'sometimes',
+                'boolean',
+            ],
             'notes' => [
                 'nullable', 
                 'string', 
@@ -92,6 +96,9 @@ class StoreClientRequest extends FormRequest
             'phone' => [
                 'required' => 'El teléfono es obligatorio.',
                 'regex'    => 'El teléfono debe tener un formato válido (opcionalmente con un + al inicio, seguido de 8 a 15 dígitos).',
+            ],
+            'notifications_enabled' => [
+                'boolean' => 'El campo de avisos debe ser verdadero o falso.',
             ],
             'notes' => [
                 'string' => 'Las notas deben tener el formato correcto.',

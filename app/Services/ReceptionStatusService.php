@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ClientNotificationType;
 use App\Enums\ReceptionStatus;
 use App\Enums\WorkOrderStatus;
 use App\Exceptions\ReceptionException;
@@ -24,6 +25,11 @@ use Illuminate\Support\Facades\DB;
  */
 class ReceptionStatusService
 {
+    public function __construct(
+        protected ClientNotificationService $clientNotificationService
+    ) {
+    }
+
     /**
      * Recalcula el estado. Llamar dentro de la transacción del evento
      * (orden de bloqueo: OT → recepción).
@@ -42,6 +48,16 @@ class ReceptionStatusService
 
         if ($status !== $reception->status) {
             $reception->update(['status' => $status]);
+
+            // Vehículo listo: un aviso por recepción (si vuelve a reparación no se repite).
+            if ($status === ReceptionStatus::COMPLETED) {
+                $this->clientNotificationService->notify(
+                    ClientNotificationType::VEHICLE_READY,
+                    $reception,
+                    $reception->client,
+                    "vehicle_ready:{$reception->id}"
+                );
+            }
         }
 
         return $reception;

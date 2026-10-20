@@ -16,13 +16,14 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 ## 1. Estado actual (verificado el 2026-10-20)
 
-* **Backend/API:** Laravel 12.56, roadmap original completo (FASES 10–20) compras (FASE 21) y pagos a
-  proveedores (FASE 22). 208 rutas API, 268 tests en verde.
+* **Backend/API:** Laravel 12.56, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
+  proveedores (FASE 22) y notificaciones (FASE 23). 215 rutas API, 283 tests en verde.
 * **Frontend:** **no está en este repositorio.** El handoff prevé React 19, pero no hay código que lo confirme; solo
   CORS y Sanctum están configurados para `http://localhost:5173`. `package.json` y `resources/` son el scaffold de
-  Laravel (Vite + Tailwind) sin uso. No asumir tecnología ni estructura del frontend.
-* **Pendiente (sin diseño ni fase asignada):** notificaciones, exportación de reportes y comprobantes imprimibles,
-  auditoría avanzada, frontend. Ninguno tiene código hoy.
+  Laravel (Vite + Tailwind) sin uso (salvo la vista de email `resources/views/mail/client-notification.blade.php`).
+  No asumir tecnología ni estructura del frontend.
+* **Pendiente (sin diseño ni fase asignada):** notificaciones por WhatsApp, exportación de reportes y comprobantes
+  imprimibles, auditoría avanzada, frontend. Ninguno tiene código hoy.
 
 ---
 
@@ -101,6 +102,9 @@ resultados esperados y casos de error).
   herramientas de edición.
 * No ejecutar `migrate:fresh`, `db:wipe` ni seeders de datos de ejemplo sobre la base de desarrollo sin pedido
   explícito (ver README, sección de base de datos).
+* Notificaciones: los emails salen por cola (`QUEUE_CONNECTION=database`) y los recordatorios por el scheduler; sin
+  `php artisan queue:work` y `php artisan schedule:run` (cada minuto) los avisos quedan `pending` o no se generan.
+  En los tests la cola es `sync` y el mail `array` (`Mail::fake()` para verificar envíos).
 
 ---
 
@@ -112,9 +116,10 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 
 | Carpeta | Contenido |
 |---|---|
-| `app/Http/Controllers/Api` | 43 controllers |
+| `app/Http/Controllers/Api` | 45 controllers |
 | `app/Http/Requests` | Validación (mensajes en español) |
-| `app/Services` | Reglas de negocio (21 services) |
+| `app/Services` | Reglas de negocio (24 services) |
+| `app/Jobs`, `app/Mail`, `app/Notifications`, `app/Console/Commands` | Envío de avisos (FASE 23) |
 | `app/Models` | Modelos Eloquent (muchos con `SoftDeletes`) |
 | `app/Http/Resources` | Contrato JSON |
 | `app/Enums` | Estados y tipos |
@@ -122,7 +127,7 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 | `app/Support/Decimal.php` | Redondeo BCMath |
 | `app/Traits/ApiResponse.php` | `successResponse` / `errorResponse` |
 | `bootstrap/app.php` | Mapeo de excepciones a JSON |
-| `config/invoice.php`, `maintenance.php` | Parámetros de negocio (`invoice.default_tax_rate` es el IVA de presupuestos y facturas) |
+| `config/invoice.php`, `maintenance.php`, `notifications.php` | Parámetros de negocio (`invoice.default_tax_rate` es el IVA de presupuestos y facturas) |
 
 ### Contrato de respuesta
 
@@ -140,7 +145,7 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 * Excepciones de dominio: `BudgetException`, `WorkOrderException`, `WorkOrderPartException`, `PartException`,
   `SupplierException`, `InventoryException`, `ServiceException`, `InvoiceException`, `PaymentException`,
   `VehicleDeliveryException`, `MaintenanceException`, `ReceptionException`, `PurchaseException`,
-  `SupplierPaymentException` (todas extienden `AppException(message, status, errorCode, errors)`).
+  `SupplierPaymentException`, `NotificationException` (todas extienden `AppException(message, status, errorCode, errors)`).
 
 ### Autenticación
 
@@ -155,12 +160,13 @@ Sanctum con tokens Bearer: `POST /api/login` (público) devuelve `data.token`; t
 |---|---|---|
 | `administrador` | Todo (`Gate::before`) | Exclusivo: usuarios/roles/permisos, costos y margen (`work-orders.view-economics`), liquidar comisiones, anular entregas, timbrados, ABM de planes de mantenimiento, reporte de rentabilidad |
 | `mechanic` | Ejecuta la OT | Diagnóstico, iniciar/pausar/completar OT e ítems, consumir/devolver repuestos, sus horas y comisiones, historial, estado de mantenimiento, dashboard (bloque taller) |
-| `recepcionista` | Atiende al cliente | Clientes, vehículos, recepciones, checklist, presupuestos completos, registrar entregas, alertas de mantenimiento, reporte de presupuestos |
+| `recepcionista` | Atiende al cliente | Clientes, vehículos, recepciones, checklist, presupuestos completos, registrar entregas, alertas de mantenimiento, reporte de presupuestos, avisos a clientes (consultar y reenviar) |
 | `jefe-taller` | Organiza el trabajo | OT completas, ítems, repuestos en OT, asignación y horas de todos, diagnóstico, intervalos de mantenimiento por vehículo, reporte de productividad, consulta de compras, pagos a proveedores y cuentas por pagar |
-| `cajero` | Cobra y paga | Facturas, pagos, resumen de caja, reportes de ventas y clientes, consulta de compras, pagos a proveedores completos (registrar, anular, resumen de egresos) y cuentas por pagar |
+| `cajero` | Cobra y paga | Facturas, pagos, resumen de caja, reportes de ventas y clientes, consulta de compras, pagos a proveedores completos (registrar, anular, resumen de egresos), cuentas por pagar y avisos a clientes (consultar y reenviar) |
 | `deposito` | Stock | Repuestos, proveedores, inventario, compras completas, repuestos en OT, reporte de inventario, consulta de pagos a proveedores y cuentas por pagar |
 
 El rol del mecánico se llama `mechanic` (no `mecanico`). Ningún usuario del seeder tiene los cuatro últimos roles.
+La bandeja interna (`me/notifications`) no usa permisos: cada usuario ve solo sus avisos.
 
 ---
 
@@ -368,6 +374,39 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   `payments/summary`).
 * Permisos `supplier-payments.index|show|store|cancel|summary` y `accounts-payable.view`. Fuera de alcance:
   retenciones, notas de crédito del proveedor, anticipos y moneda extranjera.
+
+### 6.17 Notificaciones
+
+* **Avisos al cliente** (`ClientNotification`, solo email: `NotificationChannel::MAIL`):
+  * presupuesto enviado: uno en cada envío;
+  * vehículo listo: cuando la recepción pasa a `completed`, uno por recepción;
+  * factura `issued` a crédito con saldo: uno hasta 3 días antes del vencimiento y, vencida, uno cada 7 días;
+  * mantenimiento: uno por vencer y otro vencido, por ciclo.
+
+  Días y hora de la tarea diaria en `config/notifications.php`.
+* **Registro y envío:** el aviso se registra dentro de la transacción del evento y se envía por cola con `afterCommit`.
+  * Sin email o con `clients.notifications_enabled = false` queda `skipped` con el motivo.
+  * Un fallo de envío queda `failed` sin romper la operación que lo originó. No hay reintentos automáticos.
+  * Los avisos automáticos no se repiten gracias a `dedupe_key` (único).
+* **Reenvío** (`POST client-notifications/{id}/resend`): crea otro registro (`resent_from_id`, `created_by`) con el
+  contenido actual del documento. Errores:
+  * en cola → `CLIENT_NOTIFICATION_PENDING` (409);
+  * documento o cliente eliminado → `CLIENT_NOTIFICATION_SUBJECT_UNAVAILABLE`;
+  * baja → `CLIENT_NOTIFICATIONS_DISABLED`;
+  * sin email → `CLIENT_WITHOUT_EMAIL` (estos tres, 422).
+* **Avisos internos** (tabla `notifications`, `WorkshopNotification`, tipo `InternalNotificationType`), destinatarios por
+  rol en `config/notifications.php`:
+  * presupuesto aprobado/rechazado → recepcionista y jefe-taller;
+  * OT completada → cajero y recepcionista;
+  * repuesto sin stock al reservar → depósito y jefe-taller;
+  * cuentas por pagar vencidas → cajero, una vez por día.
+
+  El administrador no recibe avisos internos salvo que se agregue su rol a la configuración.
+* **Tarea diaria:** `notifications:send-reminders` (facturas, mantenimientos y cuentas por pagar) se puede correr más de
+  una vez por día sin repetir avisos.
+* **Permisos:** `client-notifications.index|show|resend`. La bandeja interna `me/notifications` (filtros `unread`,
+  `type`; `meta.unread_count`), `PATCH me/notifications/{id}/read` y `POST me/notifications/read-all` no usan permisos;
+  un aviso ajeno responde 404.
 
 ---
 

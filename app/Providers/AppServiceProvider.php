@@ -5,7 +5,11 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use App\Models\Budget;
+use App\Models\Invoice;
 use App\Models\PurchaseItem;
+use App\Models\Reception;
+use App\Models\VehicleMaintenance;
 use App\Models\WorkOrderItem;
 use App\Models\WorkOrderPart;
 
@@ -24,13 +28,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Alias para referencias de inventario y orígenes de líneas de factura.
-        // Sin enforce: otras relaciones polimórficas (Spatie) siguen guardando
-        // el nombre de clase.
+        // Alias para referencias de inventario, orígenes de líneas de factura y
+        // documentos que originan avisos a clientes. Sin enforce: otras
+        // relaciones polimórficas (Spatie, notificaciones de usuarios) siguen
+        // guardando el nombre de clase.
         Relation::morphMap([
             'work_order_part' => WorkOrderPart::class,
             'work_order_item' => WorkOrderItem::class,
             'purchase_item' => PurchaseItem::class,
+            'budget' => Budget::class,
+            'reception' => Reception::class,
+            'invoice' => Invoice::class,
+            'vehicle_maintenance' => VehicleMaintenance::class,
         ]);
 
         // Bypass implícito para el rol 'administrador'

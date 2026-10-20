@@ -8,6 +8,7 @@ use App\Models\Part;
 use App\Models\Service;
 use App\Enums\BudgetItemType;
 use App\Enums\BudgetStatus;
+use App\Enums\ClientNotificationType;
 use App\Exceptions\BudgetException;
 use App\Exceptions\PartException;
 use App\Exceptions\ServiceException;
@@ -17,7 +18,9 @@ use Illuminate\Support\Facades\DB;
 class BudgetService
 {
     public function __construct(
-        protected ReceptionStatusService $receptionStatusService
+        protected ReceptionStatusService $receptionStatusService,
+        protected ClientNotificationService $clientNotificationService,
+        protected InternalNotificationService $internalNotificationService
     ) {
     }
 
@@ -68,11 +71,20 @@ class BudgetService
             );
         }
 
-        $budget->update([
-            'status' => BudgetStatus::SENT,
-        ]);
+        return DB::transaction(function () use ($budget) {
+            $budget->update([
+                'status' => BudgetStatus::SENT,
+            ]);
 
-        return $budget->refresh();
+            // Aviso al cliente (cada envío, también tras reabrir).
+            $this->clientNotificationService->notify(
+                ClientNotificationType::BUDGET_SENT,
+                $budget,
+                $budget->reception?->client
+            );
+
+            return $budget->refresh();
+        });
     }
 
     public function approve(Budget $budget): Budget
@@ -93,14 +105,18 @@ class BudgetService
             );
         }
 
-        $this->recalculateBudget($budget);
+        return DB::transaction(function () use ($budget) {
+            $this->recalculateBudget($budget);
 
-        $budget->update([
-            'status' => BudgetStatus::APPROVED,
-            'approved_at' => now(),
-        ]);
+            $budget->update([
+                'status' => BudgetStatus::APPROVED,
+                'approved_at' => now(),
+            ]);
 
-        return $budget->refresh();
+            $this->internalNotificationService->budgetDecided($budget);
+
+            return $budget->refresh();
+        });
     }
 
     public function reject(Budget $budget): Budget
@@ -113,11 +129,15 @@ class BudgetService
             );
         }
 
-        $budget->update([
-            'status' => BudgetStatus::REJECTED,
-        ]);
+        return DB::transaction(function () use ($budget) {
+            $budget->update([
+                'status' => BudgetStatus::REJECTED,
+            ]);
 
-        return $budget->refresh();
+            $this->internalNotificationService->budgetDecided($budget);
+
+            return $budget->refresh();
+        });
     }
 
     public function cancel(Budget $budget): Budget
