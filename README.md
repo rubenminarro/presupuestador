@@ -49,6 +49,7 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 | Presupuestos | Ítems de mano de obra, servicio y repuesto; estados `draft → sent → approved` |
 | Órdenes de trabajo | Nace de un presupuesto aprobado; estados, ítems, mecánico responsable |
 | Repuestos e inventario | Catálogo, proveedores, stock con movimientos inmutables, reservas y consumo en la OT |
+| Compras | Factura del proveedor con IVA incluido (10% / 5% / exento por línea), borrador → recibida (ingresa el stock al costo sin IVA y actualiza el costo del proveedor) → anulada (revierte el stock) |
 | Servicios y mano de obra | Catálogo de servicios, reparto entre mecánicos, horas reales, comisiones |
 | Cierre económico | Al completar la OT se congelan venta, costos, margen y comisiones; liquidación de comisiones |
 | Facturación | Timbrado, numeración `001-001-0000001`, IVA 10% / 5% / exento, contado o crédito |
@@ -58,12 +59,12 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 | Mantenimiento preventivo | Planes por km y/o días, registro automático desde la OT, km actual estimado por uso y alertas de vencimiento |
 | Reportes y dashboard | Dashboard por permisos; reportes de ventas, presupuestos, rentabilidad, productividad, inventario y clientes |
 
-### Estado real (verificado el 2026-10-17; reverificado el 2026-10-19 sin cambios de código)
+### Estado real (verificado el 2026-10-20)
 
 | Estado | Qué |
 |---|---|
-| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20) más los módulos base. 191 rutas API y 253 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
-| Pendiente, sin diseño | Compras (con ingreso de stock), notificaciones, exportación de reportes (CSV/PDF) y comprobantes imprimibles, auditoría avanzada |
+| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21) y los módulos base. 201 rutas API y 260 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
+| Pendiente, sin diseño | Pagos a proveedores, notificaciones, exportación de reportes (CSV/PDF) y comprobantes imprimibles, auditoría avanzada |
 
 ---
 
@@ -239,7 +240,7 @@ vendor/bin/phpunit
 composer test
 ```
 
-253 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
+260 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
 consulta DNS de los emails (`EMAIL_DNS_CHECK=false`).
 
 Si `pdo_sqlite` no está habilitado en el `php.ini` de Laragon:
@@ -269,9 +270,9 @@ API Resource (Resource para listados, ShowResource para detalle)
 
 | Carpeta | Contenido |
 |---|---|
-| `app/Http/Controllers/Api` | Endpoints (41 controllers) |
+| `app/Http/Controllers/Api` | Endpoints (42 controllers) |
 | `app/Http/Requests` | Validación |
-| `app/Services` | Lógica de negocio (19 services) |
+| `app/Services` | Lógica de negocio (20 services) |
 | `app/Models` | Modelos Eloquent |
 | `app/Http/Resources` | Contrato JSON público |
 | `app/Enums` | Estados y tipos |
@@ -280,7 +281,7 @@ API Resource (Resource para listados, ShowResource para detalle)
 | `app/Traits/ApiResponse.php` | Respuestas estándar |
 | `bootstrap/app.php` | Middlewares de permisos y mapeo de excepciones a JSON |
 | `config/invoice.php`, `config/maintenance.php` | Parámetros de negocio (IVA de presupuestos y facturas, decimales, umbrales de mantenimiento) |
-| `routes/api.php` | Rutas de la API (191) |
+| `routes/api.php` | Rutas de la API (201) |
 | `database/migrations`, `database/seeders` | Esquema y datos iniciales/de ejemplo |
 | `tests/Feature` | Tests por módulo |
 | `docs/` | Handoff y guía de Postman |

@@ -62,17 +62,81 @@ class InventoryService
                 'reason' => $data['reason'] ?? null,
             ]);
 
-            if (
-                $type === InventoryMovementType::PURCHASE &&
-                $supplier &&
-                $part->suppliers()->whereKey($supplier->id)->exists()
-            ) {
-                $part->suppliers()->updateExistingPivot($supplier->id, [
-                    'last_cost' => Decimal::round($unitCost, 2),
-                ]);
+            return $this->loadMovement($movement);
+        });
+    }
+
+    /**
+     * Entrada de una línea de compra recibida, al costo sin IVA.
+     * El proveedor ya fue validado por PurchaseService.
+     */
+    public function registerPurchase(
+        Part $part,
+        int|float|string $quantity,
+        string $unitCost,
+        Supplier $supplier,
+        string $documentNumber,
+        User $user,
+        Model $reference
+    ): InventoryMovement {
+        return DB::transaction(function () use ($part, $quantity, $unitCost, $supplier, $documentNumber, $user, $reference) {
+
+            if ($part->status === PartStatus::DISCONTINUED) {
+                throw new InventoryException(
+                    "El repuesto {$part->code} está descontinuado y no admite entradas de stock.",
+                    422,
+                    'PART_DISCONTINUED_NO_ENTRY'
+                );
             }
 
-            return $this->loadMovement($movement);
+            $quantity = $this->normalizeQuantity($part, $quantity);
+
+            $stock = $this->lockStock($part);
+
+            return $this->applyMovement(
+                $stock,
+                InventoryMovementType::PURCHASE,
+                $quantity,
+                Decimal::of($unitCost, self::COST_SCALE),
+                $user,
+                [
+                    'supplier_id' => $supplier->id,
+                    'document_number' => $documentNumber,
+                    'reference_type' => $reference->getMorphClass(),
+                    'reference_id' => $reference->getKey(),
+                ]
+            );
+        });
+    }
+
+    /**
+     * Salida que revierte una línea de compra anulada. Como toda salida, se
+     * valúa al costo promedio y exige stock disponible.
+     */
+    public function reversePurchase(
+        Part $part,
+        int|float|string $quantity,
+        Supplier $supplier,
+        ?string $documentNumber,
+        User $user,
+        Model $reference,
+        string $reason
+    ): InventoryMovement {
+        return DB::transaction(function () use ($part, $quantity, $supplier, $documentNumber, $user, $reference, $reason) {
+
+            $quantity = Decimal::of($quantity, self::QUANTITY_SCALE);
+
+            $stock = $this->lockStock($part);
+
+            $this->ensureAvailable($stock, $quantity);
+
+            return $this->applyMovement($stock, InventoryMovementType::PURCHASE_CANCELLATION, $quantity, null, $user, [
+                'supplier_id' => $supplier->id,
+                'document_number' => $documentNumber,
+                'reference_type' => $reference->getMorphClass(),
+                'reference_id' => $reference->getKey(),
+                'reason' => $reason,
+            ]);
         });
     }
 

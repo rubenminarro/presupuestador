@@ -14,13 +14,14 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 ---
 
-## 1. Estado actual (verificado el 2026-10-17, `main` @ `8b3027a`; reverificado el 2026-10-19 @ `4ad9466`, sin cambios de código)
+## 1. Estado actual (verificado el 2026-10-20)
 
-* **Backend/API:** Laravel 12.56, roadmap original completo (FASES 10–20). 191 rutas API, 253 tests en verde.
+* **Backend/API:** Laravel 12.56, roadmap original completo (FASES 10–20) y compras (FASE 21). 201 rutas API,
+  260 tests en verde.
 * **Frontend:** **no está en este repositorio.** El handoff prevé React 19, pero no hay código que lo confirme; solo
   CORS y Sanctum están configurados para `http://localhost:5173`. `package.json` y `resources/` son el scaffold de
   Laravel (Vite + Tailwind) sin uso. No asumir tecnología ni estructura del frontend.
-* **Pendiente (sin diseño ni fase asignada):** compras, notificaciones, exportación de reportes y comprobantes
+* **Pendiente (sin diseño ni fase asignada):** pagos a proveedores, notificaciones, exportación de reportes y comprobantes
   imprimibles, auditoría avanzada, frontend. Ninguno tiene código hoy.
 
 ---
@@ -71,9 +72,9 @@ resultados esperados y casos de error).
 * Dinero y cantidades con **BCMath** sobre strings (`App\Support\Decimal::round`), nunca `float`.
 * Operaciones sobre varios registros en `DB::transaction`; concurrencia con `lockForUpdate`.
   Orden de bloqueo: OT → línea → `part_stocks`; OT → recepción (recálculo de estado); factura → pago;
-  recepción → entregas.
-* Documentos emitidos (cierre económico, factura emitida, pago, entrega, movimiento de inventario) son **inmutables a
-  nivel de modelo**: solo se anulan o se corrigen con otro registro.
+  recepción → entregas; compra → `part_stocks`.
+* Documentos emitidos (cierre económico, factura emitida, pago, entrega, movimiento de inventario, compra recibida) son
+  **inmutables a nivel de modelo**: solo se anulan o se corrigen con otro registro.
 * Rutas anidadas con `scopeBindings()` (grupo global en `routes/api.php`); si el parámetro hijo **no** es una relación
   del padre, usar `->withoutScopedBindings()` en esa ruta.
 * Actualizaciones parciales con `PATCH`.
@@ -110,9 +111,9 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 
 | Carpeta | Contenido |
 |---|---|
-| `app/Http/Controllers/Api` | 41 controllers |
+| `app/Http/Controllers/Api` | 42 controllers |
 | `app/Http/Requests` | Validación (mensajes en español) |
-| `app/Services` | Reglas de negocio (19 services) |
+| `app/Services` | Reglas de negocio (20 services) |
 | `app/Models` | Modelos Eloquent (muchos con `SoftDeletes`) |
 | `app/Http/Resources` | Contrato JSON |
 | `app/Enums` | Estados y tipos |
@@ -137,7 +138,7 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
   `Accept: application/json` en toda ruta `api/*` (también 404/405), así que la API nunca responde HTML.
 * Excepciones de dominio: `BudgetException`, `WorkOrderException`, `WorkOrderPartException`, `PartException`,
   `SupplierException`, `InventoryException`, `ServiceException`, `InvoiceException`, `PaymentException`,
-  `VehicleDeliveryException`, `MaintenanceException`, `ReceptionException` (todas extienden `AppException(message, status, errorCode, errors)`).
+  `VehicleDeliveryException`, `MaintenanceException`, `ReceptionException`, `PurchaseException` (todas extienden `AppException(message, status, errorCode, errors)`).
 
 ### Autenticación
 
@@ -153,9 +154,9 @@ Sanctum con tokens Bearer: `POST /api/login` (público) devuelve `data.token`; t
 | `administrador` | Todo (`Gate::before`) | Exclusivo: usuarios/roles/permisos, costos y margen (`work-orders.view-economics`), liquidar comisiones, anular entregas, timbrados, ABM de planes de mantenimiento, reporte de rentabilidad |
 | `mechanic` | Ejecuta la OT | Diagnóstico, iniciar/pausar/completar OT e ítems, consumir/devolver repuestos, sus horas y comisiones, historial, estado de mantenimiento, dashboard (bloque taller) |
 | `recepcionista` | Atiende al cliente | Clientes, vehículos, recepciones, checklist, presupuestos completos, registrar entregas, alertas de mantenimiento, reporte de presupuestos |
-| `jefe-taller` | Organiza el trabajo | OT completas, ítems, repuestos en OT, asignación y horas de todos, diagnóstico, intervalos de mantenimiento por vehículo, reporte de productividad |
-| `cajero` | Cobra | Facturas, pagos, resumen de caja, reportes de ventas y clientes |
-| `deposito` | Stock | Repuestos, proveedores, inventario, repuestos en OT, reporte de inventario |
+| `jefe-taller` | Organiza el trabajo | OT completas, ítems, repuestos en OT, asignación y horas de todos, diagnóstico, intervalos de mantenimiento por vehículo, reporte de productividad, consulta de compras |
+| `cajero` | Cobra | Facturas, pagos, resumen de caja, reportes de ventas y clientes, consulta de compras |
+| `deposito` | Stock | Repuestos, proveedores, inventario, compras completas, repuestos en OT, reporte de inventario |
 
 El rol del mecánico se llama `mechanic` (no `mecanico`). Ningún usuario del seeder tiene los cuatro últimos roles.
 
@@ -163,7 +164,7 @@ El rol del mecánico se llama `mechanic` (no `mecanico`). Ningún usuario del se
 
 ## 6. Reglas de negocio vigentes
 
-Fuente: Services y tests. El detalle de diseño y su historia por fase está en el handoff (secciones 2.24–2.33).
+Fuente: Services y tests. El detalle de diseño y su historia por fase está en el handoff (secciones 2.24–2.34).
 
 ### 6.1 Clientes, vehículos y datos maestros
 
@@ -250,6 +251,8 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   (`INSUFFICIENT_STOCK`). Ajuste = conteo físico (`INVENTORY_NO_DIFFERENCE`, `STOCK_BELOW_RESERVED`).
 * Descontinuado: sin entradas (`PART_DISCONTINUED_NO_ENTRY`). `unit|set|kit` sin fracciones. Repuesto con stock no se
   elimina (`PART_HAS_STOCK`). Cantidades de inventario `decimal(12,3)`.
+* Entrada manual (`POST inventory/entries`) solo `initial` (una vez por repuesto); las compras entran solo por el
+  módulo de compras (6.15).
 
 ### 6.7 Repuestos en la OT (`WorkOrderPart`)
 
@@ -328,6 +331,24 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   rentabilidad y productividad por cierre de la OT (sin IVA).
 * Permiso por reporte (`reports.sales|budgets|profitability|productivity|inventory|clients`); el dashboard
   (`dashboard.view`) muestra solo los bloques permitidos.
+
+### 6.15 Compras
+
+* `Purchase` (`COM-000001`) con `PurchaseItem`. Estados `draft → received → cancelled`; el borrador se edita
+  (cabecera y líneas) y se elimina (soft delete); recibida es inmutable (`PURCHASE_NOT_EDITABLE`).
+* Costos **con IVA incluido** como en la factura del proveedor; tasa por línea 0/5/10 (por defecto
+  `invoice.default_tax_rate`). `net_unit_cost` = costo × 100 / (100 + tasa), 4 decimales: es lo que entra al
+  inventario. IVA de la compra = total por tasa ÷ 11 / ÷ 21, en guaraníes. Condición `cash|credit` (`InvoiceCondition`);
+  sin pagos a proveedores.
+* Recibir (`POST purchases/{purchase}/receive`): con líneas (`PURCHASE_WITHOUT_ITEMS`), número y fecha de la factura del
+  proveedor (`PURCHASE_DOCUMENT_REQUIRED`; fecha no futura), a crédito con vencimiento ≥ fecha de la factura
+  (`PURCHASE_DUE_DATE_INVALID`), proveedor activo (`SUPPLIER_INACTIVE`) y número no repetido para el proveedor entre
+  compras recibidas (`PURCHASE_DUPLICATE_DOCUMENT`, 409). Cada línea genera un movimiento `purchase`
+  (`InventoryService::registerPurchase()`, referencia `purchase_item`) y crea o actualiza `part_supplier.last_cost`.
+* Anular (`POST purchases/{purchase}/cancel`, motivo obligatorio): solo recibidas (`PURCHASE_NOT_CANCELLABLE`); una
+  salida `purchase_cancellation` por línea al costo promedio; sin disponible suficiente → `INSUFFICIENT_STOCK`. El
+  `last_cost` no se revierte.
+* Permisos `purchases.index|show|store|update|destroy|receive|cancel` (las líneas usan `purchases.update`).
 
 ---
 

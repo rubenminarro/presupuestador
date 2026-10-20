@@ -89,7 +89,7 @@ class WorkOrderPartFlowTest extends WorkOrderPartsTestCase
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'INSUFFICIENT_STOCK');
 
-        $this->entry($filter['id'], 5, 100)->assertCreated();
+        $this->purchase($filter['id'], 5, 100)->assertOk();
 
         $this->postJson($this->partsUrl($workOrder, $line['id'], 'reserve'))
             ->assertOk()
@@ -107,7 +107,7 @@ class WorkOrderPartFlowTest extends WorkOrderPartsTestCase
         $workOrder = $this->workOrderWithPart($filter, 2);
         $line = $workOrder['parts'][0];
 
-        $this->entry($filter['id'], 3, 100)->assertCreated();
+        $this->purchase($filter['id'], 3, 100)->assertOk();
         $this->startWorkOrder($workOrder);
 
         $this->postJson($this->partsUrl($workOrder, $line['id'], 'consume'), ['quantity_used' => 2])
@@ -122,7 +122,7 @@ class WorkOrderPartFlowTest extends WorkOrderPartsTestCase
         $this->actingAsAdmin();
 
         $filter = $this->createPartViaApi();
-        $this->entry($filter['id'], 5, 100)->assertCreated();
+        $this->purchase($filter['id'], 5, 100)->assertOk();
 
         $workOrder = $this->workOrderWithPart($filter, 3);
 
@@ -142,7 +142,7 @@ class WorkOrderPartFlowTest extends WorkOrderPartsTestCase
         $this->actingAsAdmin();
 
         $filter = $this->createPartViaApi();
-        $this->entry($filter['id'], 5, 100)->assertCreated();
+        $this->purchase($filter['id'], 5, 100)->assertOk();
 
         $workOrder = $this->workOrderWithPart($filter, 1);
         $line = $workOrder['parts'][0];
@@ -173,7 +173,7 @@ class WorkOrderPartFlowTest extends WorkOrderPartsTestCase
         $this->actingAsAdmin();
 
         $filter = $this->createPartViaApi();
-        $this->entry($filter['id'], 5, 100)->assertCreated();
+        $this->purchase($filter['id'], 5, 100)->assertOk();
 
         $workOrder = $this->workOrderWithPart($filter, 2);
         $line = $workOrder['parts'][0];
@@ -202,7 +202,7 @@ class WorkOrderPartFlowTest extends WorkOrderPartsTestCase
         $this->postJson($this->partsUrl($workOrder, $line['id'], 'consume'), ['quantity_used' => 3])->assertOk();
 
         // Una compra posterior cambia el promedio; la devolución se valúa al costo de la línea.
-        $this->entry($pads['id'], 7, 200)->assertCreated();
+        $this->purchase($pads['id'], 7, 200)->assertOk();
 
         $this->postJson($this->partsUrl($workOrder, $line['id'], 'return'), ['quantity' => 1, 'reason' => 'Sobrante'])
             ->assertOk()
@@ -232,7 +232,7 @@ class WorkOrderPartFlowTest extends WorkOrderPartsTestCase
         $this->actingAsAdmin();
 
         $pads = $this->createPartViaApi();
-        $this->entry($pads['id'], 2, 100)->assertCreated();
+        $this->purchase($pads['id'], 2, 100)->assertOk();
 
         $workOrder = $this->workOrderWithPart($pads, 2);
         $line = $workOrder['parts'][0];

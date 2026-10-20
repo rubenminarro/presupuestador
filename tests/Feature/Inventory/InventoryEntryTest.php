@@ -3,7 +3,6 @@
 namespace Tests\Feature\Inventory;
 
 use App\Models\InventoryMovement;
-use App\Models\PartStock;
 
 class InventoryEntryTest extends InventoryTestCase
 {
@@ -58,11 +57,26 @@ class InventoryEntryTest extends InventoryTestCase
 
         $part = $this->createPartViaApi();
 
-        $this->entry($part['id'], 5, 100)->assertCreated();
+        $this->purchase($part['id'], 5, 100)->assertOk();
 
         $this->entry($part['id'], 10, 100, ['type' => 'initial'])
             ->assertStatus(409)
             ->assertJsonPath('error_code', 'INVENTORY_INITIAL_ALREADY_REGISTERED');
+    }
+
+    public function test_manual_purchase_entries_are_rejected(): void
+    {
+        $this->actingAsAdmin();
+
+        $part = $this->createPartViaApi();
+
+        // Las compras entran solo por el módulo de compras.
+        $this->entry($part['id'], 1, 100, ['type' => 'purchase'])
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'VALIDATION_ERROR')
+            ->assertJsonValidationErrors(['type']);
+
+        $this->assertSame(0, InventoryMovement::count());
     }
 
     public function test_weighted_average_cost_is_recalculated_on_entries_only(): void
@@ -74,10 +88,9 @@ class InventoryEntryTest extends InventoryTestCase
         $this->entry($part['id'], 10, 100, ['type' => 'initial'])->assertCreated();
 
         // (10 × 100 + 5 × 130) / 15 = 110
-        $this->entry($part['id'], 5, 130)
-            ->assertCreated()
-            ->assertJsonPath('data.average_cost_after', '110.0000')
-            ->assertJsonPath('data.balance_after', '15.000');
+        $this->purchase($part['id'], 5, 130)->assertOk();
+        $this->assertSame('110.0000', $this->stockOf($part['id'])->average_cost);
+        $this->assertSame('15.000', $this->stockOf($part['id'])->quantity_on_hand);
 
         // Las salidas usan el promedio vigente y no lo modifican.
         $this->exit($part['id'], 3)
@@ -89,9 +102,7 @@ class InventoryEntryTest extends InventoryTestCase
             ->assertJsonPath('data.balance_after', '12.000');
 
         // (12 × 110 + 2 × 200) / 14 = 122.857142… → 122.8571
-        $this->entry($part['id'], 2, 200)
-            ->assertCreated()
-            ->assertJsonPath('data.average_cost_after', '122.8571');
+        $this->purchase($part['id'], 2, 200)->assertOk();
 
         $this->assertSame('122.8571', $this->stockOf($part['id'])->average_cost);
     }
@@ -102,12 +113,12 @@ class InventoryEntryTest extends InventoryTestCase
 
         $part = $this->createPartViaApi();
 
-        $this->entry($part['id'], 2, 100)->assertCreated();
+        $this->purchase($part['id'], 2, 100)->assertOk();
         $this->exit($part['id'], 2)->assertCreated();
 
-        $this->entry($part['id'], 1, 250)
-            ->assertCreated()
-            ->assertJsonPath('data.average_cost_after', '250.0000');
+        $this->purchase($part['id'], 1, 250)->assertOk();
+
+        $this->assertSame('250.0000', $this->stockOf($part['id'])->average_cost);
     }
 
     public function test_discontinued_part_rejects_entries_but_allows_exits(): void
@@ -116,11 +127,11 @@ class InventoryEntryTest extends InventoryTestCase
 
         $part = $this->createPartViaApi();
 
-        $this->entry($part['id'], 5, 100)->assertCreated();
+        $this->purchase($part['id'], 5, 100)->assertOk();
 
         $this->postJson("/api/parts/{$part['id']}/discontinue")->assertOk();
 
-        $this->entry($part['id'], 1, 100)
+        $this->purchase($part['id'], 1, 100)
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'PART_DISCONTINUED_NO_ENTRY');
 
@@ -134,13 +145,15 @@ class InventoryEntryTest extends InventoryTestCase
         $unitPart = $this->createPartViaApi(null, ['unit' => 'unit']);
         $literPart = $this->createPartViaApi(null, ['unit' => 'liter']);
 
-        $this->entry($unitPart['id'], 1.5, 100)
+        $this->purchase($unitPart['id'], 1.5, 100)
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'INVENTORY_FRACTIONAL_QUANTITY_NOT_ALLOWED');
 
-        $this->entry($literPart['id'], 1.725, 100)
-            ->assertCreated()
-            ->assertJsonPath('data.quantity', '1.725');
+        $this->purchase($literPart['id'], 1.725, 100)
+            ->assertOk()
+            ->assertJsonPath('data.items.0.quantity', '1.725');
+
+        $this->assertSame('1.725', $this->stockOf($literPart['id'])->quantity_on_hand);
     }
 
     public function test_entry_validates_input(): void
@@ -164,55 +177,5 @@ class InventoryEntryTest extends InventoryTestCase
             ->assertJsonValidationErrors(['quantity']);
 
         $this->assertSame(0, InventoryMovement::count());
-    }
-
-    public function test_purchase_updates_last_cost_of_linked_supplier(): void
-    {
-        $this->actingAsAdmin();
-
-        $part = $this->createPartViaApi();
-        $linked = $this->createSupplier();
-        $unlinked = $this->createSupplier();
-
-        $this->postJson("/api/parts/{$part['id']}/suppliers", [
-            'supplier_id' => $linked->id,
-            'last_cost' => 30000,
-        ])->assertSuccessful();
-
-        $this->entry($part['id'], 3, 36500.5, [
-            'supplier_id' => $linked->id,
-            'document_number' => 'A-0001-00000123',
-        ])
-            ->assertCreated()
-            ->assertJsonPath('data.supplier.id', $linked->id)
-            ->assertJsonPath('data.document_number', 'A-0001-00000123');
-
-        $this->assertDatabaseHas('part_supplier', [
-            'part_id' => $part['id'],
-            'supplier_id' => $linked->id,
-            'last_cost' => 36500.50,
-        ]);
-
-        // Un proveedor no vinculado no se vincula automáticamente.
-        $this->entry($part['id'], 1, 100, ['supplier_id' => $unlinked->id])->assertCreated();
-
-        $this->assertDatabaseMissing('part_supplier', [
-            'part_id' => $part['id'],
-            'supplier_id' => $unlinked->id,
-        ]);
-    }
-
-    public function test_purchase_from_inactive_supplier_is_rejected(): void
-    {
-        $this->actingAsAdmin();
-
-        $part = $this->createPartViaApi();
-        $supplier = $this->createSupplier(['is_active' => false]);
-
-        $this->entry($part['id'], 1, 100, ['supplier_id' => $supplier->id])
-            ->assertStatus(422)
-            ->assertJsonPath('error_code', 'SUPPLIER_INACTIVE');
-
-        $this->assertSame('0.000', PartStock::where('part_id', $part['id'])->value('quantity_on_hand'));
     }
 }

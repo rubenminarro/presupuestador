@@ -15,7 +15,7 @@ class InventoryExitAndAdjustmentTest extends InventoryTestCase
 
         $part = $this->createPartViaApi();
 
-        $this->entry($part['id'], 3, 100)->assertCreated();
+        $this->purchase($part['id'], 3, 100)->assertOk();
 
         $this->exit($part['id'], 4)
             ->assertStatus(422)
@@ -33,7 +33,7 @@ class InventoryExitAndAdjustmentTest extends InventoryTestCase
         $part = $this->createPartViaApi();
         $supplier = $this->createSupplier();
 
-        $this->entry($part['id'], 3, 100)->assertCreated();
+        $this->purchase($part['id'], 3, 100)->assertOk();
 
         $this->exit($part['id'], 1, ['type' => 'supplier_return'])
             ->assertStatus(422)
@@ -67,7 +67,7 @@ class InventoryExitAndAdjustmentTest extends InventoryTestCase
 
         $part = $this->createPartViaApi();
 
-        $this->entry($part['id'], 10, 100)->assertCreated();
+        $this->purchase($part['id'], 10, 100)->assertOk();
 
         $this->adjustment($part['id'], 7)
             ->assertCreated()
@@ -99,7 +99,7 @@ class InventoryExitAndAdjustmentTest extends InventoryTestCase
 
         $part = $this->createPartViaApi();
 
-        $this->entry($part['id'], 4, 250)->assertCreated();
+        $this->purchase($part['id'], 4, 250)->assertOk();
 
         $this->adjustment($part['id'], 5)
             ->assertCreated()
@@ -113,7 +113,7 @@ class InventoryExitAndAdjustmentTest extends InventoryTestCase
 
         $part = $this->createPartViaApi();
 
-        $this->entry($part['id'], 4, 100)->assertCreated();
+        $this->purchase($part['id'], 4, 100)->assertOk();
 
         $this->postJson("/api/parts/{$part['id']}/discontinue")->assertOk();
 
@@ -126,7 +126,7 @@ class InventoryExitAndAdjustmentTest extends InventoryTestCase
 
         $part = $this->createPartViaApi();
 
-        $this->entry($part['id'], 10, 100)->assertCreated();
+        $this->purchase($part['id'], 10, 100)->assertOk();
 
         $service = app(InventoryService::class);
         $service->reserve(Part::find($part['id']), 6);
@@ -157,7 +157,7 @@ class InventoryExitAndAdjustmentTest extends InventoryTestCase
 
         $part = $this->createPartViaApi();
 
-        $this->entry($part['id'], 2, 100)->assertCreated();
+        $this->purchase($part['id'], 2, 100)->assertOk();
 
         $service = app(InventoryService::class);
         $model = Part::find($part['id']);

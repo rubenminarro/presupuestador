@@ -5,9 +5,8 @@
 **Versión del handoff:** 1.2
 **Fecha:** 2026-10-17
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
-cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes); 6 roles; 235 tests
-en verde (verificado el 2026-10-17 sobre `main` @ `8b3027a`; reverificado el 2026-10-19 sobre `main` @ `4ad9466`, sin
-cambios de código desde `8b3027a`)
+cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes) y FASE 21 (compras);
+6 roles; 260 tests en verde (2026-10-20)
 **Stack principal:** Laravel 12.56 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -415,7 +414,7 @@ Warehouse              (un único depósito "DEP-01 Principal", creado por migra
 PartStock              (saldo por repuesto/depósito: on_hand, reserved, average_cost)
 InventoryMovement      (historial inmutable, fuente de verdad del stock)
 InventoryMovementType  (initial, purchase, adjustment_in/out, supplier_return, loss,
-                        work_order_out, work_order_return)
+                        work_order_out, work_order_return; purchase_cancellation desde la FASE 21)
 InventoryService       (registerEntry, registerExit, adjust, reserve, release)
 InventoryException
 App\Support\Decimal    (redondeo BCMath)
@@ -439,6 +438,9 @@ Reglas:
 Endpoints: `GET inventory/stocks`, `GET inventory/movements[/{id}]`, `GET parts/{part}/movements`,
 `POST inventory/entries|exits|adjustments`. Permisos: `inventory.index|show|entry|exit|adjust`
 (mecánico: solo `index` y `show`).
+
+> **Desde la FASE 21 (2.34):** `POST inventory/entries` solo registra el stock inicial; las compras entran por
+> `POST purchases/{purchase}/receive`.
 
 Tests: los tests usan SQLite en memoria; si en el `php.ini` de Laragon `pdo_sqlite` está deshabilitado (pasaba en
 una de las máquinas de desarrollo; en otra ya está habilitado y alcanza con `vendor/bin/phpunit`), ejecutar con:
@@ -845,6 +847,42 @@ Importes de ventas y clientes: con IVA (factura). Rentabilidad y productividad: 
 Acceso por área: cajero `sales` y `clients`; recepcionista `budgets`; jefe-taller `productivity`; depósito `inventory`;
 `profitability` solo administrador; mecánico solo el dashboard (bloque `workshop`). El bloque `maintenance` del
 dashboard usa `maintenance-alerts.index`.
+
+---
+
+# 2.34 Compras (FASE 21, 2026-10-20)
+
+Documento de compra a un proveedor que reemplaza la entrada manual de tipo `purchase`. Decisiones del usuario:
+
+| Tema | Decisión |
+|---|---|
+| Flujo | `draft → received → cancelled`. Sin orden de compra ni recepciones parciales: al recibir entra todo |
+| IVA | Costos cargados **con IVA incluido**, tasa 10/5/exenta por línea (10 por defecto, `invoice.default_tax_rate`). Al inventario entra el costo sin IVA: costo × 100 / (100 + tasa), 4 decimales. IVA de la compra liquidado como en la venta (÷ 11, ÷ 21), en guaraníes |
+| Pagos al proveedor | Fuera de alcance: solo condición `cash|credit` (reusa `InvoiceCondition`) y vencimiento |
+| Entrada manual | `POST /inventory/entries` solo acepta `initial`; `purchase` → `422 VALIDATION_ERROR` (`errors.type`) |
+| Anular | Solo recibidas, con motivo: una salida `purchase_cancellation` por línea (al costo promedio, como toda salida). Sin stock disponible suficiente → `INSUFFICIENT_STOCK`. El `last_cost` no se revierte. El borrador no se anula: se elimina (soft delete) |
+| Documento | Para recibir: número y fecha de la factura del proveedor (fecha no futura); el número no se repite para el mismo proveedor entre compras recibidas (`PURCHASE_DUPLICATE_DOCUMENT`, 409). Timbrado opcional |
+| Vínculo proveedor | Al recibir se crea el vínculo `part_supplier` si no existía, o se actualiza `last_cost` (costo sin IVA) |
+| Roles | `deposito` todo; `cajero` y `jefe-taller` solo consulta |
+
+Datos (migración `000046`): `purchases` (código `COM-000001`, proveedor, estado, documento del proveedor, condición,
+vencimiento, totales por tasa, IVA 5/10, `total` con IVA y `net_total` sin IVA, recepción y anulación, soft delete) y
+`purchase_items` (repuesto, cantidad, `unit_cost` y `total` con IVA, `tax_rate`, `net_unit_cost`,
+`inventory_movement_id`). Los movimientos referencian la línea (`reference_type = purchase_item`).
+
+Componentes: `PurchaseService` (orden de bloqueo compra → `part_stocks`), `InventoryService::registerPurchase()` y
+`reversePurchase()`, `PurchaseController`, `Purchase`/`PurchaseItem` (inmutables una vez recibida: `PURCHASE_NOT_EDITABLE`),
+`PurchaseException`. Errores: `PURCHASE_NOT_EDITABLE`, `PURCHASE_WITHOUT_ITEMS`, `PURCHASE_DOCUMENT_REQUIRED`,
+`PURCHASE_DUE_DATE_INVALID` (a crédito sin vencimiento o anterior a la factura), `PURCHASE_NOT_RECEIVABLE`,
+`PURCHASE_NOT_CANCELLABLE`, `PURCHASE_DUPLICATE_DOCUMENT`; se reutilizan `SUPPLIER_INACTIVE`,
+`PART_DISCONTINUED_NO_ENTRY`, `INVENTORY_FRACTIONAL_QUANTITY_NOT_ALLOWED` e `INSUFFICIENT_STOCK`.
+
+Respecto del diseño aprobado: la entrada manual de compra responde `VALIDATION_ERROR` (la Request ya valida el tipo)
+en lugar de `INVENTORY_INVALID_MOVEMENT_TYPE`, y se agregaron `PURCHASE_DOCUMENT_REQUIRED` y `PURCHASE_DUE_DATE_INVALID`
+para distinguir los motivos por los que no se puede recibir.
+
+Tests: `tests/Feature/Purchases/PurchaseTest`. Los tests que cargaban stock con entradas manuales de compra usan el
+helper `InventoryTestCase::purchase()` (compra exenta de una línea, recibida).
 
 ---
 
@@ -3192,13 +3230,14 @@ La arquitectura objetivo es:
 El proyecto actualmente se encuentra en:
 
 ```text
-FASE 20 — REPORTES Y DASHBOARD — CERRADA
+FASE 21 — COMPRAS — IMPLEMENTADA (2026-10-20, ver 2.34)
 ```
 
-Con la FASE 20 se completa el roadmap original (FASES 10–20). Pendientes sin fase asignada, a priorizar:
+Con la FASE 20 se completó el roadmap original (FASES 10–20); la FASE 21 (compras) fue la primera de los pendientes.
+Siguen sin fase asignada, a priorizar:
 
 ```text
-Compras (Purchase / PurchaseItem → ingreso de stock)
+Pagos a proveedores / cuentas por pagar (excluido de la FASE 21)
 Notificaciones (presupuesto enviado, vehículo listo, pago pendiente, mantenimiento próximo)
 Exportación de reportes (CSV / PDF) y comprobantes imprimibles (factura, recibo, entrega)
 Auditoría avanzada (AuditLog de precios, stock, facturación y pagos)
@@ -3311,12 +3350,13 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 [✓] Historial del vehículo con resumen, visitas, repuestos y kilometraje (FASE 18)
 [✓] Mantenimiento preventivo con planes, km estimado y alertas (FASE 19)
 [✓] Reportes y dashboard por área (FASE 20)
+[✓] Compras con IVA incluido e ingreso de stock (FASE 21)
 ```
 
 ## Próximo
 
 ```text
-[ ] Compras
+[ ] Pagos a proveedores
 [ ] Notificaciones
 [ ] Exportación de reportes y comprobantes
 [ ] Auditoría avanzada

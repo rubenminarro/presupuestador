@@ -740,32 +740,48 @@ Esperado: `201`, `type.value` `initial`, `quantity` `"10.000"`, `total_cost` `"1
 
 ### 11.2 Compra
 
-`POST {{base_url}}/inventory/entries`
+Las compras entran solo por el módulo de compras (detalle completo en la FASE 21). Compra rápida para seguir con
+esta fase: 5 litros a 143 con IVA 10% = 130 sin IVA.
+
+1. `POST {{base_url}}/purchases` → `201`, guardar `data.id` → `purchase_id`:
+
+```json
+{
+  "supplier_id": {{supplier_id}},
+  "supplier_document_number": "A-0001-00000123",
+  "supplier_document_date": "2026-10-20"
+}
+```
+
+2. `POST {{base_url}}/purchases/{{purchase_id}}/items` → `201`, `items.0.net_unit_cost` `"130.0000"`:
 
 ```json
 {
   "part_id": {{part_id}},
-  "type": "purchase",
   "quantity": 5,
-  "unit_cost": 130,
-  "supplier_id": {{supplier_id}},
-  "document_number": "A-0001-00000123"
+  "unit_cost": 143,
+  "tax_rate": 10
 }
 ```
 
-Esperado: `201`, `balance_after` `"15.000"`, `average_cost_after` `"110.0000"` ((10×100 + 5×130) / 15). En `GET {{base_url}}/parts/{{part_id}}`, `suppliers[0].pivot.last_cost` pasa a `"130.00"`. Guardar `data.id` → `movement_id`.
+3. `POST {{base_url}}/purchases/{{purchase_id}}/receive` → `200`, `status.value` `received`. Guardar
+   `data.items.0.inventory_movement_id` → `movement_id`.
 
-Casos de error de entradas:
+Esperado en `GET {{base_url}}/inventory/movements/{{movement_id}}`: `type.value` `purchase`, `balance_after` `"15.000"`,
+`average_cost_after` `"110.0000"` ((10×100 + 5×130) / 15), `document_number` `A-0001-00000123`. En
+`GET {{base_url}}/parts/{{part_id}}`, `suppliers[0].pivot.last_cost` pasa a `"130.00"`.
+
+Casos de error de entradas manuales:
 
 | Caso | Body | HTTP | error_code |
 |---|---|---|---|
+| Compra manual (ya no se admite) | `{ "part_id": {{part_id}}, "type": "purchase", "quantity": 1, "unit_cost": 100 }` | 422 | `VALIDATION_ERROR` (`errors.type`) |
 | Tipo no permitido | `{ "part_id": {{part_id}}, "type": "work_order_return", "quantity": 1, "unit_cost": 1 }` | 422 | `VALIDATION_ERROR` (`errors.type`) |
-| Cantidad cero / costo negativo | `{ "part_id": {{part_id}}, "type": "purchase", "quantity": 0, "unit_cost": -1 }` | 422 | `VALIDATION_ERROR` |
-| Más de 3 decimales | `{ "part_id": {{part_id}}, "type": "purchase", "quantity": 1.2345, "unit_cost": 100 }` | 422 | `VALIDATION_ERROR` (`errors.quantity`) |
-| Fracción en repuesto por unidad | `{ "part_id": {{part_unit_id}}, "type": "purchase", "quantity": 1.5, "unit_cost": 100 }` | 422 | `INVENTORY_FRACTIONAL_QUANTITY_NOT_ALLOWED` |
-| Proveedor inactivo | `{ ..., "supplier_id": <proveedor inactivo> }` | 422 | `SUPPLIER_INACTIVE` |
-| Repuesto descontinuado | `{ "part_id": {{part_status_id}}, "type": "purchase", "quantity": 1, "unit_cost": 100 }` | 422 | `PART_DISCONTINUED_NO_ENTRY` |
-| Repuesto inexistente | `{ "part_id": 999999, "type": "purchase", "quantity": 1, "unit_cost": 100 }` | 422 | `VALIDATION_ERROR` |
+| Cantidad cero / costo negativo | `{ "part_id": {{part_id}}, "type": "initial", "quantity": 0, "unit_cost": -1 }` | 422 | `VALIDATION_ERROR` |
+| Más de 3 decimales | `{ "part_id": {{part_id}}, "type": "initial", "quantity": 1.2345, "unit_cost": 100 }` | 422 | `VALIDATION_ERROR` (`errors.quantity`) |
+| Repuesto inexistente | `{ "part_id": 999999, "type": "initial", "quantity": 1, "unit_cost": 100 }` | 422 | `VALIDATION_ERROR` |
+
+Fracciones, repuestos descontinuados y proveedores inactivos en compras: ver 21.5.
 
 ### 11.3 Stock del repuesto por unidad (para la FASE 12)
 
@@ -2304,6 +2320,129 @@ Esperado: `200`; `totals` (`invoices_count`, `total`, `taxed_10`, `iva_10`, `ave
 | `{{token_mec}}` | — (solo `dashboard`) | todos los `reports/*` |
 
 > Recepcionista: `reports/budgets`; jefe de taller: `reports/productivity`; depósito: `reports/inventory`; rentabilidad: solo administrador.
+
+---
+
+## FASE 21 — Compras
+
+Token: administrador. La factura del proveedor se carga **con IVA incluido**; al recibir, el stock entra al costo **sin
+IVA** (costo × 100 / (100 + tasa)). Usa `{{supplier_id}}` (FASE 10) y los repuestos `{{part_id}}` (litros) y
+`{{part_unit_id}}` (unidades).
+
+### 21.1 Crear la compra en borrador
+
+`POST {{base_url}}/purchases`
+
+```json
+{
+  "supplier_id": {{supplier_id}},
+  "supplier_document_number": "001-001-0004567",
+  "supplier_document_date": "2026-10-20",
+  "supplier_stamp_number": "12345678",
+  "condition": "credit",
+  "due_date": "2026-11-20",
+  "notes": "Reposición mensual"
+}
+```
+
+Esperado: `201`, `code` `COM-…`, `status.value` `draft`, `totals.total` `"0.00"`. Guardar `data.id` → `purchase2_id`.
+
+### 21.2 Cargar líneas
+
+`POST {{base_url}}/purchases/{{purchase2_id}}/items`, una por vez:
+
+| Body | Resultado de la línea |
+|---|---|
+| `{ "part_id": {{part_unit_id}}, "quantity": 2, "unit_cost": 38500 }` (tasa por defecto 10) | `total` `"77000.00"`, `net_unit_cost` `"35000.0000"` |
+| `{ "part_id": {{part_id}}, "quantity": 4, "unit_cost": 157.5, "tax_rate": 5 }` | `total` `"630.00"`, `net_unit_cost` `"150.0000"` |
+
+Esperado tras la segunda: `201`, `totals.taxed_10` `"77000.00"`, `totals.iva_10` `"7000.00"` (÷ 11), `totals.taxed_5`
+`"630.00"`, `totals.iva_5` `"30.00"` (÷ 21), `totals.total` `"77630.00"`, `totals.net_total` `"70600.00"`. Guardar
+`data.items.1.id` → `purchase_item_id`.
+
+| Caso | Método / Endpoint | Body | HTTP | Resultado / error_code |
+|---|---|---|---|---|
+| Editar línea | `PATCH {{base_url}}/purchases/{{purchase2_id}}/items/{{purchase_item_id}}` | `{ "quantity": 5 }` | 200 | `total` `"788.00"` (5 × 157,5 redondeado) |
+| Volver a 4 | mismo | `{ "quantity": 4 }` | 200 | `totals.total` `"77630.00"` |
+| Línea de otra compra | `PATCH {{base_url}}/purchases/{{purchase_id}}/items/{{purchase_item_id}}` | `{ "quantity": 1 }` | 404 | `RESOURCE_NOT_FOUND` |
+
+### 21.3 Recibir
+
+`POST {{base_url}}/purchases/{{purchase2_id}}/receive` → `200`, `status.value` `received`, `received_at` con fecha y
+cada línea con `inventory_movement_id`.
+
+Verificar: `GET {{base_url}}/inventory/movements?type=purchase` incluye las dos líneas con `document_number`
+`001-001-0004567`; en `GET {{base_url}}/parts/{{part_unit_id}}` el proveedor queda vinculado con `last_cost`
+`"35000.00"` (se vincula solo si no lo estaba).
+
+| Caso | Método / Endpoint | Body | HTTP | error_code |
+|---|---|---|---|---|
+| Recibir de nuevo | `POST {{base_url}}/purchases/{{purchase2_id}}/receive` | — | 422 | `PURCHASE_NOT_RECEIVABLE` |
+| Editar recibida | `PATCH {{base_url}}/purchases/{{purchase2_id}}` | `{ "notes": "x" }` | 422 | `PURCHASE_NOT_EDITABLE` |
+| Agregar línea a recibida | `POST {{base_url}}/purchases/{{purchase2_id}}/items` | body de 21.2 | 422 | `PURCHASE_NOT_EDITABLE` |
+| Eliminar recibida | `DELETE {{base_url}}/purchases/{{purchase2_id}}` | — | 422 | `PURCHASE_NOT_EDITABLE` |
+
+### 21.4 Validaciones al recibir
+
+Crear una compra nueva (body de 21.1 sin `supplier_document_number` y con `"condition": "cash"`) → `purchase3_id`.
+
+| Paso | Método / Endpoint | Body | HTTP | error_code |
+|---|---|---|---|---|
+| Sin líneas | `POST {{base_url}}/purchases/{{purchase3_id}}/receive` | — | 422 | `PURCHASE_WITHOUT_ITEMS` |
+| Agregar una línea | `POST {{base_url}}/purchases/{{purchase3_id}}/items` | `{ "part_id": {{part_id}}, "quantity": 1, "unit_cost": 110 }` | 201 | — |
+| Sin número de factura | `POST {{base_url}}/purchases/{{purchase3_id}}/receive` | — | 422 | `PURCHASE_DOCUMENT_REQUIRED` |
+| A crédito sin vencimiento | `PATCH {{base_url}}/purchases/{{purchase3_id}}` | `{ "supplier_document_number": "001-001-0004567", "condition": "credit", "due_date": null }` | 200 | — |
+| Recibir | `POST {{base_url}}/purchases/{{purchase3_id}}/receive` | — | 422 | `PURCHASE_DUE_DATE_INVALID` |
+| Al contado | `PATCH {{base_url}}/purchases/{{purchase3_id}}` | `{ "condition": "cash" }` | 200 | — |
+| Factura ya cargada (mismo proveedor y número que 21.1) | `POST {{base_url}}/purchases/{{purchase3_id}}/receive` | — | 409 | `PURCHASE_DUPLICATE_DOCUMENT` |
+| Número nuevo | `PATCH {{base_url}}/purchases/{{purchase3_id}}` | `{ "supplier_document_number": "001-001-0004568" }` | 200 | — |
+| Descartar el borrador | `DELETE {{base_url}}/purchases/{{purchase3_id}}` | — | 200 | — |
+
+### 21.5 Errores de carga
+
+| Caso | Método / Endpoint | Body | HTTP | error_code |
+|---|---|---|---|---|
+| Body vacío | `POST {{base_url}}/purchases` | `{}` | 422 | `VALIDATION_ERROR` (`supplier_id`) |
+| Fecha futura | `POST {{base_url}}/purchases` | `{ "supplier_id": {{supplier_id}}, "supplier_document_date": "2099-01-01" }` | 422 | `VALIDATION_ERROR` |
+| Proveedor inactivo | `POST {{base_url}}/purchases` | `{ "supplier_id": <proveedor inactivo> }` | 422 | `SUPPLIER_INACTIVE` |
+| Tasa inválida | `POST {{base_url}}/purchases/{{purchase_draft_id}}/items` (un borrador nuevo, body de 21.1) | `{ "part_id": {{part_id}}, "quantity": 1, "unit_cost": 1, "tax_rate": 7 }` | 422 | `VALIDATION_ERROR` |
+| Fracción en repuesto por unidad | ídem | `{ "part_id": {{part_unit_id}}, "quantity": 1.5, "unit_cost": 100 }` | 422 | `INVENTORY_FRACTIONAL_QUANTITY_NOT_ALLOWED` |
+| Repuesto descontinuado | ídem | `{ "part_id": {{part_status_id}}, "quantity": 1, "unit_cost": 100 }` | 422 | `PART_DISCONTINUED_NO_ENTRY` |
+
+### 21.6 Anular
+
+`POST {{base_url}}/purchases/{{purchase2_id}}/cancel` con `{ "reason": "Factura cargada con error" }`.
+
+Si parte del stock de la compra ya se consumió o está reservada y no alcanza el disponible → `422 INSUFFICIENT_STOCK`
+(el mensaje indica el repuesto) y no cambia nada. Con stock suficiente → `200`, `status.value` `cancelled`,
+`cancellation_reason`, y un movimiento `purchase_cancellation` (salida al costo promedio) por línea. El `last_cost` del
+proveedor no se revierte.
+
+| Caso | Body | HTTP | error_code |
+|---|---|---|---|
+| Sin motivo | `{}` | 422 | `VALIDATION_ERROR` (`errors.reason`) |
+| Anular de nuevo | `{ "reason": "Otra vez" }` | 422 | `PURCHASE_NOT_CANCELLABLE` |
+| Anular un borrador | `POST .../purchases/{id-borrador}/cancel` | 422 | `PURCHASE_NOT_CANCELLABLE` (el borrador se elimina) |
+
+### 21.7 Listado
+
+| Caso | Método / Endpoint | HTTP | Resultado |
+|---|---|---|---|
+| Todas | `GET {{base_url}}/purchases` | 200 | `meta.pagination` |
+| Por estado | `GET {{base_url}}/purchases?status=received` | 200 | Solo recibidas |
+| Por proveedor | `GET {{base_url}}/purchases?supplier_id={{supplier_id}}` | 200 | Filtrado |
+| Búsqueda | `GET {{base_url}}/purchases?search=0004567` | 200 | Por código o número de factura |
+| Por fecha de factura | `GET {{base_url}}/purchases?date_from=2026-10-01&date_to=2026-10-31` | 200 | Filtrado |
+| Estado inexistente | `GET {{base_url}}/purchases?status=paid` | 422 | `VALIDATION_ERROR` |
+
+### 21.8 Permisos
+
+| Token | Puede | 403 `FORBIDDEN` en |
+|---|---|---|
+| `{{token_caja}}` | `GET purchases`, `GET purchases/{id}` | crear, editar, recibir, anular |
+| `{{token_mec}}` | — | todo `purchases/*` |
+
+> Depósito: todo el módulo. Jefe de taller: solo consulta, como el cajero.
 
 ---
 

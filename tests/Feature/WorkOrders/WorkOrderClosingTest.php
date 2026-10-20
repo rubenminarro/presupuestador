@@ -86,7 +86,7 @@ class WorkOrderClosingTest extends WorkOrderPartsTestCase
 
         // Repuesto extra no presupuestado: costo 30, venta 80.
         $filter = $this->createPartViaApi();
-        $this->entry($filter['id'], 5, 30)->assertCreated();
+        $this->purchase($filter['id'], 5, 30)->assertOk();
 
         $extra = $this->postJson($this->partsUrl($workOrder), [
             'part_id' => $filter['id'],

@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use App\Models\PurchaseItem;
 use App\Models\WorkOrderItem;
 use App\Models\WorkOrderPart;
 
@@ -29,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
         Relation::morphMap([
             'work_order_part' => WorkOrderPart::class,
             'work_order_item' => WorkOrderItem::class,
+            'purchase_item' => PurchaseItem::class,
         ]);
 
         // Bypass implícito para el rol 'administrador'

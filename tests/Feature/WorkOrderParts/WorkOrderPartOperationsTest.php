@@ -10,7 +10,7 @@ class WorkOrderPartOperationsTest extends WorkOrderPartsTestCase
 
         $budgeted = $this->createPartViaApi();
         $extra = $this->createPartViaApi(null, ['sale_price' => 72000]);
-        $this->entry($extra['id'], 4, 100)->assertCreated();
+        $this->purchase($extra['id'], 4, 100)->assertOk();
 
         $workOrder = $this->workOrderWithPart($budgeted, 1);
 
@@ -35,7 +35,7 @@ class WorkOrderPartOperationsTest extends WorkOrderPartsTestCase
         $this->actingAsAdmin();
 
         $filter = $this->createPartViaApi();
-        $this->entry($filter['id'], 10, 100)->assertCreated();
+        $this->purchase($filter['id'], 10, 100)->assertOk();
 
         $workOrder = $this->workOrderWithPart($filter, 2);
         $line = $workOrder['parts'][0];
@@ -65,7 +65,7 @@ class WorkOrderPartOperationsTest extends WorkOrderPartsTestCase
         $this->actingAsAdmin();
 
         $filter = $this->createPartViaApi();
-        $this->entry($filter['id'], 10, 100)->assertCreated();
+        $this->purchase($filter['id'], 10, 100)->assertOk();
 
         $workOrder = $this->workOrderWithPart($filter, 2);
         $line = $workOrder['parts'][0];
@@ -105,7 +105,7 @@ class WorkOrderPartOperationsTest extends WorkOrderPartsTestCase
         $this->actingAsAdmin();
 
         $oil = $this->createPartViaApi(null, ['unit' => 'liter']);
-        $this->entry($oil['id'], 3, 100)->assertCreated();
+        $this->purchase($oil['id'], 3, 100)->assertOk();
 
         $workOrder = $this->workOrderWithPart($oil, 2);
         $line = $workOrder['parts'][0];
@@ -210,7 +210,7 @@ class WorkOrderPartOperationsTest extends WorkOrderPartsTestCase
         $this->actingAsAdmin();
 
         $filter = $this->createPartViaApi();
-        $this->entry($filter['id'], 10, 100)->assertCreated();
+        $this->purchase($filter['id'], 10, 100)->assertOk();
 
         $first = $this->workOrderWithPart($filter, 1);
         $second = $this->workOrderWithPart($filter, 1);
@@ -225,7 +225,7 @@ class WorkOrderPartOperationsTest extends WorkOrderPartsTestCase
         $this->actingAsAdmin();
 
         $filter = $this->createPartViaApi();
-        $this->entry($filter['id'], 10, 100)->assertCreated();
+        $this->purchase($filter['id'], 10, 100)->assertOk();
 
         $workOrder = $this->workOrderWithPart($filter, 2);
         $line = $workOrder['parts'][0];

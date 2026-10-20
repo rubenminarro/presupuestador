@@ -72,7 +72,7 @@ class StoreInventoryEntryRequest extends FormRequest
             'type' => [
                 'required' => 'El tipo de entrada es obligatorio.',
                 'string' => 'El tipo de entrada debe ser un texto válido.',
-                'in' => 'El tipo de entrada debe ser stock inicial o compra.',
+                'in' => 'El tipo de entrada debe ser stock inicial; las compras se registran en el módulo de compras.',
             ],
             'quantity' => [
                 'required' => 'La cantidad es obligatoria.',

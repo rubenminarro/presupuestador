@@ -12,6 +12,7 @@ enum InventoryMovementType: string
     case LOSS = 'loss';
     case WORK_ORDER_OUT = 'work_order_out';
     case WORK_ORDER_RETURN = 'work_order_return';
+    case PURCHASE_CANCELLATION = 'purchase_cancellation';
 
     public function label(): string {
         return match($this) {
@@ -23,6 +24,7 @@ enum InventoryMovementType: string
             self::LOSS => 'Baja / merma',
             self::WORK_ORDER_OUT => 'Consumo en OT',
             self::WORK_ORDER_RETURN => 'Devolución desde OT',
+            self::PURCHASE_CANCELLATION => 'Anulación de compra',
         };
     }
 
@@ -53,10 +55,11 @@ enum InventoryMovementType: string
 
     /**
      * Entradas que pueden registrarse desde POST /inventory/entries.
+     * Las compras entran solo por el módulo de compras (PurchaseService).
      */
     public static function manualEntries(): array
     {
-        return [self::INITIAL, self::PURCHASE];
+        return [self::INITIAL];
     }
 
     /**

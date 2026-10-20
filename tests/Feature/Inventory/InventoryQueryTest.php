@@ -15,7 +15,7 @@ class InventoryQueryTest extends InventoryTestCase
 
         $this->entry($part['id'], 20, 50, ['type' => 'initial'])->assertCreated();
         $this->exit($part['id'], 1.7)->assertCreated();
-        $this->entry($part['id'], 4.25, 60)->assertCreated();
+        $this->purchase($part['id'], 4.25, 60)->assertOk();
         $this->adjustment($part['id'], 22)->assertCreated();
         $this->exit($part['id'], 0.5)->assertCreated();
 
@@ -41,7 +41,7 @@ class InventoryQueryTest extends InventoryTestCase
 
         $this->entry($part['id'], 5, 100, ['type' => 'initial'])->assertCreated();
         $this->exit($part['id'], 2)->assertCreated();
-        $this->entry($other['id'], 1, 100)->assertCreated();
+        $this->purchase($other['id'], 1, 100)->assertOk();
 
         $this->getJson("/api/parts/{$part['id']}/movements")
             ->assertOk()
@@ -57,7 +57,7 @@ class InventoryQueryTest extends InventoryTestCase
 
         $part = $this->createPartViaApi();
 
-        $this->entry($part['id'], 5, 100)->assertCreated();
+        $this->purchase($part['id'], 5, 100)->assertOk();
         $exitId = $this->exit($part['id'], 1)->assertCreated()->json('data.id');
 
         $this->getJson('/api/inventory/movements?type=loss')
@@ -95,8 +95,8 @@ class InventoryQueryTest extends InventoryTestCase
         $empty = $this->createPartViaApi(null, ['name' => 'Correa', 'minimum_stock' => 0]);
         $deleted = $this->createPartViaApi(null, ['name' => 'Lampara']);
 
-        $this->entry($low['id'], 3, 100)->assertCreated();
-        $this->entry($ok['id'], 10, 100)->assertCreated();
+        $this->purchase($low['id'], 3, 100)->assertOk();
+        $this->purchase($ok['id'], 10, 100)->assertOk();
         $this->deleteJson("/api/parts/{$deleted['id']}")->assertOk();
 
         $this->getJson('/api/inventory/stocks')
@@ -129,7 +129,7 @@ class InventoryQueryTest extends InventoryTestCase
 
         $part = $this->createPartViaApi();
 
-        $id = $this->entry($part['id'], 5, 100)->assertCreated()->json('data.id');
+        $id = $this->purchase($part['id'], 5, 100)->assertOk()->json('data.items.0.inventory_movement_id');
 
         $movement = InventoryMovement::findOrFail($id);
 
@@ -156,7 +156,7 @@ class InventoryQueryTest extends InventoryTestCase
 
         $part = $this->createPartViaApi();
 
-        $this->entry($part['id'], 2, 100)->assertCreated();
+        $this->purchase($part['id'], 2, 100)->assertOk();
 
         $this->deleteJson("/api/parts/{$part['id']}")
             ->assertStatus(409)
@@ -178,7 +178,7 @@ class InventoryQueryTest extends InventoryTestCase
         $this->actingAsAdmin();
 
         $part = $this->createPartViaApi();
-        $movementId = $this->entry($part['id'], 5, 100)->json('data.id');
+        $movementId = $this->entry($part['id'], 5, 100)->assertCreated()->json('data.id');
 
         $this->actingAsMechanic();
 

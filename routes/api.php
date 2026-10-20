@@ -42,6 +42,7 @@ use App\Http\Controllers\Api\PartSupplierController;
 use App\Http\Controllers\Api\InventoryStockController;
 use App\Http\Controllers\Api\InventoryMovementController;
 use App\Http\Controllers\Api\InventoryOperationController;
+use App\Http\Controllers\Api\PurchaseController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -269,5 +270,25 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::post('inventory/exits', [InventoryOperationController::class, 'storeExit'])->name('inventory.exits.store');
 
     Route::post('inventory/adjustments', [InventoryOperationController::class, 'storeAdjustment'])->name('inventory.adjustments.store');
+
+    Route::get('purchases', [PurchaseController::class, 'index'])->name('purchases.index');
+
+    Route::post('purchases', [PurchaseController::class, 'store'])->name('purchases.store');
+
+    Route::get('purchases/{purchase}', [PurchaseController::class, 'show'])->name('purchases.show');
+
+    Route::patch('purchases/{purchase}', [PurchaseController::class, 'update'])->name('purchases.update');
+
+    Route::delete('purchases/{purchase}', [PurchaseController::class, 'destroy'])->name('purchases.destroy');
+
+    Route::post('purchases/{purchase}/items', [PurchaseController::class, 'storeItem'])->name('purchases.items.store');
+
+    Route::patch('purchases/{purchase}/items/{item}', [PurchaseController::class, 'updateItem'])->name('purchases.items.update');
+
+    Route::delete('purchases/{purchase}/items/{item}', [PurchaseController::class, 'destroyItem'])->name('purchases.items.destroy');
+
+    Route::post('purchases/{purchase}/receive', [PurchaseController::class, 'receive'])->name('purchases.receive');
+
+    Route::post('purchases/{purchase}/cancel', [PurchaseController::class, 'cancel'])->name('purchases.cancel');
 
 });
