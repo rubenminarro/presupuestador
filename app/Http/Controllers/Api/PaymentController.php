@@ -11,15 +11,17 @@ use App\Http\Resources\PaymentResource;
 use App\Http\Resources\ShowPaymentResource;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Services\DocumentPdfService;
 use App\Services\PaymentService;
 use App\Traits\ApiResponse;
+use App\Traits\FileResponse;
 use Carbon\Carbon;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
 class PaymentController extends Controller implements HasMiddleware
 {
-    use ApiResponse;
+    use ApiResponse, FileResponse;
 
     public function __construct(
         protected PaymentService $paymentService
@@ -30,7 +32,7 @@ class PaymentController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:payments.index', only: ['index']),
-            new Middleware('permission:payments.show', only: ['show']),
+            new Middleware('permission:payments.show', only: ['show', 'receipt']),
             new Middleware('permission:payments.store', only: ['store']),
             new Middleware('permission:payments.cancel', only: ['cancel']),
             new Middleware('permission:payments.summary', only: ['summary']),
@@ -82,6 +84,14 @@ class PaymentController extends Controller implements HasMiddleware
             new ShowPaymentResource($payment->load('invoice')),
             200
         );
+    }
+
+    /**
+     * Recibo imprimible (solo pagos de facturas a crédito).
+     */
+    public function receipt(Payment $payment, DocumentPdfService $documentPdfService)
+    {
+        return $this->fileResponse($documentPdfService->receipt($payment), 'application/pdf');
     }
 
     public function store(StorePaymentRequest $request, Invoice $invoice)

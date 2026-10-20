@@ -10,14 +10,16 @@ use App\Http\Resources\BudgetResource;
 use App\Http\Resources\ShowBudgetResource;
 use App\Models\Budget;
 use App\Services\BudgetService;
+use App\Services\DocumentPdfService;
 use App\Traits\ApiResponse;
+use App\Traits\FileResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
 class BudgetController extends Controller implements HasMiddleware
 {
-    use ApiResponse;
+    use ApiResponse, FileResponse;
 
     public function __construct(
         protected BudgetService $budgetService
@@ -29,7 +31,7 @@ class BudgetController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:budgets.index', only: ['index']),
             new Middleware('permission:budgets.store', only: ['store']),
-            new Middleware('permission:budgets.show', only: ['show']),
+            new Middleware('permission:budgets.show', only: ['show', 'pdf']),
             new Middleware('permission:budgets.update', only: ['update']),
             new Middleware('permission:budgets.destroy', only: ['destroy']),
             new Middleware('permission:budgets.send', only: ['send']),
@@ -172,6 +174,11 @@ class BudgetController extends Controller implements HasMiddleware
             'Presupuesto recuperado exitosamente.',
             new ShowBudgetResource($budget)
         );
+    }
+
+    public function pdf(Budget $budget, DocumentPdfService $documentPdfService)
+    {
+        return $this->fileResponse($documentPdfService->budget($budget), 'application/pdf');
     }
     
     public function update(UpdateBudgetRequest $request, Budget $budget)

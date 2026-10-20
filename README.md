@@ -29,6 +29,7 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 | Backend | Laravel 12 (`laravel/framework` 12.56) |
 | Autenticación | Laravel Sanctum 4.3 (tokens Bearer) |
 | Roles y permisos | spatie/laravel-permission 6.25 (guard `api`) |
+| PDF | barryvdh/laravel-dompdf 3.1 (dompdf 3.1; requiere la extensión `gd` para imágenes) |
 | Base de datos | MySQL (Laragon con MySQL 8.4); SQLite en memoria para los tests |
 | Tests | PHPUnit 11.5 |
 | Assets | Vite 7 + Tailwind CSS 4 + axios (scaffold por defecto de Laravel, sin uso: la app es solo API) |
@@ -59,14 +60,15 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 | Historial del vehículo | Resumen, visitas (diagnóstico, OT, repuestos, factura, entrega), repuestos usados y lecturas de kilometraje |
 | Mantenimiento preventivo | Planes por km y/o días, registro automático desde la OT, km actual estimado por uso y alertas de vencimiento |
 | Reportes y dashboard | Dashboard por permisos; reportes de ventas, presupuestos, rentabilidad, productividad, inventario y clientes |
+| Exportación y comprobantes | Reportes en CSV (Excel) y PDF; PDF de presupuesto, factura (representación sin valor fiscal), recibo y comprobante de entrega |
 | Notificaciones | Emails al cliente (presupuesto enviado, vehículo listo, factura por vencer / vencida, mantenimiento próximo / vencido) con registro, reenvío y baja por cliente; bandeja interna por usuario (presupuesto aprobado/rechazado, OT completada, repuesto sin stock, cuentas por pagar vencidas) |
 
 ### Estado real (verificado el 2026-10-20)
 
 | Estado | Qué |
 |---|---|
-| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22), notificaciones (FASE 23) y los módulos base. 215 rutas API y 283 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
-| Pendiente, sin diseño | Notificaciones por WhatsApp, exportación de reportes (CSV/PDF) y comprobantes imprimibles, auditoría avanzada |
+| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24) y los módulos base. 219 rutas API y 291 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
+| Pendiente, sin diseño | Notificaciones por WhatsApp, auditoría avanzada |
 
 ---
 
@@ -123,6 +125,16 @@ MAIL_PASSWORD=<contraseña>
 MAIL_FROM_ADDRESS=<remitente del taller>
 MAIL_FROM_NAME="${APP_NAME}"
 QUEUE_CONNECTION=database
+
+# Datos del taller en los comprobantes y reportes PDF (config/company.php)
+COMPANY_NAME="Taller Ejemplo"
+COMPANY_LEGAL_NAME="Taller Ejemplo S.A."
+COMPANY_TAX_ID=80000000-0
+COMPANY_ACTIVITY="Reparación y mantenimiento de vehículos"
+COMPANY_ADDRESS="Av. Ejemplo 123"
+COMPANY_CITY=Asunción
+COMPANY_PHONE="+595 21 000000"
+COMPANY_EMAIL=taller@example.com
 ```
 
 ### Cola y tareas programadas (notificaciones)
@@ -268,7 +280,7 @@ vendor/bin/phpunit
 composer test
 ```
 
-283 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
+291 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
 consulta DNS de los emails (`EMAIL_DNS_CHECK=false`).
 
 Si `pdo_sqlite` no está habilitado en el `php.ini` de Laragon:

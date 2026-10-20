@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use Illuminate\Mail\Attachment;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -13,7 +14,7 @@ use Illuminate\Mail\Mailables\Envelope;
 class ClientNotificationMail extends Mailable
 {
     /**
-     * @param array{subject: string, greeting: string, lines: string[], rows: array<int, array<string, string>>} $content
+     * @param array{subject: string, greeting: string, lines: string[], rows: array<int, array<string, string>>, attachments?: array<int, array{filename: string, content: string}>} $content
      */
     public function __construct(
         public readonly array $content
@@ -24,6 +25,17 @@ class ClientNotificationMail extends Mailable
     {
         return new Envelope(
             subject: $this->content['subject'],
+        );
+    }
+
+    /**
+     * Adjuntos del contenido (p. ej. el PDF del presupuesto).
+     */
+    public function attachments(): array
+    {
+        return array_map(
+            fn (array $file) => Attachment::fromData(fn () => $file['content'], $file['filename'])->withMime('application/pdf'),
+            $this->content['attachments'] ?? []
         );
     }
 

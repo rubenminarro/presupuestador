@@ -13,14 +13,16 @@ use App\Http\Resources\ShowInvoiceResource;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\WorkOrder;
+use App\Services\DocumentPdfService;
 use App\Services\InvoiceService;
 use App\Traits\ApiResponse;
+use App\Traits\FileResponse;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
 class InvoiceController extends Controller implements HasMiddleware
 {
-    use ApiResponse;
+    use ApiResponse, FileResponse;
 
     public function __construct(
         protected InvoiceService $invoiceService
@@ -31,7 +33,7 @@ class InvoiceController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:invoices.index', only: ['index']),
-            new Middleware('permission:invoices.show', only: ['show']),
+            new Middleware('permission:invoices.show', only: ['show', 'pdf']),
             new Middleware('permission:invoices.store', only: ['storeFromWorkOrder']),
             new Middleware('permission:invoices.update', only: ['update', 'updateItem']),
             new Middleware('permission:invoices.issue', only: ['issue']),
@@ -83,6 +85,14 @@ class InvoiceController extends Controller implements HasMiddleware
             new ShowInvoiceResource($invoice->load(['items', 'workOrder', 'payments'])),
             200
         );
+    }
+
+    /**
+     * Representación imprimible (no es el comprobante fiscal).
+     */
+    public function pdf(Invoice $invoice, DocumentPdfService $documentPdfService)
+    {
+        return $this->fileResponse($documentPdfService->invoice($invoice), 'application/pdf');
     }
 
     public function storeFromWorkOrder(WorkOrder $workOrder)

@@ -17,13 +17,14 @@ y avisar, en lugar de "corregir" por cuenta propia.
 ## 1. Estado actual (verificado el 2026-10-20)
 
 * **Backend/API:** Laravel 12.56, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
-  proveedores (FASE 22) y notificaciones (FASE 23). 215 rutas API, 283 tests en verde.
+  proveedores (FASE 22), notificaciones (FASE 23) y exportación y comprobantes imprimibles (FASE 24). 219 rutas API,
+  291 tests en verde.
 * **Frontend:** **no está en este repositorio.** El handoff prevé React 19, pero no hay código que lo confirme; solo
   CORS y Sanctum están configurados para `http://localhost:5173`. `package.json` y `resources/` son el scaffold de
-  Laravel (Vite + Tailwind) sin uso (salvo la vista de email `resources/views/mail/client-notification.blade.php`).
+  Laravel (Vite + Tailwind) sin uso, salvo las vistas de email (`resources/views/mail`) y de PDF (`resources/views/pdf`).
   No asumir tecnología ni estructura del frontend.
-* **Pendiente (sin diseño ni fase asignada):** notificaciones por WhatsApp, exportación de reportes y comprobantes
-  imprimibles, auditoría avanzada, frontend. Ninguno tiene código hoy.
+* **Pendiente (sin diseño ni fase asignada):** notificaciones por WhatsApp, auditoría avanzada, frontend. Ninguno tiene
+  código hoy.
 
 ---
 
@@ -118,7 +119,7 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 |---|---|
 | `app/Http/Controllers/Api` | 45 controllers |
 | `app/Http/Requests` | Validación (mensajes en español) |
-| `app/Services` | Reglas de negocio (24 services) |
+| `app/Services` | Reglas de negocio (26 services) |
 | `app/Jobs`, `app/Mail`, `app/Notifications`, `app/Console/Commands` | Envío de avisos (FASE 23) |
 | `app/Models` | Modelos Eloquent (muchos con `SoftDeletes`) |
 | `app/Http/Resources` | Contrato JSON |
@@ -126,8 +127,9 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 | `app/Exceptions` | `AppException` y una subclase por módulo |
 | `app/Support/Decimal.php` | Redondeo BCMath |
 | `app/Traits/ApiResponse.php` | `successResponse` / `errorResponse` |
+| `app/Traits/FileResponse.php` | Descarga de archivos generados (PDF, CSV) |
 | `bootstrap/app.php` | Mapeo de excepciones a JSON |
-| `config/invoice.php`, `maintenance.php`, `notifications.php` | Parámetros de negocio (`invoice.default_tax_rate` es el IVA de presupuestos y facturas) |
+| `config/invoice.php`, `maintenance.php`, `notifications.php`, `company.php` | Parámetros de negocio (`invoice.default_tax_rate` es el IVA de presupuestos y facturas; `company` son los datos del taller para los PDF) |
 
 ### Contrato de respuesta
 
@@ -302,7 +304,7 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 * `draft → issued → cancelled`. Emitir exige RUC/CI y, a crédito, vencimiento ≥ hoy; toma el número del timbrado
   activo y vigente con `lockForUpdate` (`001-001-0000001`); números no se reutilizan. Emitida es inmutable
   (`INVOICE_NOT_EDITABLE`). Con pagos vigentes no se anula (`INVOICE_HAS_PAYMENTS`).
-* Fuera de alcance hoy: SIFEN, notas de crédito, PDF.
+* Fuera de alcance hoy: SIFEN y notas de crédito. El PDF de la factura (6.18) es una representación sin valor fiscal.
 
 ### 6.11 Pagos
 
@@ -407,6 +409,26 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 * **Permisos:** `client-notifications.index|show|resend`. La bandeja interna `me/notifications` (filtros `unread`,
   `type`; `meta.unread_count`), `PATCH me/notifications/{id}/read` y `POST me/notifications/read-all` no usan permisos;
   un aviso ajeno responde 404.
+* El email de "presupuesto enviado" adjunta el PDF del presupuesto (6.18).
+
+### 6.18 Exportación y comprobantes imprimibles
+
+* **PDF** (dompdf, `DocumentPdfService`, vistas en `resources/views/pdf`), con descarga `attachment`:
+  * `GET budgets/{budget}/pdf`;
+  * `GET invoices/{invoice}/pdf`;
+  * `GET payments/{payment}/receipt`: solo pagos con recibo, si no `PAYMENT_WITHOUT_RECEIPT` (422);
+  * `GET vehicle-deliveries/{delivery}/pdf`: con la firma embebida.
+
+  Permisos: el `show` de cada documento. Borradores y anulados se imprimen con marca de agua (`BORRADOR`,
+  `RECHAZADO`, `CANCELADO`, `ANULADA`/`ANULADO`).
+* **Factura en PDF:** es una representación con la leyenda "no válido como documento fiscal".
+* **Datos del taller:** se leen de `config/company.php` (variables `COMPANY_*` del `.env`).
+* **Reportes:** el mismo endpoint con `?format=csv|pdf` (mismo permiso `reports.*`). Sin `format` responde el JSON de
+  siempre. `ReportExportService` no recalcula: convierte el array del reporte en secciones (resumen + tablas).
+  * CSV para Excel en español: BOM, `;`, coma decimal.
+  * Una clave nueva en un reporte necesita su etiqueta en `ReportExportService::LABELS`.
+* **Formato de presentación:** `App\Support\Format` (`money`, `integer`, `quantity`). Es solo para mostrar: los
+  cálculos siguen con BCMath.
 
 ---
 

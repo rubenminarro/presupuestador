@@ -2643,6 +2643,54 @@ Con `{{token_caja}}` después de completar una OT:
 
 ---
 
+## FASE 24 — Exportación y comprobantes imprimibles
+
+Token: administrador. Las descargas devuelven el archivo, no JSON. En Postman, usar **Send and Download** o ver la
+respuesta en la pestaña de vista previa. Los errores (403, 404, 422) siguen en JSON. Los datos del taller del
+encabezado salen de las variables `COMPANY_*` del `.env`.
+
+### 24.1 Comprobantes
+
+| Caso | Método / Endpoint | HTTP | Resultado / error_code |
+|---|---|---|---|
+| Presupuesto | `GET {{base_url}}/budgets/{{budget_id}}/pdf` | 200 | `application/pdf`, `presupuesto-BUD-….pdf`; en borrador, marca de agua `BORRADOR` (`RECHAZADO` / `CANCELADO` según el estado) |
+| Factura emitida | `GET {{base_url}}/invoices/{{invoice_id}}/pdf` | 200 | `factura-001-001-….pdf`, con timbrado, IVA por tasa y la leyenda "no válido como documento fiscal" |
+| Factura en borrador | `GET {{base_url}}/invoices/{id-borrador}/pdf` | 200 | `factura-borrador-{id}.pdf`, marca `BORRADOR` |
+| Factura anulada | `GET {{base_url}}/invoices/{id-anulada}/pdf` | 200 | Marca `ANULADA` y el motivo |
+| Recibo (pago de factura a crédito) | `GET {{base_url}}/payments/{id}/receipt` | 200 | `recibo-REC-….pdf`; anulado → marca `ANULADO` |
+| Recibo de un pago al contado | `GET {{base_url}}/payments/{id}/receipt` | 422 | `PAYMENT_WITHOUT_RECEIPT` |
+| Comprobante de entrega | `GET {{base_url}}/vehicle-deliveries/{id}/pdf` | 200 | `entrega-ENT-….pdf`, con km, quién retira, conformidad, OT y facturas, y la firma si se cargó |
+| Documento inexistente | `GET {{base_url}}/invoices/999999/pdf` | 404 | `RESOURCE_NOT_FOUND` |
+
+El email de "presupuesto enviado" (23.2) lleva el PDF del presupuesto adjunto. Con `MAIL_MAILER=log`, el adjunto
+aparece codificado en el log.
+
+### 24.2 Reportes
+
+Mismo endpoint de cada reporte (FASE 20) con `format`:
+
+| Caso | Método / Endpoint | HTTP | Resultado |
+|---|---|---|---|
+| Ventas en CSV | `GET {{base_url}}/reports/sales?format=csv&date_from=2026-10-01&date_to=2026-10-31` | 200 | `text/csv`, `reporte-ventas_2026-10-01_2026-10-31.csv`: título, período, "Resumen" (Concepto;Valor) y una tabla por lista ("Por período", "Por condición", "Cobrado — Por medio de pago") |
+| Ventas en PDF | `GET {{base_url}}/reports/sales?format=pdf` | 200 | `application/pdf`, A4 apaisado, mes en curso |
+| Los demás | `budgets`, `profitability`, `productivity`, `inventory`, `clients` con `?format=csv` o `?format=pdf` | 200 | — |
+| Sin formato o `format=json` | `GET {{base_url}}/reports/sales` | 200 | JSON de siempre |
+| Formato inválido | `GET {{base_url}}/reports/sales?format=xlsx` | 422 | `VALIDATION_ERROR` (`format`) |
+
+El CSV abre directo en Excel en español: UTF-8 con BOM, separador `;` y coma decimal.
+
+### 24.3 Permisos
+
+Se usan los permisos de consulta existentes: `budgets.show`, `invoices.show`, `payments.show`,
+`vehicle-deliveries.show` y el `reports.*` de cada reporte.
+
+| Token | Puede | 403 `FORBIDDEN` en |
+|---|---|---|
+| `{{token_caja}}` | Factura, recibo, entrega, presupuesto; reportes de ventas y clientes | `reports/profitability?format=pdf` (solo administrador) |
+| `{{token_mec}}` | — | `invoices/{id}/pdf`, `budgets/{id}/pdf`, `payments/{id}/receipt` |
+
+---
+
 ## Errores HTTP genéricos
 
 | Caso | Método / Endpoint | Body | HTTP | error_code |

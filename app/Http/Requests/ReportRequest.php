@@ -22,6 +22,8 @@ class ReportRequest extends FormRequest
             'date_from' => ['nullable', 'date_format:Y-m-d'],
             'date_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date_from'],
             'group_by' => ['nullable', 'in:day,month'],
+            // Sin formato: JSON (contrato de siempre); csv o pdf: descarga.
+            'format' => ['nullable', 'in:json,csv,pdf'],
         ];
     }
 
@@ -37,6 +39,9 @@ class ReportRequest extends FormRequest
             ],
             'group_by' => [
                 'in' => 'La agrupación debe ser day o month.',
+            ],
+            'format' => [
+                'in' => 'El formato debe ser json, csv o pdf.',
             ],
         ];
     }

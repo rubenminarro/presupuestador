@@ -16,7 +16,7 @@ use App\Models\Reception;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleMaintenance;
-use App\Support\Decimal;
+use App\Support\Format;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -30,6 +30,11 @@ use Throwable;
  */
 class ClientNotificationService
 {
+    public function __construct(
+        protected DocumentPdfService $documentPdfService
+    ) {
+    }
+
     /**
      * Registra un aviso automático. Con clave de deduplicación, un aviso ya
      * registrado no se repite (devuelve null).
@@ -206,9 +211,10 @@ class ClientNotificationService
             ],
             'rows' => $budget->items->map(fn ($item) => [
                 'description' => $item->description,
-                'quantity' => $this->quantity($item->quantity),
+                'quantity' => Format::quantity($item->quantity, 2),
                 'total' => $this->money($item->total),
             ])->values()->all(),
+            'attachments' => [$this->documentPdfService->budget($budget)],
         ];
     }
 
@@ -280,18 +286,8 @@ class ClientNotificationService
         return trim($name . ($identifier ? " ({$identifier})" : ''));
     }
 
-    /**
-     * Guaraníes sin decimales con separador de miles.
-     */
     private function money(int|float|string|null $amount): string
     {
-        return 'Gs. ' . number_format((int) Decimal::round(Decimal::of($amount, 2), 0), 0, ',', '.');
-    }
-
-    private function quantity(int|float|string $quantity): string
-    {
-        $value = Decimal::of($quantity, 2);
-
-        return str_contains($value, '.') ? rtrim(rtrim($value, '0'), '.') : $value;
+        return Format::money($amount);
     }
 }

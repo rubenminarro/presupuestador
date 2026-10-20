@@ -10,14 +10,16 @@ use App\Http\Resources\ShowVehicleDeliveryResource;
 use App\Http\Resources\VehicleDeliveryResource;
 use App\Models\Reception;
 use App\Models\VehicleDelivery;
+use App\Services\DocumentPdfService;
 use App\Services\VehicleDeliveryService;
 use App\Traits\ApiResponse;
+use App\Traits\FileResponse;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
 class VehicleDeliveryController extends Controller implements HasMiddleware
 {
-    use ApiResponse;
+    use ApiResponse, FileResponse;
 
     public function __construct(
         protected VehicleDeliveryService $deliveryService
@@ -28,7 +30,7 @@ class VehicleDeliveryController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:vehicle-deliveries.index', only: ['index']),
-            new Middleware('permission:vehicle-deliveries.show', only: ['show']),
+            new Middleware('permission:vehicle-deliveries.show', only: ['show', 'pdf']),
             new Middleware('permission:vehicle-deliveries.store', only: ['store']),
             new Middleware('permission:vehicle-deliveries.cancel', only: ['cancel']),
         ];
@@ -79,6 +81,11 @@ class VehicleDeliveryController extends Controller implements HasMiddleware
             new ShowVehicleDeliveryResource($delivery->load(['reception', 'vehicle', 'client'])),
             200
         );
+    }
+
+    public function pdf(VehicleDelivery $delivery, DocumentPdfService $documentPdfService)
+    {
+        return $this->fileResponse($documentPdfService->delivery($delivery), 'application/pdf');
     }
 
     public function store(StoreVehicleDeliveryRequest $request, Reception $reception)

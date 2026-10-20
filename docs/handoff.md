@@ -6,7 +6,8 @@
 **Fecha:** 2026-10-17
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
-FASE 22 (pagos a proveedores), FASE 23 (notificaciones); 6 roles; 283 tests en verde (2026-10-20)
+FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes); 6 roles;
+291 tests en verde (2026-10-20)
 **Stack principal:** Laravel 12.56 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -405,6 +406,7 @@ También se completaron:
 * **FASE 21 — Compras:** ver sección 2.34.
 * **FASE 22 — Pagos a proveedores:** ver sección 2.35.
 * **FASE 23 — Notificaciones:** ver sección 2.36.
+* **FASE 24 — Exportación de reportes y comprobantes imprimibles:** ver sección 2.37.
 
 ---
 
@@ -1006,6 +1008,49 @@ Componentes:
 Fuera de alcance: WhatsApp/SMS, preferencias de aviso por tipo, plantillas editables y reintentos automáticos.
 
 Tests: `tests/Feature/Notifications/ClientNotificationTest`, `InternalNotificationTest` y `NotificationReminderTest`.
+
+---
+
+# 2.37 Exportación de reportes y comprobantes imprimibles (FASE 24, 2026-10-20)
+
+Decisiones del usuario:
+
+| Tema | Decisión |
+|---|---|
+| Reportes | Los seis reportes se exportan a CSV y a PDF |
+| Comprobantes | PDF de presupuesto, factura, recibo de pago y comprobante de entrega |
+| Factura | Es una representación, con la leyenda "Representación del comprobante – no válido como documento fiscal". No reemplaza al talonario ni a la factura electrónica |
+| Datos del taller | En `.env` / `config/company.php` (`COMPANY_NAME`, `COMPANY_LEGAL_NAME`, `COMPANY_TAX_ID`, `COMPANY_ACTIVITY`, `COMPANY_ADDRESS`, `COMPANY_CITY`, `COMPANY_PHONE`, `COMPANY_EMAIL`), sin tabla ni endpoints |
+| Email | El aviso de "presupuesto enviado" (FASE 23) adjunta el PDF del presupuesto |
+| Permisos | Se reutilizan los existentes: el `show` de cada documento y el `reports.*` de cada reporte. No hay permisos nuevos |
+| Estados | Se imprime todo con marca de agua: `BORRADOR` (presupuesto y factura en borrador), `RECHAZADO` y `CANCELADO` (presupuesto), `ANULADA` / `ANULADO` (factura, pago y entrega) |
+
+Dependencia nueva: `barryvdh/laravel-dompdf` ^3.1 (dompdf 3.1). Usa la fuente DejaVu Sans, que trae los acentos, y la extensión `gd` para la firma.
+
+Endpoints, todos de solo lectura. Responden el archivo con `Content-Disposition: attachment`; los errores siguen en JSON con el contrato habitual:
+- `GET budgets/{budget}/pdf` (`budgets.show`).
+- `GET invoices/{invoice}/pdf` (`invoices.show`).
+- `GET payments/{payment}/receipt` (`payments.show`). Solo los pagos con recibo, es decir, los de facturas a crédito; los demás responden `PAYMENT_WITHOUT_RECEIPT` (422, `PaymentException`).
+- `GET vehicle-deliveries/{delivery}/pdf` (`vehicle-deliveries.show`). Incluye la firma como imagen embebida.
+- Reportes: el mismo endpoint con `?format=csv|pdf`, por ejemplo `GET reports/sales?format=csv`. Sin `format`, o con `format=json`, la respuesta es el JSON de siempre; un formato inválido responde `422 VALIDATION_ERROR`.
+
+Exportación de reportes (`ReportExportService`): no recalcula nada, recorre el array de `ReportService`.
+- Los valores sueltos van a la sección "Resumen" (Concepto / Valor). Los grupos anidados llevan un prefijo, por ejemplo "Cobrado — Total"; `totals` va sin prefijo.
+- Cada lista de filas se convierte en una tabla.
+- Las etiquetas en español salen de un mapa en el servicio. Una clave nueva sin etiqueta se muestra legible a partir de su nombre en inglés.
+- El CSV está pensado para Excel en español: UTF-8 con BOM, separador `;` y coma decimal.
+- El PDF sale en A4 apaisado.
+- Nombre del archivo: `reporte-{nombre}_{desde}_{hasta}.{ext}`.
+
+Componentes:
+- Services: `DocumentPdfService` y `ReportExportService`.
+- Trait `FileResponse` y helper de presentación `App\Support\Format` (`money`, `integer`, `quantity`; también lo usa `ClientNotificationService`).
+- Vistas en `resources/views/pdf` (`layout`, `partials/parties`, `budget`, `invoice`, `receipt`, `delivery`, `report`).
+- `ClientNotificationMail::attachments()`.
+
+Fuera de alcance: Excel (.xlsx), monto en letras en el recibo, logo del taller, original/duplicado fiscal y KuDE/SIFEN.
+
+Tests: `tests/Feature/Documents/DocumentPdfTest` y `tests/Feature/Reports/ReportExportTest`.
 
 ---
 
@@ -3353,15 +3398,15 @@ La arquitectura objetivo es:
 El proyecto actualmente se encuentra en:
 
 ```text
-FASE 23 — NOTIFICACIONES — IMPLEMENTADA (2026-10-20, ver 2.36)
+FASE 24 — EXPORTACIÓN Y COMPROBANTES IMPRIMIBLES — IMPLEMENTADA (2026-10-20, ver 2.37)
 ```
 
 Con la FASE 20 se completó el roadmap original (FASES 10–20); después se implementaron compras (FASE 21), pagos a
-proveedores (FASE 22) y notificaciones por email y bandeja interna (FASE 23). Siguen sin fase asignada, a priorizar:
+proveedores (FASE 22), notificaciones por email y bandeja interna (FASE 23) y exportación de reportes y comprobantes
+imprimibles (FASE 24). Siguen sin fase asignada, a priorizar:
 
 ```text
 Notificaciones por WhatsApp (el canal ya está previsto en NotificationChannel)
-Exportación de reportes (CSV / PDF) y comprobantes imprimibles (factura, recibo, entrega)
 Auditoría avanzada (AuditLog de precios, stock, facturación y pagos)
 Frontend React 19 (consumo de esta API)
 ```
@@ -3475,13 +3520,13 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 [✓] Compras con IVA incluido e ingreso de stock (FASE 21)
 [✓] Pagos a proveedores y cuentas por pagar (FASE 22)
 [✓] Notificaciones por email y bandeja interna (FASE 23)
+[✓] Exportación de reportes (CSV/PDF) y comprobantes imprimibles (FASE 24)
 ```
 
 ## Próximo
 
 ```text
 [ ] Notificaciones por WhatsApp
-[ ] Exportación de reportes y comprobantes
 [ ] Auditoría avanzada
 ```
 

@@ -104,6 +104,8 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
     Route::post('budgets/{budget}/reopen', [BudgetController::class, 'reopen'])->name('budgets.reopen');
 
+    Route::get('budgets/{budget}/pdf', [BudgetController::class, 'pdf'])->name('budgets.pdf');
+
     Route::apiResource('budgets.items', BudgetItemController::class);
 
     Route::apiResource('work-orders', WorkOrderController::class)->except(['update', 'destroy']);
@@ -148,6 +150,8 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
     Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
 
+    Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
+
     Route::patch('invoices/{invoice}', [InvoiceController::class, 'update'])->name('invoices.update');
 
     Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
@@ -167,6 +171,8 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
     Route::get('payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
 
+    Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
+
     Route::post('payments/{payment}/cancel', [PaymentController::class, 'cancel'])->name('payments.cancel');
 
     Route::post('receptions/{reception}/delivery', [VehicleDeliveryController::class, 'store'])->name('receptions.delivery.store');
@@ -174,6 +180,8 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::get('vehicle-deliveries', [VehicleDeliveryController::class, 'index'])->name('vehicle-deliveries.index');
 
     Route::get('vehicle-deliveries/{delivery}', [VehicleDeliveryController::class, 'show'])->name('vehicle-deliveries.show');
+
+    Route::get('vehicle-deliveries/{delivery}/pdf', [VehicleDeliveryController::class, 'pdf'])->name('vehicle-deliveries.pdf');
 
     Route::post('vehicle-deliveries/{delivery}/cancel', [VehicleDeliveryController::class, 'cancel'])->name('vehicle-deliveries.cancel');
 
