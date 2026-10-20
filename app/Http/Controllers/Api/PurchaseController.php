@@ -46,6 +46,7 @@ class PurchaseController extends Controller implements HasMiddleware
 
         $purchases = Purchase::query()
             ->with('supplier')
+            ->withSum(['payments as paid_total' => fn ($q) => $q->registered()], 'amount')
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->when($request->filled('supplier_id'), fn ($q) => $q->where('supplier_id', $request->supplier_id))
             ->when($request->filled('search'), function ($q) use ($search) {
@@ -78,7 +79,7 @@ class PurchaseController extends Controller implements HasMiddleware
     {
         return $this->successResponse(
             'Compra obtenida correctamente.',
-            new ShowPurchaseResource($purchase->load(['supplier', 'items.part'])),
+            new ShowPurchaseResource($purchase->load(['supplier', 'items.part', 'payments'])),
             200
         );
     }

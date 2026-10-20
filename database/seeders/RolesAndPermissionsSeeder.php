@@ -275,6 +275,14 @@ class RolesAndPermissionsSeeder extends Seeder
             'purchases.destroy',
             'purchases.receive',
             'purchases.cancel',
+
+            /* supplier payment permissions */
+            'supplier-payments.index',
+            'supplier-payments.show',
+            'supplier-payments.store',
+            'supplier-payments.cancel',
+            'supplier-payments.summary',
+            'accounts-payable.view',
         ];
 
         foreach ($permissions as $permission) {
@@ -435,6 +443,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'parts.index', 'parts.show', 'part-categories.index',
                     'inventory.index', 'inventory.show',
                     'purchases.index', 'purchases.show',
+                    'supplier-payments.index', 'supplier-payments.show', 'accounts-payable.view',
                     'vehicle-deliveries.index', 'vehicle-deliveries.show',
                     'vehicle-history.view',
                     'maintenance-plans.index', 'maintenance-plans.show',
@@ -454,6 +463,8 @@ class RolesAndPermissionsSeeder extends Seeder
                     'invoices.issue', 'invoices.cancel', 'invoices.destroy',
                     'payments.index', 'payments.show', 'payments.store', 'payments.cancel', 'payments.summary',
                     'purchases.index', 'purchases.show',
+                    'supplier-payments.index', 'supplier-payments.show', 'supplier-payments.store',
+                    'supplier-payments.cancel', 'supplier-payments.summary', 'accounts-payable.view',
                     'vehicle-deliveries.index', 'vehicle-deliveries.show',
                     'vehicle-history.view',
                     'dashboard.view', 'reports.sales', 'reports.clients',
@@ -470,6 +481,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'inventory.index', 'inventory.show', 'inventory.entry', 'inventory.exit', 'inventory.adjust',
                     'purchases.index', 'purchases.show', 'purchases.store', 'purchases.update', 'purchases.destroy',
                     'purchases.receive', 'purchases.cancel',
+                    'supplier-payments.index', 'supplier-payments.show', 'accounts-payable.view',
                     'work-orders.index', 'work-orders.show',
                     'work-order-parts.index', 'work-order-parts.store', 'work-order-parts.update', 'work-order-parts.reserve',
                     'work-order-parts.consume', 'work-order-parts.return', 'work-order-parts.cancel',

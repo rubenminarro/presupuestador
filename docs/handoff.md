@@ -5,8 +5,8 @@
 **Versión del handoff:** 1.2
 **Fecha:** 2026-10-17
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
-cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes) y FASE 21 (compras);
-6 roles; 260 tests en verde (2026-10-20)
+cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
+FASE 22 (pagos a proveedores); 6 roles; 268 tests en verde (2026-10-20)
 **Stack principal:** Laravel 12.56 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -883,6 +883,57 @@ para distinguir los motivos por los que no se puede recibir.
 
 Tests: `tests/Feature/Purchases/PurchaseTest`. Los tests que cargaban stock con entradas manuales de compra usan el
 helper `InventoryTestCase::purchase()` (compra exenta de una línea, recibida).
+
+> **Desde la FASE 22 (2.35):** una compra con pagos vigentes no se anula (`PURCHASE_HAS_PAYMENTS`).
+
+---
+
+# 2.35 Pagos a proveedores (FASE 22, 2026-10-20)
+
+Cuentas por pagar sobre las compras recibidas, con el mismo modelo que los pagos de clientes (FASE 16). Decisiones del
+usuario:
+
+| Tema | Decisión |
+|---|---|
+| Compras al contado | También quedan con saldo y se les registra el pago (el egreso queda con su medio de pago); no se dan por pagadas al recibir |
+| Imputación | Un pago, una compra. Varios pagos por compra hasta el total. Sin pagos a varias compras, anticipos ni pagos sin compra |
+| Anular la compra | Con pagos vigentes se rechaza (`PURCHASE_HAS_PAYMENTS`, 422), como `INVOICE_HAS_PAYMENTS`: primero se anulan los pagos |
+| Medios | Se reutiliza `PaymentMethod` (`cash|card|transfer|check`); referencia obligatoria salvo efectivo, banco obligatorio en cheque (guardado también en transferencia); sin vuelto |
+| Caja | `payments/summary` no cambia; los egresos tienen su propio resumen (`supplier-payments/summary`) |
+| Roles | `cajero` todo; `deposito` y `jefe-taller` consultan pagos y cuentas por pagar (sin resumen de egresos) |
+| Fuera de alcance | Retenciones de IVA y renta, notas de crédito del proveedor, moneda extranjera |
+
+Datos (migración `000047`): `supplier_payments` (código `PAG-000001` = máximo id + 1, `purchase_id`, `supplier_id`
+copiado de la compra para filtrar y agrupar, fecha, monto entero, medio, referencia, banco, `supplier_receipt_number`
+opcional, notas, estado `registered|cancelled` con `PaymentStatus`, alta y anulación). `purchases` no cambia: pagado,
+saldo y estado de pago (`unpaid|partial|paid`, `InvoicePaymentStatus`, solo en recibidas) se calculan
+(`Purchase::paidTotal()`, `balance()`, `paymentStatus()`; el listado usa `withSum` como facturas).
+
+Reglas: solo compras `received` (`PURCHASE_NOT_PAYABLE`); saldo cero → `PURCHASE_ALREADY_PAID`; monto mayor al saldo →
+`SUPPLIER_PAYMENT_EXCEEDS_BALANCE`; fecha no futura (validación) ni anterior a la factura del proveedor
+(`SUPPLIER_PAYMENT_DATE_BEFORE_DOCUMENT`). El pago no se edita ni se elimina (`SUPPLIER_PAYMENT_NOT_EDITABLE`, 409, a
+nivel de modelo): se anula con motivo (`SUPPLIER_PAYMENT_NOT_CANCELLABLE` si ya lo está). Orden de bloqueo: compra → pago.
+
+Cuentas por pagar (`GET accounts-payable`, permiso `accounts-payable.view`): a hoy, compras recibidas con saldo por
+proveedor; vence en `due_date` (crédito) o en la fecha de la factura (contado) y está vencida si esa fecha es anterior a
+hoy. Totales `balance`, `overdue`, `not_due`; con `supplier_id`, el detalle por compra con `days_overdue`.
+
+Endpoints: `GET|POST purchases/{purchase}/payments`, `GET supplier-payments` (filtros proveedor, compra, medio, estado,
+búsqueda, fechas), `GET supplier-payments/summary`, `GET supplier-payments/{supplierPayment}`,
+`POST supplier-payments/{supplierPayment}/cancel`, `GET accounts-payable`. Permisos
+`supplier-payments.index|show|store|cancel|summary` y `accounts-payable.view`. `PurchaseResource` suma `paid_total`,
+`balance` y `payment_status`; `ShowPurchaseResource`, `payment_summary` y (en `show`) `payments`. Solo campos nuevos:
+el contrato existente no cambia.
+
+Componentes: `SupplierPaymentService`, `SupplierPaymentController`, `SupplierPayment`, `SupplierPaymentException`,
+`StoreSupplierPaymentRequest`, `IndexSupplierPaymentRequest`, `AccountsPayableRequest` (se reutilizan
+`CancelPaymentRequest` y `PaymentSummaryRequest`), `SupplierPaymentResource` y `ShowSupplierPaymentResource`.
+
+Respecto del diseño aprobado: el campo del total pagado se llama `paid_total` (no `paid_amount`) por consistencia con
+las facturas; el banco es obligatorio solo en cheque, igual que en los cobros.
+
+Tests: `tests/Feature/Purchases/SupplierPaymentTest`. El helper `InventoryTestCase::purchase()` acepta además
+`supplier_document_date`, `condition` y `due_date`.
 
 ---
 
@@ -3230,14 +3281,13 @@ La arquitectura objetivo es:
 El proyecto actualmente se encuentra en:
 
 ```text
-FASE 21 — COMPRAS — IMPLEMENTADA (2026-10-20, ver 2.34)
+FASE 22 — PAGOS A PROVEEDORES — IMPLEMENTADA (2026-10-20, ver 2.35)
 ```
 
-Con la FASE 20 se completó el roadmap original (FASES 10–20); la FASE 21 (compras) fue la primera de los pendientes.
-Siguen sin fase asignada, a priorizar:
+Con la FASE 20 se completó el roadmap original (FASES 10–20); después se implementaron compras (FASE 21) y pagos a
+proveedores (FASE 22). Siguen sin fase asignada, a priorizar:
 
 ```text
-Pagos a proveedores / cuentas por pagar (excluido de la FASE 21)
 Notificaciones (presupuesto enviado, vehículo listo, pago pendiente, mantenimiento próximo)
 Exportación de reportes (CSV / PDF) y comprobantes imprimibles (factura, recibo, entrega)
 Auditoría avanzada (AuditLog de precios, stock, facturación y pagos)
@@ -3351,12 +3401,12 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 [✓] Mantenimiento preventivo con planes, km estimado y alertas (FASE 19)
 [✓] Reportes y dashboard por área (FASE 20)
 [✓] Compras con IVA incluido e ingreso de stock (FASE 21)
+[✓] Pagos a proveedores y cuentas por pagar (FASE 22)
 ```
 
 ## Próximo
 
 ```text
-[ ] Pagos a proveedores
 [ ] Notificaciones
 [ ] Exportación de reportes y comprobantes
 [ ] Auditoría avanzada

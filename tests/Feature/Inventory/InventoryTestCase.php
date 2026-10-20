@@ -36,7 +36,9 @@ abstract class InventoryTestCase extends PartsTestCase
         $purchaseId = $this->postJson('/api/purchases', [
             'supplier_id' => $supplierId,
             'supplier_document_number' => $overrides['supplier_document_number'] ?? '001-001-' . str_pad((string) ++$this->purchaseDocument, 7, '0', STR_PAD_LEFT),
-            'supplier_document_date' => now()->toDateString(),
+            'supplier_document_date' => $overrides['supplier_document_date'] ?? now()->toDateString(),
+            'condition' => $overrides['condition'] ?? 'cash',
+            'due_date' => $overrides['due_date'] ?? null,
         ])->assertCreated()->json('data.id');
 
         $item = $this->postJson("/api/purchases/{$purchaseId}/items", [

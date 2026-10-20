@@ -42,6 +42,12 @@ class ShowPurchaseResource extends JsonResource
                 'total' => $this->total,
                 'net_total' => $this->net_total,
             ],
+            'payment_summary' => [
+                'paid_total' => $this->paidTotal(),
+                'balance' => $this->balance(),
+                'status' => $this->paymentStatus()?->value,
+            ],
+            'payments' => SupplierPaymentResource::collection($this->whenLoaded('payments')),
             'notes' => $this->notes,
             'received_at' => $this->received_at,
             'received_by' => $this->received_by,

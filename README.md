@@ -50,6 +50,7 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 | Órdenes de trabajo | Nace de un presupuesto aprobado; estados, ítems, mecánico responsable |
 | Repuestos e inventario | Catálogo, proveedores, stock con movimientos inmutables, reservas y consumo en la OT |
 | Compras | Factura del proveedor con IVA incluido (10% / 5% / exento por línea), borrador → recibida (ingresa el stock al costo sin IVA y actualiza el costo del proveedor) → anulada (revierte el stock) |
+| Pagos a proveedores | Pagos parciales contra compras recibidas (contado o crédito), comprobante `PAG-000001`, anulación con motivo, resumen de egresos y cuentas por pagar por proveedor (vencido / por vencer) |
 | Servicios y mano de obra | Catálogo de servicios, reparto entre mecánicos, horas reales, comisiones |
 | Cierre económico | Al completar la OT se congelan venta, costos, margen y comisiones; liquidación de comisiones |
 | Facturación | Timbrado, numeración `001-001-0000001`, IVA 10% / 5% / exento, contado o crédito |
@@ -63,8 +64,8 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 
 | Estado | Qué |
 |---|---|
-| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21) y los módulos base. 201 rutas API y 260 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
-| Pendiente, sin diseño | Pagos a proveedores, notificaciones, exportación de reportes (CSV/PDF) y comprobantes imprimibles, auditoría avanzada |
+| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22) y los módulos base. 208 rutas API y 268 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
+| Pendiente, sin diseño | Notificaciones, exportación de reportes (CSV/PDF) y comprobantes imprimibles, auditoría avanzada |
 
 ---
 
@@ -240,7 +241,7 @@ vendor/bin/phpunit
 composer test
 ```
 
-260 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
+268 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
 consulta DNS de los emails (`EMAIL_DNS_CHECK=false`).
 
 Si `pdo_sqlite` no está habilitado en el `php.ini` de Laragon:

@@ -221,6 +221,14 @@ class PurchaseService
                 );
             }
 
+            if ($purchase->payments()->registered()->exists()) {
+                throw new PurchaseException(
+                    'La compra tiene pagos registrados: anúlelos antes de anular la compra.',
+                    422,
+                    'PURCHASE_HAS_PAYMENTS'
+                );
+            }
+
             foreach ($purchase->items()->with('part')->get() as $item) {
                 try {
                     $this->inventoryService->reversePurchase(

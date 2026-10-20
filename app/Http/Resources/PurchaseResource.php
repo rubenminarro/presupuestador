@@ -27,6 +27,9 @@ class PurchaseResource extends JsonResource
             'due_date' => $this->due_date?->toDateString(),
             'total' => $this->total,
             'net_total' => $this->net_total,
+            'paid_total' => $this->paidTotal(),
+            'balance' => $this->balance(),
+            'payment_status' => $this->paymentStatus()?->value,
             'received_at' => $this->received_at,
             'created_at' => $this->created_at,
         ];

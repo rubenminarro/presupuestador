@@ -43,6 +43,7 @@ use App\Http\Controllers\Api\InventoryStockController;
 use App\Http\Controllers\Api\InventoryMovementController;
 use App\Http\Controllers\Api\InventoryOperationController;
 use App\Http\Controllers\Api\PurchaseController;
+use App\Http\Controllers\Api\SupplierPaymentController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -290,5 +291,20 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::post('purchases/{purchase}/receive', [PurchaseController::class, 'receive'])->name('purchases.receive');
 
     Route::post('purchases/{purchase}/cancel', [PurchaseController::class, 'cancel'])->name('purchases.cancel');
+
+    Route::get('purchases/{purchase}/payments', [SupplierPaymentController::class, 'purchasePayments'])->name('purchases.payments.index');
+
+    Route::post('purchases/{purchase}/payments', [SupplierPaymentController::class, 'store'])->name('purchases.payments.store');
+
+    // Antes de supplier-payments/{supplierPayment}: si no, la ruta con parámetro captura "summary".
+    Route::get('supplier-payments/summary', [SupplierPaymentController::class, 'summary'])->name('supplier-payments.summary');
+
+    Route::get('supplier-payments', [SupplierPaymentController::class, 'index'])->name('supplier-payments.index');
+
+    Route::get('supplier-payments/{supplierPayment}', [SupplierPaymentController::class, 'show'])->name('supplier-payments.show');
+
+    Route::post('supplier-payments/{supplierPayment}/cancel', [SupplierPaymentController::class, 'cancel'])->name('supplier-payments.cancel');
+
+    Route::get('accounts-payable', [SupplierPaymentController::class, 'accountsPayable'])->name('accounts-payable');
 
 });

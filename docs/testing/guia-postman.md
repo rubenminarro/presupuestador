@@ -2444,6 +2444,116 @@ proveedor no se revierte.
 
 > Depósito: todo el módulo. Jefe de taller: solo consulta, como el cajero.
 
+> Desde la FASE 22, una compra con pagos vigentes no se anula (`PURCHASE_HAS_PAYMENTS`, ver 22.4).
+
+---
+
+## FASE 22 — Pagos a proveedores
+
+Token: administrador. Cada compra recibida (contado o crédito) queda con saldo hasta registrar sus pagos. Montos en
+guaraníes enteros.
+
+Preparar una compra recibida a crédito: repetir 21.1 con `"supplier_document_number": "001-001-0007001"` y
+`"supplier_document_date"` de hoy, agregar `{ "part_id": {{part_unit_id}}, "quantity": 2, "unit_cost": 55000 }` (21.2)
+y recibirla (21.3). Guardar `data.id` → `purchase4_id`. La respuesta trae `payment_summary`: `paid_total` `"0.00"`,
+`balance` `"110000.00"`, `status` `unpaid`.
+
+### 22.1 Pago parcial en efectivo
+
+`POST {{base_url}}/purchases/{{purchase4_id}}/payments`
+
+```json
+{
+  "amount": 40000,
+  "method": "cash",
+  "supplier_receipt_number": "R-0099",
+  "notes": "Entrega a cuenta"
+}
+```
+
+Esperado: `201`, `code` `PAG-…`, `payment_date` de hoy, `reference` y `bank` `null`, `purchase.balance` `"70000.00"`,
+`purchase.payment_status` `partial`. Guardar `data.id` → `supplier_payment_id`.
+
+### 22.2 Saldo con cheque
+
+`POST {{base_url}}/purchases/{{purchase4_id}}/payments`
+
+```json
+{
+  "amount": 70000,
+  "method": "check",
+  "reference": "CH-000778",
+  "bank": "Banco Basa"
+}
+```
+
+Esperado: `201`, `purchase.balance` `"0.00"`, `purchase.payment_status` `paid`.
+
+| Caso | Método / Endpoint | Body | HTTP | error_code |
+|---|---|---|---|---|
+| Compra ya pagada | `POST {{base_url}}/purchases/{{purchase4_id}}/payments` | `{ "amount": 1, "method": "cash" }` | 422 | `PURCHASE_ALREADY_PAID` |
+| Ver pagos de la compra | `GET {{base_url}}/purchases/{{purchase4_id}}/payments` | — | 200 | 2 pagos |
+| Detalle de la compra | `GET {{base_url}}/purchases/{{purchase4_id}}` | — | 200 | `payment_summary.status` `paid` y `payments` |
+
+### 22.3 Validaciones del pago
+
+Los errores de validación se responden antes de mirar el saldo; los de saldo y fecha frente a la factura, en 22.4.
+
+| Caso | Método / Endpoint | Body | HTTP | error_code |
+|---|---|---|---|---|
+| Fecha futura, decimales, medio inválido | `POST {{base_url}}/purchases/{{purchase4_id}}/payments` | `{ "amount": 1.5, "method": "x", "payment_date": "2099-01-01" }` | 422 | `VALIDATION_ERROR` (`amount`, `method`, `payment_date`) |
+| Cheque sin referencia ni banco | ídem | `{ "amount": 1000, "method": "check" }` | 422 | `VALIDATION_ERROR` (`reference`, `bank`) |
+| Compra en borrador | `POST {{base_url}}/purchases/{id-borrador}/payments` | `{ "amount": 1000, "method": "cash" }` | 422 | `PURCHASE_NOT_PAYABLE` |
+| Compra anulada | `POST {{base_url}}/purchases/{{purchase2_id}}/payments` | ídem | 422 | `PURCHASE_NOT_PAYABLE` |
+
+### 22.4 Anular un pago
+
+`POST {{base_url}}/supplier-payments/{{supplier_payment_id}}/cancel` con `{ "reason": "Cargado dos veces" }` → `200`,
+`status.value` `cancelled`, `purchase.balance` `"40000.00"`, `purchase.payment_status` `partial`.
+
+| Caso | Método / Endpoint | Body | HTTP | error_code |
+|---|---|---|---|---|
+| Sin motivo | `POST {{base_url}}/supplier-payments/{{supplier_payment_id}}/cancel` | `{}` | 422 | `VALIDATION_ERROR` (`errors.reason`) |
+| Anular de nuevo | ídem | `{ "reason": "Otra vez" }` | 422 | `SUPPLIER_PAYMENT_NOT_CANCELLABLE` |
+| Supera el saldo (40.000) | `POST {{base_url}}/purchases/{{purchase4_id}}/payments` | `{ "amount": 40001, "method": "cash" }` | 422 | `SUPPLIER_PAYMENT_EXCEEDS_BALANCE` |
+| Fecha anterior a la factura | ídem | `{ "amount": 1000, "method": "cash", "payment_date": "2020-01-01" }` | 422 | `SUPPLIER_PAYMENT_DATE_BEFORE_DOCUMENT` |
+| Anular la compra con un pago vigente | `POST {{base_url}}/purchases/{{purchase4_id}}/cancel` | `{ "reason": "Error" }` | 422 | `PURCHASE_HAS_PAYMENTS` |
+
+### 22.5 Listado y resumen de egresos
+
+| Caso | Método / Endpoint | HTTP | Resultado |
+|---|---|---|---|
+| Todos | `GET {{base_url}}/supplier-payments` | 200 | `meta.pagination`, con `purchase_code` y `supplier_name` |
+| Por proveedor / compra | `GET {{base_url}}/supplier-payments?supplier_id={{supplier_id}}&purchase_id={{purchase4_id}}` | 200 | Filtrado |
+| Por medio y estado | `GET {{base_url}}/supplier-payments?method=check&status=registered` | 200 | Filtrado |
+| Búsqueda | `GET {{base_url}}/supplier-payments?search=CH-000778` | 200 | Por código, referencia, recibo del proveedor, código o factura de la compra |
+| Por fecha | `GET {{base_url}}/supplier-payments?date_from=2026-10-01&date_to=2026-10-31` | 200 | Filtrado |
+| Detalle | `GET {{base_url}}/supplier-payments/{{supplier_payment_id}}` | 200 | Proveedor, compra con saldo y datos de anulación |
+| Resumen (hoy) | `GET {{base_url}}/supplier-payments/summary` | 200 | `total` y `by_method` de pagos vigentes; `cancelled_count` |
+| Resumen por período | `GET {{base_url}}/supplier-payments/summary?date_from=2026-10-01&date_to=2026-10-31` | 200 | — |
+
+El resumen de caja de cobros (`GET payments/summary`) no incluye los pagos a proveedores.
+
+### 22.6 Cuentas por pagar
+
+`GET {{base_url}}/accounts-payable` → `200`: `as_of` (hoy), `balance`, `overdue`, `not_due` y `suppliers` (saldo por
+proveedor, ordenado de mayor a menor, con `purchases_count` y `oldest_due_date`). Solo compras recibidas con saldo. Vence
+en `due_date` (crédito) o en la fecha de la factura (contado); vencido = antes de hoy.
+
+`GET {{base_url}}/accounts-payable?supplier_id={{supplier_id}}` → además, `suppliers.0.purchases` con cada compra
+(`due_date`, `days_overdue`, `total`, `paid_total`, `balance`, `payment_status`). Proveedor inexistente → `422
+VALIDATION_ERROR`.
+
+### 22.7 Permisos
+
+| Token | Puede | 403 `FORBIDDEN` en |
+|---|---|---|
+| `{{token_caja}}` | todo el módulo | — |
+| `{{token_mec}}` | — | `supplier-payments/*`, `purchases/{id}/payments`, `accounts-payable` |
+
+> Depósito y jefe de taller: consultan pagos (`GET supplier-payments`, detalle, pagos de la compra) y cuentas por
+> pagar; no registran, no anulan ni ven el resumen de egresos.
+
 ---
 
 ## Errores HTTP genéricos

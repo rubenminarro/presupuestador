@@ -3,8 +3,11 @@
 namespace App\Models;
 
 use App\Enums\InvoiceCondition;
+use App\Enums\InvoicePaymentStatus;
+use App\Enums\PaymentStatus;
 use App\Enums\PurchaseStatus;
 use App\Exceptions\PurchaseException;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -115,6 +118,58 @@ class Purchase extends Model
     public function items(): HasMany
     {
         return $this->hasMany(PurchaseItem::class)->orderBy('id');
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(SupplierPayment::class)->orderBy('id');
+    }
+
+    /**
+     * Total pagado (pagos no anulados). Usa paid_total si vino de withSum
+     * o la relación si está cargada.
+     */
+    public function paidTotal(): string
+    {
+        if (array_key_exists('paid_total', $this->attributes)) {
+            return bcadd((string) ($this->attributes['paid_total'] ?? '0'), '0', 2);
+        }
+
+        $payments = $this->relationLoaded('payments')
+            ? $this->payments->where('status', PaymentStatus::REGISTERED)
+            : $this->payments()->registered()->get();
+
+        return $payments->reduce(fn (string $sum, SupplierPayment $p) => bcadd($sum, $p->amount, 2), '0.00');
+    }
+
+    public function balance(): string
+    {
+        return bcsub((string) $this->total, $this->paidTotal(), 2);
+    }
+
+    /**
+     * Estado de pago: solo aplica a compras recibidas.
+     */
+    public function paymentStatus(): ?InvoicePaymentStatus
+    {
+        if ($this->status !== PurchaseStatus::RECEIVED) {
+            return null;
+        }
+
+        return match (true) {
+            bccomp($this->balance(), '0', 2) <= 0 => InvoicePaymentStatus::PAID,
+            bccomp($this->paidTotal(), '0', 2) > 0 => InvoicePaymentStatus::PARTIAL,
+            default => InvoicePaymentStatus::UNPAID,
+        };
+    }
+
+    /**
+     * Fecha en que vence la deuda: el vencimiento a crédito o, al contado,
+     * la fecha de la factura del proveedor.
+     */
+    public function payableDueDate(): ?CarbonInterface
+    {
+        return $this->due_date ?? $this->supplier_document_date;
     }
 
     public function creator(): BelongsTo

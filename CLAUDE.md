@@ -16,13 +16,13 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 ## 1. Estado actual (verificado el 2026-10-20)
 
-* **Backend/API:** Laravel 12.56, roadmap original completo (FASES 10–20) y compras (FASE 21). 201 rutas API,
-  260 tests en verde.
+* **Backend/API:** Laravel 12.56, roadmap original completo (FASES 10–20) compras (FASE 21) y pagos a
+  proveedores (FASE 22). 208 rutas API, 268 tests en verde.
 * **Frontend:** **no está en este repositorio.** El handoff prevé React 19, pero no hay código que lo confirme; solo
   CORS y Sanctum están configurados para `http://localhost:5173`. `package.json` y `resources/` son el scaffold de
   Laravel (Vite + Tailwind) sin uso. No asumir tecnología ni estructura del frontend.
-* **Pendiente (sin diseño ni fase asignada):** pagos a proveedores, notificaciones, exportación de reportes y comprobantes
-  imprimibles, auditoría avanzada, frontend. Ninguno tiene código hoy.
+* **Pendiente (sin diseño ni fase asignada):** notificaciones, exportación de reportes y comprobantes imprimibles,
+  auditoría avanzada, frontend. Ninguno tiene código hoy.
 
 ---
 
@@ -72,8 +72,9 @@ resultados esperados y casos de error).
 * Dinero y cantidades con **BCMath** sobre strings (`App\Support\Decimal::round`), nunca `float`.
 * Operaciones sobre varios registros en `DB::transaction`; concurrencia con `lockForUpdate`.
   Orden de bloqueo: OT → línea → `part_stocks`; OT → recepción (recálculo de estado); factura → pago;
-  recepción → entregas; compra → `part_stocks`.
-* Documentos emitidos (cierre económico, factura emitida, pago, entrega, movimiento de inventario, compra recibida) son
+  recepción → entregas; compra → `part_stocks`; compra → pago a proveedor.
+* Documentos emitidos (cierre económico, factura emitida, pago, entrega, movimiento de inventario, compra recibida,
+  pago a proveedor) son
   **inmutables a nivel de modelo**: solo se anulan o se corrigen con otro registro.
 * Rutas anidadas con `scopeBindings()` (grupo global en `routes/api.php`); si el parámetro hijo **no** es una relación
   del padre, usar `->withoutScopedBindings()` en esa ruta.
@@ -111,9 +112,9 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 
 | Carpeta | Contenido |
 |---|---|
-| `app/Http/Controllers/Api` | 42 controllers |
+| `app/Http/Controllers/Api` | 43 controllers |
 | `app/Http/Requests` | Validación (mensajes en español) |
-| `app/Services` | Reglas de negocio (20 services) |
+| `app/Services` | Reglas de negocio (21 services) |
 | `app/Models` | Modelos Eloquent (muchos con `SoftDeletes`) |
 | `app/Http/Resources` | Contrato JSON |
 | `app/Enums` | Estados y tipos |
@@ -138,7 +139,8 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
   `Accept: application/json` en toda ruta `api/*` (también 404/405), así que la API nunca responde HTML.
 * Excepciones de dominio: `BudgetException`, `WorkOrderException`, `WorkOrderPartException`, `PartException`,
   `SupplierException`, `InventoryException`, `ServiceException`, `InvoiceException`, `PaymentException`,
-  `VehicleDeliveryException`, `MaintenanceException`, `ReceptionException`, `PurchaseException` (todas extienden `AppException(message, status, errorCode, errors)`).
+  `VehicleDeliveryException`, `MaintenanceException`, `ReceptionException`, `PurchaseException`,
+  `SupplierPaymentException` (todas extienden `AppException(message, status, errorCode, errors)`).
 
 ### Autenticación
 
@@ -154,9 +156,9 @@ Sanctum con tokens Bearer: `POST /api/login` (público) devuelve `data.token`; t
 | `administrador` | Todo (`Gate::before`) | Exclusivo: usuarios/roles/permisos, costos y margen (`work-orders.view-economics`), liquidar comisiones, anular entregas, timbrados, ABM de planes de mantenimiento, reporte de rentabilidad |
 | `mechanic` | Ejecuta la OT | Diagnóstico, iniciar/pausar/completar OT e ítems, consumir/devolver repuestos, sus horas y comisiones, historial, estado de mantenimiento, dashboard (bloque taller) |
 | `recepcionista` | Atiende al cliente | Clientes, vehículos, recepciones, checklist, presupuestos completos, registrar entregas, alertas de mantenimiento, reporte de presupuestos |
-| `jefe-taller` | Organiza el trabajo | OT completas, ítems, repuestos en OT, asignación y horas de todos, diagnóstico, intervalos de mantenimiento por vehículo, reporte de productividad, consulta de compras |
-| `cajero` | Cobra | Facturas, pagos, resumen de caja, reportes de ventas y clientes, consulta de compras |
-| `deposito` | Stock | Repuestos, proveedores, inventario, compras completas, repuestos en OT, reporte de inventario |
+| `jefe-taller` | Organiza el trabajo | OT completas, ítems, repuestos en OT, asignación y horas de todos, diagnóstico, intervalos de mantenimiento por vehículo, reporte de productividad, consulta de compras, pagos a proveedores y cuentas por pagar |
+| `cajero` | Cobra y paga | Facturas, pagos, resumen de caja, reportes de ventas y clientes, consulta de compras, pagos a proveedores completos (registrar, anular, resumen de egresos) y cuentas por pagar |
+| `deposito` | Stock | Repuestos, proveedores, inventario, compras completas, repuestos en OT, reporte de inventario, consulta de pagos a proveedores y cuentas por pagar |
 
 El rol del mecánico se llama `mechanic` (no `mecanico`). Ningún usuario del seeder tiene los cuatro últimos roles.
 
@@ -349,6 +351,23 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   salida `purchase_cancellation` por línea al costo promedio; sin disponible suficiente → `INSUFFICIENT_STOCK`. El
   `last_cost` no se revierte.
 * Permisos `purchases.index|show|store|update|destroy|receive|cancel` (las líneas usan `purchases.update`).
+* Con pagos a proveedores vigentes no se anula (`PURCHASE_HAS_PAYMENTS`).
+
+### 6.16 Pagos a proveedores
+
+* `SupplierPayment` (`PAG-000001`) contra una compra `received`, contado o crédito (`PURCHASE_NOT_PAYABLE`): un pago,
+  una compra; varios pagos hasta el total (`SUPPLIER_PAYMENT_EXCEEDS_BALANCE`, `PURCHASE_ALREADY_PAID`). Monto entero;
+  fecha no futura ni anterior a la factura del proveedor (`SUPPLIER_PAYMENT_DATE_BEFORE_DOCUMENT`).
+* Medios como en cobros (`PaymentMethod`): referencia obligatoria salvo efectivo, banco en cheque; sin vuelto.
+  `supplier_receipt_number` opcional.
+* El pago no se edita ni se elimina: se anula con motivo (`SUPPLIER_PAYMENT_NOT_CANCELLABLE`). Orden de bloqueo:
+  compra → pago.
+* Pagado, saldo y estado de pago (`unpaid|partial|paid`, solo recibidas) se calculan (`Purchase::balance()`).
+* Cuentas por pagar (`GET accounts-payable`): a hoy, por proveedor; vence en `due_date` o, al contado, en la fecha de
+  la factura; vencida si es anterior a hoy. Egresos por medio de pago en `supplier-payments/summary` (separado de
+  `payments/summary`).
+* Permisos `supplier-payments.index|show|store|cancel|summary` y `accounts-payable.view`. Fuera de alcance:
+  retenciones, notas de crédito del proveedor, anticipos y moneda extranjera.
 
 ---
 
