@@ -65,6 +65,45 @@ class MechanicTest extends PartsTestCase
         $this->getJson("/api/mechanics/{$mechanic['id']}")->assertNotFound()->assertJsonPath('error_code', 'RESOURCE_NOT_FOUND');
     }
 
+    public function test_cost_and_commission_cannot_be_null(): void
+    {
+        // Antes: 500 por la columna NOT NULL (handoff 14, punto 10).
+        $this->postJson('/api/mechanics', $this->payload(['hour_cost' => null, 'commission_percentage' => null]))
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'VALIDATION_ERROR')
+            ->assertJsonValidationErrors(['hour_cost', 'commission_percentage']);
+
+        // Sin enviarlos quedan en 0 (default de la columna).
+        $payload = $this->payload();
+        unset($payload['hour_cost'], $payload['commission_percentage']);
+
+        $this->postJson('/api/mechanics', $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.hour_cost', '0.00')
+            ->assertJsonPath('data.commission_percentage', '0.00');
+    }
+
+    public function test_optional_fields_can_be_cleared_on_update(): void
+    {
+        $mechanic = $this->postJson('/api/mechanics', $this->payload(['notes' => 'Turno mañana.']))->assertCreated()->json('data');
+
+        $this->patchJson("/api/mechanics/{$mechanic['id']}", [
+            'specialty' => null,
+            'hire_date' => null,
+            'notes' => null,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.specialty', null)
+            ->assertJsonPath('data.hire_date', null)
+            ->assertJsonPath('data.notes', null)
+            ->assertJsonPath('data.hour_cost', '40000.00');
+
+        // Costo y comisión no se vacían (la base no admite null).
+        $this->patchJson("/api/mechanics/{$mechanic['id']}", ['hour_cost' => null, 'commission_percentage' => null])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['hour_cost', 'commission_percentage']);
+    }
+
     public function test_mechanic_validation(): void
     {
         $this->postJson('/api/mechanics', [])

@@ -39,8 +39,10 @@ class UpdateVehicleRequest extends FormRequest
                 'integer',
                 Rule::exists('vehicle_models', 'id'),
             ],
+            // Los opcionales del alta (nullable) también se pueden vaciar al editar.
             'chassis' => [
                 'sometimes',
+                'nullable',
                 Rule::requiredIf(function () {
                     return $this->boolean('no_plate');
                 }),
@@ -50,6 +52,7 @@ class UpdateVehicleRequest extends FormRequest
             ],
             'plate' => [
                 'sometimes',
+                'nullable',
                 'required_if:no_plate,false,0',
                 'string', 
                 'max:20', 
@@ -62,6 +65,7 @@ class UpdateVehicleRequest extends FormRequest
             ],
             'year' => [
                 'sometimes',
+                'nullable',
                 'integer',
                 'digits:4',
                 'min:1900',
@@ -69,11 +73,13 @@ class UpdateVehicleRequest extends FormRequest
             ],
             'color' => [
                 'sometimes',
+                'nullable',
                 Rule::enum(VehicleColor::class),
                 'max:30',
             ],
             'engine_number' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'alpha_num:ascii',
                 'min:5',
@@ -81,23 +87,27 @@ class UpdateVehicleRequest extends FormRequest
             ],
             'mileage' => [
                 'sometimes',
+                'nullable',
                 'integer',
                 'min:0',
             ],
             'fuel_type' => [
                 'sometimes',
+                'nullable',
                 Rule::enum(FuelType::class),
                 'max:50',
             ],
             'transmission' => [
                 'sometimes',
+                'nullable',
                 Rule::enum(TransmissionType::class),
                 'max:50',
             ],
             'notes' => [
-                'sometimes', 
-                'string', 
-                'max:500', 
+                'sometimes',
+                'nullable',
+                'string',
+                'max:500',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
             ],
         ];

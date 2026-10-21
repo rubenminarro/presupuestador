@@ -36,13 +36,16 @@ class StoreMechanicRequest extends FormRequest
                 'nullable',
                 'date',
             ],
+            // Opcionales pero no vacíos: la columna es NOT NULL DEFAULT 0 (sin enviar, quedan en 0).
             'hour_cost' => [
-                'nullable',
+                'sometimes',
+                'required',
                 'numeric',
                 'min:0',
             ],
             'commission_percentage' => [
-                'nullable',
+                'sometimes',
+                'required',
                 'numeric',
                 'between:0,100',
             ],
@@ -78,10 +81,12 @@ class StoreMechanicRequest extends FormRequest
                 'date' => 'El campo fecha de contratación debe ser una fecha válida.',
             ],
             'hour_cost' => [
+                'required' => 'El campo costo por hora no puede quedar vacío.',
                 'numeric' => 'El campo costo por hora debe ser un número.',
                 'min' => 'El campo costo por hora no puede ser negativo.',
             ],
             'commission_percentage' => [
+                'required' => 'El campo porcentaje de comisión no puede quedar vacío.',
                 'numeric' => 'El campo porcentaje de comisión debe ser un número.',
                 'between' => 'El campo porcentaje de comisión debe estar entre 0 y 100.',
             ],

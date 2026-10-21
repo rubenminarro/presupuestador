@@ -31,23 +31,29 @@ class UpdateMechanicRequest extends FormRequest
                 'max:50',
                 Rule::unique('mechanics', 'employee_code')->ignore($Idmechanic),
             ],
+            // Los opcionales del alta (nullable) también se pueden vaciar al editar.
             'specialty' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'max:100',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?%]*$/u',
             ],
             'hire_date' => [
                 'sometimes',
+                'nullable',
                 'date',
             ],
+            // hour_cost y commission_percentage no admiten null en la base (default 0).
             'hour_cost' => [
                 'sometimes',
+                'required',
                 'numeric',
                 'min:0',
             ],
             'commission_percentage' => [
                 'sometimes',
+                'required',
                 'numeric',
                 'between:0,100',
             ],
@@ -57,6 +63,7 @@ class UpdateMechanicRequest extends FormRequest
             ],
             'notes' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?%]*$/u',
             ],
@@ -84,10 +91,12 @@ class UpdateMechanicRequest extends FormRequest
                 'date' => 'El campo fecha de contratación debe ser una fecha válida.',
             ],
             'hour_cost' => [
+                'required' => 'El campo costo por hora no puede quedar vacío.',
                 'numeric' => 'El campo costo por hora debe ser un número.',
                 'min' => 'El campo costo por hora no puede ser negativo.',
             ],
             'commission_percentage' => [
+                'required' => 'El campo porcentaje de comisión no puede quedar vacío.',
                 'numeric' => 'El campo porcentaje de comisión debe ser un número.',
                 'between' => 'El campo porcentaje de comisión debe estar entre 0 y 100.',
             ],

@@ -9,6 +9,7 @@ use App\Http\Resources\ShowBrandResource;
 use App\Http\Requests\UpdateBrandRequest;
 use App\Http\Resources\BrandResource;
 use App\Models\Brand;
+use App\Services\VehicleCatalogService;
 use App\Traits\ApiResponse;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -92,18 +93,9 @@ class BrandController extends Controller implements HasMiddleware
         );
     }
 
-    public function destroy(Brand $brand)
+    public function destroy(Brand $brand, VehicleCatalogService $vehicleCatalogService)
     {
-        
-        $suffix = '//deleted_' . now()->timestamp;
-
-        if ($brand->name) {
-            $brand->name = $brand->name . $suffix;
-        }
-
-        $brand->save();
-
-        $brand->delete();
+        $vehicleCatalogService->deleteBrand($brand);
 
         return $this->successResponse(
             'Marca eliminada correctamente.',

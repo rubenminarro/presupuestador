@@ -9,6 +9,7 @@ use App\Http\Resources\ShowVehicleModelResource;
 use App\Http\Requests\UpdateVehicleModelRequest;
 use App\Http\Resources\VehicleModelResource;
 use App\Models\VehicleModel;
+use App\Services\VehicleCatalogService;
 use App\Traits\ApiResponse;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -34,6 +35,9 @@ class VehicleModelController extends Controller implements HasMiddleware
         
         $vehicleModels = VehicleModel::query()
         ->with(['brand'])
+        ->when($request->filled('brand_id'), function ($query) use ($request) {
+            $query->where('brand_id', $request->brand_id);
+        })
         ->when($request->filled('search'), function ($query) use ($request) {
             
             $search = $request->search;
@@ -101,18 +105,9 @@ class VehicleModelController extends Controller implements HasMiddleware
         );
     }
 
-    public function destroy(VehicleModel $vehicleModel)
+    public function destroy(VehicleModel $vehicleModel, VehicleCatalogService $vehicleCatalogService)
     {
-        
-        $suffix = '//deleted_' . now()->timestamp;
-
-        if ($vehicleModel->name) {
-            $vehicleModel->name = $vehicleModel->name . $suffix;
-        }
-
-        $vehicleModel->save();
-    
-        $vehicleModel->delete();
+        $vehicleCatalogService->deleteVehicleModel($vehicleModel);
 
         return $this->successResponse(
             'Modelo de vehículo eliminado correctamente.',

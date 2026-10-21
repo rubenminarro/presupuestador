@@ -56,8 +56,9 @@ class UpdateClientRequest extends FormRequest
                 'boolean',
             ],
             'notes' => [
-                'sometimes', 
-                'string', 
+                'sometimes',
+                'nullable',
+                'string',
                 'max:1000',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u',
             ],
