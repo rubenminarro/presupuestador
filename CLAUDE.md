@@ -16,7 +16,7 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 ## 1. Estado actual (verificado el 2026-10-20)
 
-* **Backend/API:** Laravel 12.56, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
+* **Backend/API:** Laravel 12.70, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
   proveedores (FASE 22), notificaciones (FASE 23) y exportación y comprobantes imprimibles (FASE 24). 219 rutas API,
   291 tests en verde.
 * **Frontend:** **no está en este repositorio.** El handoff prevé React 19, pero no hay código que lo confirme; solo

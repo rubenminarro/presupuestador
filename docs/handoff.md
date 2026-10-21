@@ -8,7 +8,7 @@
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
 FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes); 6 roles;
 291 tests en verde (2026-10-20)
-**Stack principal:** Laravel 12.56 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
+**Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
 **Base de datos:** `presupuestador`

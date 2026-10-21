@@ -26,7 +26,7 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 | Capa | Tecnología |
 |---|---|
 | Lenguaje | PHP `^8.2` (desarrollo con PHP 8.3) |
-| Backend | Laravel 12 (`laravel/framework` 12.56) |
+| Backend | Laravel 12 (`laravel/framework` 12.70) |
 | Autenticación | Laravel Sanctum 4.3 (tokens Bearer) |
 | Roles y permisos | spatie/laravel-permission 6.25 (guard `api`) |
 | PDF | barryvdh/laravel-dompdf 3.1 (dompdf 3.1; requiere la extensión `gd` para imágenes) |
@@ -74,7 +74,9 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 
 ## Requisitos
 
-- PHP 8.2 o superior con las extensiones `pdo_mysql`, `bcmath` y `mbstring` (y `pdo_sqlite` para los tests)
+- PHP 8.2 o superior con las extensiones `pdo_mysql`, `bcmath`, `mbstring`, `gd` (imágenes en los PDF) y `zip` (y
+  `pdo_sqlite` para los tests). Sin `zip` en el PHP de consola, Composer no puede descomprimir los paquetes y los
+  clona uno por uno con git: la instalación tarda muchísimo. En Laragon, descomentar `extension=zip` en el `php.ini`.
 - Composer
 - MySQL 8 (Laragon trae MySQL; en desarrollo se usa 8.4)
 - Node.js y npm: **opcionales**; solo los usan los scripts `npm run dev|build` del scaffold de Vite, que la API no necesita
