@@ -20,8 +20,10 @@ class UpdatePartRequest extends FormRequest
         $partId = $this->route('part')?->id ?? $this->route('part');
 
         return [
+            // Los opcionales del alta (nullable) también se pueden vaciar al editar.
             'sku' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'max:100',
                 'regex:/^[0-9A-Za-z\-_.\/]+$/',
@@ -29,6 +31,7 @@ class UpdatePartRequest extends FormRequest
             ],
             'part_number' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'max:100',
                 'regex:/^[0-9A-Za-z\-_.\/\s]+$/',
@@ -42,12 +45,14 @@ class UpdatePartRequest extends FormRequest
             ],
             'description' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'max:1000',
                 'regex:/^[\pL\pN\s.,;:()\-\/#%+&"\'°º]+$/u',
             ],
             'brand' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'max:100',
                 'regex:/^[\pL\pN\s&.\-\/]+$/u',
@@ -73,8 +78,10 @@ class UpdatePartRequest extends FormRequest
                 'min:0',
                 'max:99999999.99',
             ],
+            // minimum_stock no admite null en la base (default 0).
             'minimum_stock' => [
                 'sometimes',
+                'required',
                 'numeric',
                 'min:0',
                 'max:9999999.999',
@@ -130,6 +137,7 @@ class UpdatePartRequest extends FormRequest
                 'max' => 'El precio de venta supera el máximo permitido.',
             ],
             'minimum_stock' => [
+                'required' => 'El stock mínimo no puede quedar vacío.',
                 'numeric' => 'El stock mínimo debe ser un número.',
                 'min' => 'El stock mínimo no puede ser negativo.',
                 'max' => 'El stock mínimo supera el máximo permitido.',

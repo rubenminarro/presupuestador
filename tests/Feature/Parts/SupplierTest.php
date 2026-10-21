@@ -49,6 +49,45 @@ class SupplierTest extends PartsTestCase
             ->assertJsonPath('error_code', 'SUPPLIER_HAS_PARTS');
     }
 
+    public function test_optional_fields_can_be_cleared_on_update(): void
+    {
+        $this->actingAsAdmin();
+
+        $supplier = $this->postJson('/api/suppliers', [
+            'name' => 'Distribuidora Central',
+            'tax_id' => '80012345-6',
+            'contact_name' => 'Ana Gomez',
+            'phone' => '021 555 555',
+            'email' => 'ventas@central.test',
+            'address' => 'Avda. Mcal. López 123',
+            'notes' => 'Entrega los lunes.',
+        ])
+            ->assertCreated()
+            ->json('data');
+
+        $this->patchJson("/api/suppliers/{$supplier['id']}", [
+            'tax_id' => null,
+            'contact_name' => null,
+            'phone' => null,
+            'email' => null,
+            'address' => null,
+            'notes' => null,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.tax_id', null)
+            ->assertJsonPath('data.contact_name', null)
+            ->assertJsonPath('data.phone', null)
+            ->assertJsonPath('data.email', null)
+            ->assertJsonPath('data.address', null)
+            ->assertJsonPath('data.notes', null)
+            ->assertJsonPath('data.name', 'Distribuidora Central');
+
+        // El nombre sigue siendo obligatorio.
+        $this->patchJson("/api/suppliers/{$supplier['id']}", ['name' => null])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['name']);
+    }
+
     public function test_mechanic_cannot_access_suppliers(): void
     {
         $this->actingAsMechanic();

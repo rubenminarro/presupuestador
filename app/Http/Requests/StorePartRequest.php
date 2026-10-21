@@ -70,8 +70,10 @@ class StorePartRequest extends FormRequest
                 'min:0',
                 'max:99999999.99',
             ],
+            // Opcional pero no vacío: la columna es NOT NULL DEFAULT 0 (sin enviar, queda en 0).
             'minimum_stock' => [
-                'nullable',
+                'sometimes',
+                'required',
                 'numeric',
                 'min:0',
                 'max:9999999.999',
@@ -132,6 +134,7 @@ class StorePartRequest extends FormRequest
                 'max' => 'El precio de venta supera el máximo permitido.',
             ],
             'minimum_stock' => [
+                'required' => 'El stock mínimo no puede quedar vacío.',
                 'numeric' => 'El stock mínimo debe ser un número.',
                 'min' => 'El stock mínimo no puede ser negativo.',
                 'max' => 'El stock mínimo supera el máximo permitido.',

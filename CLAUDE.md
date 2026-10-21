@@ -18,7 +18,7 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 * **Backend/API:** Laravel 12.70, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
   proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24) y auditoría
-  (FASE 25). 222 rutas API, 310 tests en verde.
+  (FASE 25). 222 rutas API, 314 tests en verde.
 * **Nombre:** el proyecto se llamaba **Presupuestador**; desde el 2026-10-21 es **SyncTaller** (repos
   `synctaller-backend` y `synctaller-frontend`, base de datos y conexión `synctaller`).
 * **Frontend:** **no está en este repositorio**, sino en `../synctaller-frontend` (React 19 + TypeScript + Vite +
@@ -274,6 +274,10 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   elimina (`PART_HAS_STOCK`). Cantidades de inventario `decimal(12,3)`.
 * Entrada manual (`POST inventory/entries`) solo `initial` (una vez por repuesto); las compras entran solo por el
   módulo de compras (6.15).
+* Ediciones de repuesto (`sku`, `part_number`, `description`, `brand`), proveedor (`tax_id`, `contact_name`, `phone`,
+  `email`, `address`, `notes`) y vínculo repuesto–proveedor (`supplier_part_code`, `last_cost`) aceptan `null` para
+  vaciar los opcionales. `minimum_stock` es opcional pero no vacío (`NOT NULL DEFAULT 0`): sin enviarlo queda en 0;
+  `null` → 422 en alta y edición.
 
 ### 6.7 Repuestos en la OT (`WorkOrderPart`)
 

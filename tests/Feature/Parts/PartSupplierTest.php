@@ -99,6 +99,37 @@ class PartSupplierTest extends PartsTestCase
             ->assertNotFound();
     }
 
+    public function test_pivot_optional_fields_can_be_cleared_and_cost_is_validated_on_update(): void
+    {
+        $this->actingAsAdmin();
+
+        $part = $this->createPartViaApi();
+        $supplier = $this->createSupplier();
+
+        $this->postJson("/api/parts/{$part['id']}/suppliers", [
+            'supplier_id' => $supplier->id,
+            'supplier_part_code' => 'MANN-W712',
+            'last_cost' => 34000,
+        ])->assertCreated();
+
+        $this->patchJson("/api/parts/{$part['id']}/suppliers/{$supplier->id}", [
+            'supplier_part_code' => null,
+            'last_cost' => null,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.suppliers.0.pivot.supplier_part_code', null)
+            ->assertJsonPath('data.suppliers.0.pivot.last_cost', null);
+
+        // Mismos límites que al vincular.
+        $this->patchJson("/api/parts/{$part['id']}/suppliers/{$supplier->id}", ['last_cost' => -1])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['last_cost']);
+
+        $this->patchJson("/api/parts/{$part['id']}/suppliers/{$supplier->id}", ['last_cost' => 100000000])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['last_cost']);
+    }
+
     public function test_mechanic_cannot_manage_part_suppliers(): void
     {
         $this->actingAsAdmin();

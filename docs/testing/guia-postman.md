@@ -582,6 +582,9 @@ Esperado: `201` → `supplier_id`.
 | Dirección con carácter no permitido | `{ "name": "Proveedor Dir", "address": "Calle <falsa> 123" }` | 422 | `VALIDATION_ERROR` (`errors.address`) |
 | Contacto con números | `{ "name": "Proveedor Contacto", "contact_name": "Juan 123" }` | 422 | `VALIDATION_ERROR` (`errors.contact_name`) |
 
+Edición (`PATCH {{base_url}}/suppliers/{{supplier_id}}`): `{ "tax_id": null, "email": null, "notes": null }` → `200`
+con esos campos vacíos; `{ "name": null }` → `422` (`errors.name`).
+
 Caracteres admitidos (además de letras, números y espacios): nombre y dirección `. , # - / ° º & ( ) '`; nombre de contacto solo letras, espacios y `. ' -`.
 
 Caso válido:
@@ -666,6 +669,8 @@ Esperado: `200`, `sale_price` `"160.00"`; el resto de los campos sin cambios.
 | Caso | Body | HTTP | Resultado / error_code |
 |---|---|---|---|
 | Intentar cambiar código/estado | `{ "code": "HACK-1", "status": "discontinued" }` | 200 | `code` y `status` sin cambios |
+| Vaciar opcionales | `{ "sku": null, "part_number": null, "description": null, "brand": null }` | 200 | Los cuatro en `null` |
+| Stock mínimo vacío | `{ "minimum_stock": null }` | 422 | `VALIDATION_ERROR` (`errors.minimum_stock`; también en el alta) |
 
 ### 10.6 Consultar repuestos
 
@@ -720,6 +725,11 @@ Esperado: `201`, `suppliers[0].pivot.is_preferred` `true`.
 ```
 
 Esperado: `200`, `pivot.last_cost` `"98.00"`.
+
+| Caso | Body | HTTP | Resultado / error_code |
+|---|---|---|---|
+| Vaciar código y costo | `{ "supplier_part_code": null, "last_cost": null }` | 200 | Ambos en `null` |
+| Costo negativo | `{ "last_cost": -1 }` | 422 | `VALIDATION_ERROR` (`errors.last_cost`) |
 
 ### 10.10 Eliminaciones con integridad
 

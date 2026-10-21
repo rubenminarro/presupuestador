@@ -21,42 +21,50 @@ class UpdateSupplierRequest extends FormRequest
         return [
             'name' => [
                 'sometimes',
+                'required',
                 'string',
                 'min:2',
                 'max:150',
                 'regex:/^[\pL\pN\s.,#\-\/°º&()\']+$/u',
             ],
+            // Los opcionales del alta (nullable) también se pueden vaciar al editar.
             'tax_id' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'max:30',
                 Rule::unique('suppliers', 'tax_id')->ignore($supplierId),
             ],
             'contact_name' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'max:150',
                 'regex:/^[\pL\s.\'\-]+$/u',
             ],
             'phone' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'max:30',
                 'regex:/^[0-9+\-\s()]+$/',
             ],
             'email' => [
                 'sometimes',
+                'nullable',
                 'email',
                 'max:150',
             ],
             'address' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'max:255',
                 'regex:/^[\pL\pN\s.,#\-\/°º&()\']+$/u',
             ],
             'notes' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'max:500',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u',
@@ -72,6 +80,7 @@ class UpdateSupplierRequest extends FormRequest
     {
         return [
             'name' => [
+                'required' => 'El nombre del proveedor no puede quedar vacío.',
                 'string' => 'El nombre del proveedor debe ser un texto válido.',
                 'min' => 'El nombre del proveedor debe tener al menos 2 caracteres.',
                 'max' => 'El nombre del proveedor no debe superar los 150 caracteres.',

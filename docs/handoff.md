@@ -7,7 +7,7 @@
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
 FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes), FASE 25 (auditoría); 6 roles;
-310 tests en verde (2026-10-21)
+314 tests en verde (2026-10-21)
 **Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -1130,6 +1130,24 @@ Surgen de construir las pantallas de datos maestros del frontend (`../synctaller
   `hour_cost` y `commission_percentage` del mecánico quedan sin `nullable` (columna `NOT NULL`; ver 14, punto 10).
 
 Tests: `tests/Feature/MasterData/BrandAndVehicleModelTest`, `VehicleTest`, `ClientTest`, `MechanicTest`.
+
+---
+
+# 2.40 Opcionales del catálogo de repuestos (2026-10-21)
+
+Surgen de las pantallas de repuestos e inventario del frontend (fase F2), con el mismo criterio que 2.39:
+
+- **Vaciar opcionales al editar:** repuesto (`sku`, `part_number`, `description`, `brand`), proveedor (`tax_id`,
+  `contact_name`, `phone`, `email`, `address`, `notes`) y vínculo repuesto–proveedor (`supplier_part_code`,
+  `last_cost`) aceptan `null`, igual que el alta. Antes `sometimes` sin `nullable` respondía 422.
+- **`minimum_stock`:** el alta lo aceptaba como `null` y la columna es `NOT NULL DEFAULT 0` → 500. Ahora es opcional
+  pero no vacío en alta y edición (`null` → 422), como el costo y la comisión del mecánico. `PartService::create()`
+  refresca el modelo, así la respuesta del alta trae el 0 por defecto en lugar de `null`.
+- **Nombre del proveedor:** en la edición `null` → 422 con mensaje propio (`required`).
+- **`last_cost` al editar el vínculo:** mismos límites que al vincular (`min:0`, `max:99999999.99`); antes aceptaba
+  negativos.
+
+Tests: `tests/Feature/Parts/PartTest`, `SupplierTest`, `PartSupplierTest`.
 
 ---
 

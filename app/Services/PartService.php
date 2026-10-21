@@ -31,7 +31,8 @@ class PartService
                 'warehouse_id' => Warehouse::getDefault()->id,
             ]);
 
-            return $part->load(['category', 'suppliers', 'stock']);
+            // refresh: los defaults de la base (p. ej. minimum_stock = 0) no quedan en el modelo recién creado.
+            return $part->refresh()->load(['category', 'suppliers', 'stock']);
         });
     }
 

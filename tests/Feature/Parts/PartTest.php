@@ -44,6 +44,49 @@ class PartTest extends PartsTestCase
         $this->assertSoftDeleted('parts', ['id' => $first['id']]);
     }
 
+    public function test_optional_fields_can_be_cleared_on_update(): void
+    {
+        $this->actingAsAdmin();
+
+        $part = $this->createPartViaApi(null, ['part_number' => 'W 712/75', 'description' => 'Rosca 3/4.']);
+
+        $this->patchJson("/api/parts/{$part['id']}", [
+            'sku' => null,
+            'part_number' => null,
+            'description' => null,
+            'brand' => null,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.sku', null)
+            ->assertJsonPath('data.part_number', null)
+            ->assertJsonPath('data.description', null)
+            ->assertJsonPath('data.brand', null)
+            ->assertJsonPath('data.name', 'Filtro de aceite');
+    }
+
+    public function test_minimum_stock_cannot_be_null(): void
+    {
+        $this->actingAsAdmin();
+
+        $category = $this->createCategory();
+
+        // La columna es NOT NULL DEFAULT 0: sin enviarlo queda en 0; en null se rechaza.
+        $this->postJson('/api/parts', $this->partPayload($category, ['minimum_stock' => null]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['minimum_stock']);
+
+        $payload = $this->partPayload($category);
+        unset($payload['minimum_stock']);
+        $part = $this->postJson('/api/parts', $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.minimum_stock', '0.000')
+            ->json('data');
+
+        $this->patchJson("/api/parts/{$part['id']}", ['minimum_stock' => null])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['minimum_stock']);
+    }
+
     public function test_create_part_validates_input(): void
     {
         $this->actingAsAdmin();
