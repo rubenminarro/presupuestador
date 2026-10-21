@@ -7,7 +7,7 @@
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
 FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes), FASE 25 (auditoría); 6 roles;
-300 tests en verde (2026-10-21)
+303 tests en verde (2026-10-21)
 **Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -1028,7 +1028,7 @@ Decisiones del usuario:
 
 Dependencia nueva: `barryvdh/laravel-dompdf` ^3.1 (dompdf 3.1). Usa la fuente DejaVu Sans, que trae los acentos, y la extensión `gd` para la firma.
 
-Endpoints, todos de solo lectura. Responden el archivo con `Content-Disposition: attachment`; los errores siguen en JSON con el contrato habitual:
+Endpoints, todos de solo lectura. Responden el archivo con `Content-Disposition: attachment`; los errores siguen en JSON con el contrato habitual. Desde 2026-10-21 `config/cors.php` expone `Content-Disposition` para que el frontend lea el nombre del archivo (test `tests/Feature/Http/CorsTest`):
 - `GET budgets/{budget}/pdf` (`budgets.show`).
 - `GET invoices/{invoice}/pdf` (`invoices.show`).
 - `GET payments/{payment}/receipt` (`payments.show`). Solo los pagos con recibo, es decir, los de facturas a crédito; los demás responden `PAYMENT_WITHOUT_RECEIPT` (422, `PaymentException`).

@@ -68,7 +68,7 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 
 | Estado | Qué |
 |---|---|
-| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24), auditoría (FASE 25) y los módulos base. 222 rutas API y 300 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
+| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24), auditoría (FASE 25) y los módulos base. 222 rutas API y 303 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
 | Pendiente, sin diseño | Notificaciones por WhatsApp |
 
 ---
@@ -215,6 +215,7 @@ verificarse):
 | Configuración | Valor actual |
 |---|---|
 | `config/cors.php` → `allowed_origins` | `http://localhost:5173` (servidor de desarrollo de Vite) |
+| `config/cors.php` → `exposed_headers` | `Content-Disposition` (nombre de los PDF/CSV descargados) |
 | `config/sanctum.php` → `stateful` (`SANCTUM_STATEFUL_DOMAINS`) | `localhost:5173` |
 | URL base de la API para el frontend | `http://127.0.0.1:8000/api` (o el `APP_URL` + `/api`) |
 
@@ -284,7 +285,7 @@ vendor/bin/phpunit
 composer test
 ```
 
-300 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
+303 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
 consulta DNS de los emails (`EMAIL_DNS_CHECK=false`).
 
 Si `pdo_sqlite` no está habilitado en el `php.ini` de Laragon:

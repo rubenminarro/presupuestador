@@ -25,7 +25,8 @@ return [
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => [],
+    // El frontend lee el nombre de los PDF/CSV descargados (FASE 24) desde este header.
+    'exposed_headers' => ['Content-Disposition'],
 
     'max_age' => 0,
 

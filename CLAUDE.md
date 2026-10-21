@@ -18,10 +18,10 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 * **Backend/API:** Laravel 12.70, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
   proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24) y auditoría
-  (FASE 25). 222 rutas API, 300 tests en verde.
+  (FASE 25). 222 rutas API, 303 tests en verde.
 * **Frontend:** **no está en este repositorio**, sino en `../presupuestador-frontend` (React 19 + TypeScript + Vite +
   Tabler; ver su `CLAUDE.md` y `docs/plan-desarrollo.md`). CORS y Sanctum están configurados para
-  `http://localhost:5173`. `package.json` y `resources/` de este repositorio son el scaffold de Laravel (Vite +
+  `http://localhost:5173`; CORS expone `Content-Disposition` (nombre de las descargas). `package.json` y `resources/` de este repositorio son el scaffold de Laravel (Vite +
   Tailwind) sin uso, salvo las vistas de email (`resources/views/mail`) y de PDF (`resources/views/pdf`).
 * **Pendiente (sin diseño ni fase asignada):** notificaciones por WhatsApp.
 
