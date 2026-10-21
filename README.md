@@ -1,4 +1,4 @@
-# Presupuestador — Sistema de gestión para taller mecánico
+# SyncTaller — Sistema de gestión para taller mecánico
 
 API REST para gestionar el flujo completo de atención de un vehículo en un taller mecánico: desde la recepción
 hasta el pago de la factura.
@@ -87,8 +87,8 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 ## Instalación local
 
 ```bash
-git clone https://github.com/rubenminarro/presupuestador.git
-cd presupuestador
+git clone https://github.com/rubenminarro/synctaller-backend.git
+cd synctaller-backend
 
 composer install
 
@@ -103,13 +103,13 @@ migra y compila assets con npm), `composer dev` (servidor, cola, logs con Pail y
 Configurar en `.env` la base de datos y la contraseña de los usuarios de prueba:
 
 ```env
-APP_NAME=Presupuestador
+APP_NAME=SyncTaller
 APP_URL=http://127.0.0.1:8000
 
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=presupuestador
+DB_DATABASE=synctaller
 DB_USERNAME=root
 DB_PASSWORD=
 
@@ -152,14 +152,14 @@ php artisan schedule:run        # cada minuto; en Windows, con el Programador de
 ```
 
 En Windows: Programador de tareas → crear tarea que repita cada 1 minuto la acción
-`php C:\laragon\www\presupuestador\artisan schedule:run`. Sin estos procesos los avisos quedan `pending` y los
+`php C:\laragon\www\synctaller-backend\artisan schedule:run`. Sin estos procesos los avisos quedan `pending` y los
 recordatorios no se generan. En desarrollo, `composer dev` ya levanta la cola; los recordatorios se pueden probar a
 mano con `php artisan notifications:send-reminders`.
 
 ### Base de datos (MySQL en Laragon)
 
-1. Iniciar MySQL desde Laragon y crear la base `presupuestador` (utf8mb4), por ejemplo desde HeidiSQL o con
-   `CREATE DATABASE presupuestador CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`.
+1. Iniciar MySQL desde Laragon y crear la base `synctaller` (utf8mb4), por ejemplo desde HeidiSQL o con
+   `CREATE DATABASE synctaller CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`.
 2. Sobre una base **vacía**, migrar y cargar los datos iniciales y de ejemplo:
 
 ```bash

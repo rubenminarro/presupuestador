@@ -1,6 +1,6 @@
 # Project Handoff Document
 
-## Presupuestador — Sistema de Gestión para Taller Mecánico
+## SyncTaller (antes Presupuestador) — Sistema de Gestión para Taller Mecánico
 
 **Versión del handoff:** 1.2
 **Fecha:** 2026-10-17
@@ -11,7 +11,7 @@ FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y
 **Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
-**Base de datos:** `presupuestador`
+**Base de datos:** `synctaller` (hasta el 2026-10-21, `presupuestador`)
 
 > **Propósito de este documento (desde la v1.2).** Es el registro histórico y de decisiones del proyecto: contexto,
 > diseño por fase, decisiones de negocio y roadmap original. Hasta la v1.1 estaba en `CLAUDE.md`; en la v1.2 se movió
@@ -30,7 +30,8 @@ repositorio** (ver 1.2)
 
 ## 1.1 Propósito del proyecto
 
-El proyecto **Presupuestador** es un sistema de gestión para un taller mecánico.
+El proyecto **SyncTaller** (llamado **Presupuestador** hasta el 2026-10-21) es un sistema de gestión para un taller
+mecánico.
 
 Su objetivo es cubrir progresivamente el flujo completo de atención de un vehículo:
 
@@ -1113,7 +1114,7 @@ Tests: `tests/Feature/Audit/AuditLogTest`.
 
 # 2.39 Ajustes de datos maestros para el frontend (2026-10-21)
 
-Surgen de construir las pantallas de datos maestros del frontend (`../presupuestador-frontend`, fase F1):
+Surgen de construir las pantallas de datos maestros del frontend (`../synctaller-frontend`, fase F1):
 
 - **Bajas del catálogo de vehículos:** `VehicleCatalogService::deleteBrand()` / `deleteVehicleModel()` (antes la
   lógica estaba en los controllers). Si hay vehículos vigentes (no eliminados) con esa marca o modelo →
@@ -2210,7 +2211,7 @@ Nunca migrar secretos reales dentro del handoff.
 El nuevo entorno debe disponer de variables equivalentes a:
 
 ```env
-APP_NAME=Presupuestador
+APP_NAME=SyncTaller
 APP_ENV=local
 APP_KEY=<SECRET>
 APP_DEBUG=true
@@ -2223,7 +2224,7 @@ Base de datos:
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=presupuestador
+DB_DATABASE=synctaller
 DB_USERNAME=<DB_USER>
 DB_PASSWORD=<DB_PASSWORD>
 ```

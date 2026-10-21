@@ -31,7 +31,7 @@ return [
 
     'connections' => [
 
-        'presupuestador' => [
+        'synctaller' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),
             'host' => env('DB_HOST'),
