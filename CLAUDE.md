@@ -14,16 +14,16 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 ---
 
-## 1. Estado actual (verificado el 2026-10-20)
+## 1. Estado actual (verificado el 2026-10-21)
 
 * **Backend/API:** Laravel 12.70, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
   proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24) y auditoría
-  (FASE 25). 221 rutas API, 297 tests en verde.
-* **Frontend:** **no está en este repositorio.** El handoff prevé React 19, pero no hay código que lo confirme; solo
-  CORS y Sanctum están configurados para `http://localhost:5173`. `package.json` y `resources/` son el scaffold de
-  Laravel (Vite + Tailwind) sin uso, salvo las vistas de email (`resources/views/mail`) y de PDF (`resources/views/pdf`).
-  No asumir tecnología ni estructura del frontend.
-* **Pendiente (sin diseño ni fase asignada):** notificaciones por WhatsApp y frontend. Ninguno tiene código hoy.
+  (FASE 25). 222 rutas API, 300 tests en verde.
+* **Frontend:** **no está en este repositorio**, sino en `../presupuestador-frontend` (React 19 + TypeScript + Vite +
+  Tabler; ver su `CLAUDE.md` y `docs/plan-desarrollo.md`). CORS y Sanctum están configurados para
+  `http://localhost:5173`. `package.json` y `resources/` de este repositorio son el scaffold de Laravel (Vite +
+  Tailwind) sin uso, salvo las vistas de email (`resources/views/mail`) y de PDF (`resources/views/pdf`).
+* **Pendiente (sin diseño ni fase asignada):** notificaciones por WhatsApp.
 
 ---
 
@@ -153,6 +153,9 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 
 Sanctum con tokens Bearer: `POST /api/login` (público) devuelve `data.token`; todo lo demás está bajo
 `auth:sanctum`. `POST /api/logout` revoca el token actual. Los tokens no expiran (`sanctum.expiration = null`).
+`GET /api/me` (sin permiso específico) devuelve `data.user` (`UserResource`, como el login) y `data.permissions` (nombres
+de los permisos, ordenados; el administrador recibe todos los del guard `api` por el `Gate::before`). Lo usa el
+frontend para hidratar la sesión y adaptar menús y botones.
 
 ---
 

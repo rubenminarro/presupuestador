@@ -7,7 +7,7 @@
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
 FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes), FASE 25 (auditoría); 6 roles;
-297 tests en verde (2026-10-20)
+300 tests en verde (2026-10-21)
 **Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -1132,6 +1132,12 @@ La autenticación utiliza:
 ```text
 Laravel Sanctum
 ```
+
+**Usuario autenticado (2026-10-21).** `GET /api/me`, bajo `auth:sanctum` y sin permiso específico, devuelve
+`data.user` (mismo `UserResource` que el login) y `data.permissions` (nombres, ordenados). Motivo: el login solo trae
+los IDs de los permisos de cada rol y no había forma de revalidar el token al recargar el frontend; con los nombres el
+frontend adapta menús y botones sin duplicar el seeder. Al administrador se le devuelven todos los permisos del guard
+`api`, coherente con el `Gate::before`. No se audita (es lectura). Tests: `tests/Feature/Auth/LoginTest`.
 
 El login inválido devuelve una respuesta API estandarizada.
 

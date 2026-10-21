@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\AuditEvent;
 use App\Http\Controllers\Controller;
+use App\Models\Permission;
 use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use App\Http\Requests\LoginRequest;
@@ -44,6 +45,24 @@ class AuthController extends Controller
             [
                 'token' => $token,
                 'user'  => new UserResource($user->load('roles'))
+            ]
+        );
+    }
+
+    public function me(Request $request)
+    {
+        $user = $request->user();
+
+        // El administrador pasa todo por Gate::before: se informan todos los permisos aunque su rol no los tenga.
+        $permissions = $user->hasRole('administrador')
+            ? Permission::where('guard_name', 'api')->pluck('name')
+            : $user->getAllPermissions()->pluck('name');
+
+        return $this->successResponse(
+            'Usuario autenticado.',
+            [
+                'user'        => new UserResource($user->load('roles')),
+                'permissions' => $permissions->sort()->values(),
             ]
         );
     }

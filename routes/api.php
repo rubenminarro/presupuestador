@@ -54,6 +54,9 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    // Usuario autenticado con los nombres de sus permisos (sin permiso específico).
+    Route::get('/me', [AuthController::class, 'me']);
+
     Route::apiResource('users', UserRoleController::class);
 
     Route::apiResource('permissions', PermissionController::class);

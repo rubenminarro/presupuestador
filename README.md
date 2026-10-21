@@ -68,7 +68,7 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 
 | Estado | Qué |
 |---|---|
-| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24), auditoría (FASE 25) y los módulos base. 221 rutas API y 297 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
+| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24), auditoría (FASE 25) y los módulos base. 222 rutas API y 300 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
 | Pendiente, sin diseño | Notificaciones por WhatsApp |
 
 ---
@@ -229,7 +229,8 @@ Todas las rutas (salvo `POST /api/login`) requieren el header `Authorization: Be
 responde JSON con el formato de la API aunque no se envíe `Accept: application/json` (middleware global
 `EnsureJsonResponse`); se recomienda enviarlo igual.
 
-Autenticación con Sanctum: `POST /api/login` devuelve `data.token` y `data.user` (con roles); `POST /api/logout` revoca
+Autenticación con Sanctum: `POST /api/login` devuelve `data.token` y `data.user` (con roles); `GET /api/me` devuelve
+el usuario autenticado (`data.user`) y los nombres de sus permisos (`data.permissions`); `POST /api/logout` revoca
 el token actual. Los tokens no expiran. Cada endpoint exige un permiso (`recurso.acción`) asignado al rol del usuario.
 
 ```http
@@ -283,7 +284,7 @@ vendor/bin/phpunit
 composer test
 ```
 
-297 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
+300 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
 consulta DNS de los emails (`EMAIL_DNS_CHECK=false`).
 
 Si `pdo_sqlite` no está habilitado en el `php.ini` de Laragon:

@@ -110,6 +110,20 @@ Casos de error:
 
 Esperado: `200`. Copiar `data.token` en `token_mec`.
 
+### B.2b Usuario autenticado
+
+| | |
+|---|---|
+| **Método** | `GET` |
+| **Endpoint** | `{{base_url}}/me` |
+| **Body** | ninguno |
+
+| Caso | Token | HTTP | Esperado |
+|---|---|---|---|
+| Administrador | `{{token_admin}}` | 200 | `data.user` con rol `administrador`; `data.permissions` con **todos** los permisos (incluye `users.index`, `audit-logs.index`) |
+| Mecánico | `{{token_mec}}` | 200 | `data.user.roles[0].name = "mechanic"`; `data.permissions` solo con los del rol (no incluye `users.index`) |
+| Sin token | — | 401 | `UNAUTHENTICATED` |
+
 ### B.3 Accesos sin autenticación
 
 | Caso | Método / Endpoint | Headers | HTTP | error_code |

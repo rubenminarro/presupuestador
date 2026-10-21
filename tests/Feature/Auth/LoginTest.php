@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Permission;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -73,6 +74,51 @@ class LoginTest extends TestCase
         $this->withToken($token)->getJson('/api/clients')
             ->assertUnauthorized()
             ->assertJsonPath('error_code', 'UNAUTHENTICATED');
+    }
+
+    public function test_me_returns_the_user_and_permission_names(): void
+    {
+        $user = User::create([
+            'name' => 'cajero_test',
+            'first_name' => 'Cajero',
+            'last_name' => 'Test',
+            'email' => 'cajero@test.local',
+            'password' => bcrypt('secreto123'),
+        ])->assignRole('cajero');
+
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/me')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.user.email', 'cajero@test.local')
+            ->assertJsonPath('data.user.roles.0.name', 'cajero');
+
+        $permissions = $response->json('data.permissions');
+
+        $this->assertEqualsCanonicalizing($user->getAllPermissions()->pluck('name')->all(), $permissions);
+        $this->assertContains('invoices.index', $permissions);
+        $this->assertNotContains('users.index', $permissions);
+    }
+
+    public function test_me_returns_every_permission_for_the_administrator(): void
+    {
+        $admin = User::where('email', 'admin@test.local')->first();
+
+        // Gate::before autoriza al administrador aunque su rol no tenga el permiso.
+        $admin->roles()->first()->revokePermissionTo('users.index');
+
+        $permissions = $this->actingAs($admin, 'sanctum')->getJson('/api/me')
+            ->assertOk()
+            ->json('data.permissions');
+
+        $this->assertEqualsCanonicalizing(
+            Permission::where('guard_name', 'api')->pluck('name')->all(),
+            $permissions
+        );
+    }
+
+    public function test_me_requires_a_token(): void
+    {
+        $this->getJson('/api/me')->assertUnauthorized()->assertJsonPath('error_code', 'UNAUTHENTICATED');
     }
 
     public function test_protected_routes_require_a_token(): void
