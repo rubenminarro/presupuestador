@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use App\Enums\InvoiceCondition;
 use App\Enums\InvoicePaymentStatus;
 use App\Enums\InvoiceStatus;
@@ -17,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Invoice extends Model
 {
+    use Auditable;
+
     /**
      * Campos que pueden cambiar una vez emitida (solo la anulación).
      */

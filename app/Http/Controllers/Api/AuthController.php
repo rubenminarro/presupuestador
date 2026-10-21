@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\AuditEvent;
 use App\Http\Controllers\Controller;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use App\Http\Requests\LoginRequest;
 use Illuminate\Support\Facades\Auth;
@@ -15,9 +17,12 @@ class AuthController extends Controller
     
     use ApiResponse;
     
-    public function login(LoginRequest $request)
+    public function login(LoginRequest $request, AuditLogger $auditLogger)
     {
         if (!Auth::attempt($request->validated())) {
+            // Sin usuario: se guarda el email intentado.
+            $auditLogger->record(AuditEvent::LOGIN_FAILED, null, null, ['email' => $request->input('email')]);
+
             return $this->errorResponse(
                 'Credenciales inválidas.',
                 401,
@@ -32,6 +37,8 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        $auditLogger->record(AuditEvent::LOGIN, $user, null, null, $user);
+
         return $this->successResponse(
             'Inicio de sesión exitoso.',
             [
@@ -41,8 +48,10 @@ class AuthController extends Controller
         );
     }
 
-    public function logout(Request $request)
+    public function logout(Request $request, AuditLogger $auditLogger)
     {
+        $auditLogger->record(AuditEvent::LOGOUT, $request->user());
+
         $request->user()->currentAccessToken()->delete();
 
         return $this->successResponse('Sesión cerrada correctamente.');

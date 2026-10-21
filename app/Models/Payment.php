@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Exceptions\PaymentException;
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Payment extends Model
 {
+    use Auditable;
+
     /**
      * Campos que pueden cambiar una vez registrado (solo la anulación).
      */

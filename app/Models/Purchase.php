@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use App\Enums\InvoiceCondition;
 use App\Enums\InvoicePaymentStatus;
 use App\Enums\PaymentStatus;
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Purchase extends Model
 {
-    use SoftDeletes;
+    use Auditable, SoftDeletes;
 
     /**
      * Campos que pueden cambiar una vez recibida (solo la anulación).

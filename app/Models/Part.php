@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use App\Enums\PartStatus;
 use App\Enums\PartUnit;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Part extends Model
 {
-    use SoftDeletes;
+    use Auditable, SoftDeletes;
 
     protected $fillable = [
         'code',

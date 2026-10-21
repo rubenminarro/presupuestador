@@ -2691,6 +2691,53 @@ Se usan los permisos de consulta existentes: `budgets.show`, `invoices.show`, `p
 
 ---
 
+## FASE 25 — Auditoría
+
+Token: administrador. La auditoría no tiene endpoints de alta: los registros se generan solos al operar sobre precios,
+facturación, pagos, compras, usuarios, roles, permisos y datos maestros, y al iniciar o cerrar sesión. Son inmutables.
+
+### 25.1 Generar y consultar un cambio de precio
+
+1. `PATCH {{base_url}}/parts/{{part_id}}` con `{ "sale_price": 1500 }` → `200`.
+2. `GET {{base_url}}/audit-logs?auditable_type=part&auditable_id={{part_id}}` → `200`. El primer registro tiene
+   `event.value` `updated`, `old_values` `{ "sale_price": … }` (el precio anterior), `new_values`
+   `{ "sale_price": 1500 }`, `user` (quién) e `ip_address`. Guardar `data.0.id` → `audit_log_id`.
+3. Repetir el mismo `PATCH` sin cambiar el valor: no se agrega un registro nuevo.
+
+### 25.2 Otros eventos
+
+| Acción | Qué buscar en `GET audit-logs` |
+|---|---|
+| `PATCH parts/{id}/suppliers/{supplier}` con `last_cost` (o recibir una compra) | `auditable_type=part_supplier`, con `part_id` y `supplier_id` en los valores |
+| Emitir una factura | `auditable_type=invoice`, `updated`: `status` `draft` → `issued`, `number` asignado |
+| Registrar y anular un pago | `auditable_type=payment`: `created` y `updated` (`status` → `cancelled`, motivo) |
+| `POST login` con contraseña incorrecta | `event=login_failed`, sin usuario, `new_values.email` |
+| `POST login` / `POST logout` | `event=login` / `event=logout`, con el usuario |
+| Crear un usuario o cambiar su contraseña | `auditable_type=user`: `password` aparece como `********` |
+| `PATCH roles/{id}` con `permissions` | `event=permissions_synced`: lista de permisos antes y después |
+| `PATCH users/{id}` con `role` | `event=roles_synced`: roles antes y después |
+
+### 25.3 Filtros, detalle y errores
+
+| Caso | Método / Endpoint | HTTP | Resultado / error_code |
+|---|---|---|---|
+| Todos (20 por página) | `GET {{base_url}}/audit-logs` | 200 | Del más reciente al más antiguo, `meta.pagination` |
+| Por usuario, evento y fecha | `GET {{base_url}}/audit-logs?user_id=1&event=updated&date_from=2026-10-01&date_to=2026-10-31` | 200 | Filtrado |
+| Detalle | `GET {{base_url}}/audit-logs/{{audit_log_id}}` | 200 | Además `user_agent` y el email del usuario |
+| Evento inválido / tipo con mayúsculas | `GET {{base_url}}/audit-logs?event=x&auditable_type=Part` | 422 | `VALIDATION_ERROR` (`event`, `auditable_type`) |
+| Inexistente | `GET {{base_url}}/audit-logs/999999` | 404 | `RESOURCE_NOT_FOUND` |
+
+Tipos (`auditable_type`): `part`, `service`, `budget_item`, `part_supplier`, `invoice`, `invoice_item`, `payment`,
+`supplier_payment`, `purchase`, `purchase_item`, `user`, `role`, `permission`, `client`, `vehicle`, `mechanic`,
+`invoice_stamp`, `maintenance_plan`.
+
+### 25.4 Permisos
+
+Solo administrador: con `{{token_caja}}`, `{{token_mec}}` o cualquier otro rol del taller, `GET audit-logs` responde
+`403 FORBIDDEN`.
+
+---
+
 ## Errores HTTP genéricos
 
 | Caso | Método / Endpoint | Body | HTTP | error_code |

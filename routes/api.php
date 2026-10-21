@@ -46,6 +46,7 @@ use App\Http\Controllers\Api\PurchaseController;
 use App\Http\Controllers\Api\SupplierPaymentController;
 use App\Http\Controllers\Api\ClientNotificationController;
 use App\Http\Controllers\Api\UserNotificationController;
+use App\Http\Controllers\Api\AuditLogController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -324,6 +325,10 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::post('client-notifications/{clientNotification}/resend', [ClientNotificationController::class, 'resend'])->name('client-notifications.resend');
 
     Route::get('clients/{client}/notifications', [ClientNotificationController::class, 'clientNotifications'])->name('clients.notifications.index');
+
+    Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+
+    Route::get('audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit-logs.show');
 
     // Bandeja interna del usuario autenticado (sin permisos: solo sus avisos).
     Route::get('me/notifications', [UserNotificationController::class, 'index'])->name('me.notifications.index');

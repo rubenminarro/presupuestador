@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use App\Enums\PurchaseStatus;
 use App\Enums\TaxRate;
 use App\Exceptions\PurchaseException;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class PurchaseItem extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'purchase_id',
         'part_id',

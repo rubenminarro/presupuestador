@@ -6,8 +6,8 @@
 **Fecha:** 2026-10-17
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
-FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes); 6 roles;
-291 tests en verde (2026-10-20)
+FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes), FASE 25 (auditoría); 6 roles;
+297 tests en verde (2026-10-20)
 **Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -407,6 +407,7 @@ También se completaron:
 * **FASE 22 — Pagos a proveedores:** ver sección 2.35.
 * **FASE 23 — Notificaciones:** ver sección 2.36.
 * **FASE 24 — Exportación de reportes y comprobantes imprimibles:** ver sección 2.37.
+* **FASE 25 — Auditoría avanzada:** ver sección 2.38.
 
 ---
 
@@ -1051,6 +1052,62 @@ Componentes:
 Fuera de alcance: Excel (.xlsx), monto en letras en el recibo, logo del taller, original/duplicado fiscal y KuDE/SIFEN.
 
 Tests: `tests/Feature/Documents/DocumentPdfTest` y `tests/Feature/Reports/ReportExportTest`.
+
+---
+
+# 2.38 Auditoría avanzada (FASE 25, 2026-10-20)
+
+Decisiones del usuario:
+
+| Tema | Decisión |
+|---|---|
+| Qué se audita | Precios y costos, facturación y pagos, seguridad y usuarios, datos maestros |
+| Mecanismo | Tabla propia (`audit_logs`) y trait `Auditable`, sin dependencias nuevas |
+| Acceso | Solo el administrador (permisos `audit-logs.index` y `audit-logs.show`, sin asignar a otros roles) |
+| Retención | Para siempre: los registros son inmutables y no se depuran |
+
+Datos (migración `000049`): `audit_logs` con estos campos:
+- `event` (`AuditEvent`);
+- `auditable_type` (tipo corto: `part`, `invoice`, `part_supplier`…) y `auditable_id`;
+- `user_id` (null en procesos sin usuario y en el login fallido);
+- `old_values` y `new_values` (JSON);
+- `ip_address`, `user_agent` y `created_at`.
+
+`AuditLog` es inmutable: modificarlo o borrarlo responde `AUDIT_LOG_IMMUTABLE` (409, `AuditException`). El stock no se duplica, porque ya tiene su auditoría en `inventory_movements`.
+
+Modelos con `Auditable`:
+
+| Grupo | Modelos |
+|---|---|
+| Precios y costos | `Part`, `Service`, `BudgetItem`, `PartSupplier` (pivote del costo por proveedor; se identifica con `part_id` y `supplier_id` en los valores) |
+| Facturación y pagos | `Invoice`, `InvoiceItem`, `Payment`, `SupplierPayment`, `Purchase`, `PurchaseItem` |
+| Seguridad y usuarios | `User`, `Role`, `Permission` |
+| Datos maestros | `Client`, `Vehicle`, `Mechanic`, `InvoiceStamp`, `MaintenancePlan` |
+
+Reglas del registro (`AuditLogger`):
+- **Qué se guarda:**
+  - alta: todos los valores;
+  - modificación: solo los campos que cambiaron, antes y después; si no cambió nada relevante, no se registra;
+  - baja: los valores previos;
+  - restauración (soft delete).
+- **Qué se excluye o se enmascara:** se ignoran `created_at`, `updated_at` y `deleted_at`. `password`, `remember_token` y `token` se guardan como `********`.
+- **Valores:** se guardan tal como quedan en la base. Por ejemplo, un precio cargado como 999 se registra como `999`.
+- **Eventos sin modelo propio** (`AuditLogger::record()`):
+  - `login` (con el usuario), `login_failed` (sin usuario, con el email intentado) y `logout`;
+  - `permissions_synced` (rol, lista de permisos antes y después) y `roles_synced` (usuario, roles antes y después). Se registran aparte porque `syncPermissions` y `syncRoles` de Spatie no disparan eventos de modelo.
+- **Límite conocido:** las actualizaciones masivas por query builder no disparan eventos y no se auditan (por ejemplo, `PartService::clearPreferredSupplier`, que desmarca el proveedor preferido).
+
+Endpoints:
+- `GET audit-logs`, con filtros `auditable_type`, `auditable_id`, `user_id`, `event`, `date_from`, `date_to` y `per_page` (20 por defecto).
+- `GET audit-logs/{auditLog}`, que suma `user_agent` y el email del usuario.
+
+Componentes: `AuditLogger`, trait `App\Traits\Auditable`, `AuditLog`, `AuditEvent`, `AuditException`,
+`AuditLogController`, `IndexAuditLogRequest`, `AuditLogResource` y `ShowAuditLogResource`.
+
+Fuera de alcance: auditar lecturas (quién vio qué), depuración automática, exportación de la auditoría y
+alertas por eventos sospechosos.
+
+Tests: `tests/Feature/Audit/AuditLogTest`.
 
 ---
 
@@ -3398,16 +3455,15 @@ La arquitectura objetivo es:
 El proyecto actualmente se encuentra en:
 
 ```text
-FASE 24 — EXPORTACIÓN Y COMPROBANTES IMPRIMIBLES — IMPLEMENTADA (2026-10-20, ver 2.37)
+FASE 25 — AUDITORÍA AVANZADA — IMPLEMENTADA (2026-10-20, ver 2.38)
 ```
 
 Con la FASE 20 se completó el roadmap original (FASES 10–20); después se implementaron compras (FASE 21), pagos a
-proveedores (FASE 22), notificaciones por email y bandeja interna (FASE 23) y exportación de reportes y comprobantes
-imprimibles (FASE 24). Siguen sin fase asignada, a priorizar:
+proveedores (FASE 22), notificaciones por email y bandeja interna (FASE 23), exportación de reportes y comprobantes
+imprimibles (FASE 24) y auditoría avanzada (FASE 25). Siguen sin fase asignada, a priorizar:
 
 ```text
 Notificaciones por WhatsApp (el canal ya está previsto en NotificationChannel)
-Auditoría avanzada (AuditLog de precios, stock, facturación y pagos)
 Frontend React 19 (consumo de esta API)
 ```
 
@@ -3521,13 +3577,14 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 [✓] Pagos a proveedores y cuentas por pagar (FASE 22)
 [✓] Notificaciones por email y bandeja interna (FASE 23)
 [✓] Exportación de reportes (CSV/PDF) y comprobantes imprimibles (FASE 24)
+[✓] Auditoría avanzada de precios, facturación, seguridad y datos maestros (FASE 25)
 ```
 
 ## Próximo
 
 ```text
 [ ] Notificaciones por WhatsApp
-[ ] Auditoría avanzada
+[ ] Frontend React 19
 ```
 
 ---

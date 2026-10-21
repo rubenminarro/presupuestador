@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use App\Enums\TaxRate;
 use App\Support\Decimal;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class InvoiceItem extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'invoice_id',
         'source_type',

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class InvoiceStamp extends Model
 {
+    use Auditable;
+
     public const MAX_NUMBER = 9999999;
 
     protected $fillable = [

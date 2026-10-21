@@ -288,6 +288,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'client-notifications.index',
             'client-notifications.show',
             'client-notifications.resend',
+
+            /* audit permissions (solo administrador) */
+            'audit-logs.index',
+            'audit-logs.show',
         ];
 
         foreach ($permissions as $permission) {

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\AuditEvent;
 use App\Http\Controllers\Controller;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRoleRequest;
@@ -57,13 +59,13 @@ class RoleController extends Controller implements HasMiddleware
         );
     }
 
-    public function store(StoreRoleRequest $request)
+    public function store(StoreRoleRequest $request, AuditLogger $auditLogger)
     {
         $data = $request->validated();
 
         $role = Role::create($data);
 
-        $role->syncPermissions($data['permissions']);
+        $this->syncPermissions($role, $data['permissions'], $auditLogger);
 
         return $this->successResponse(
             'Rol creado correctamente.',
@@ -81,15 +83,15 @@ class RoleController extends Controller implements HasMiddleware
         );
     }
 
-    public function update(UpdateRoleRequest $request, Role $role)
+    public function update(UpdateRoleRequest $request, Role $role, AuditLogger $auditLogger)
     {
-        
+
         $data = $request->validated();
 
         $role->update($data);
-    
+
         if (array_key_exists('permissions', $data)) {
-            $role->syncPermissions($data['permissions']);
+            $this->syncPermissions($role, $data['permissions'], $auditLogger);
         }
 
         return $this->successResponse(
@@ -97,6 +99,22 @@ class RoleController extends Controller implements HasMiddleware
             new ShowRoleResource($role),
             200
         );
+    }
+
+    /**
+     * syncPermissions no dispara eventos de modelo: se audita aparte.
+     */
+    private function syncPermissions(Role $role, array $permissions, AuditLogger $auditLogger): void
+    {
+        $before = $role->permissions()->pluck('name')->sort()->values()->all();
+
+        $role->syncPermissions($permissions);
+
+        $after = $role->permissions()->pluck('name')->sort()->values()->all();
+
+        if ($before !== $after) {
+            $auditLogger->record(AuditEvent::PERMISSIONS_SYNCED, $role, ['permissions' => $before], ['permissions' => $after]);
+        }
     }
 
     public function destroy(Role $role)

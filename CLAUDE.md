@@ -17,14 +17,13 @@ y avisar, en lugar de "corregir" por cuenta propia.
 ## 1. Estado actual (verificado el 2026-10-20)
 
 * **Backend/API:** Laravel 12.70, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
-  proveedores (FASE 22), notificaciones (FASE 23) y exportación y comprobantes imprimibles (FASE 24). 219 rutas API,
-  291 tests en verde.
+  proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24) y auditoría
+  (FASE 25). 221 rutas API, 297 tests en verde.
 * **Frontend:** **no está en este repositorio.** El handoff prevé React 19, pero no hay código que lo confirme; solo
   CORS y Sanctum están configurados para `http://localhost:5173`. `package.json` y `resources/` son el scaffold de
   Laravel (Vite + Tailwind) sin uso, salvo las vistas de email (`resources/views/mail`) y de PDF (`resources/views/pdf`).
   No asumir tecnología ni estructura del frontend.
-* **Pendiente (sin diseño ni fase asignada):** notificaciones por WhatsApp, auditoría avanzada, frontend. Ninguno tiene
-  código hoy.
+* **Pendiente (sin diseño ni fase asignada):** notificaciones por WhatsApp y frontend. Ninguno tiene código hoy.
 
 ---
 
@@ -117,9 +116,9 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 
 | Carpeta | Contenido |
 |---|---|
-| `app/Http/Controllers/Api` | 45 controllers |
+| `app/Http/Controllers/Api` | 46 controllers |
 | `app/Http/Requests` | Validación (mensajes en español) |
-| `app/Services` | Reglas de negocio (26 services) |
+| `app/Services` | Reglas de negocio (27 services, incluido `AuditLogger`) |
 | `app/Jobs`, `app/Mail`, `app/Notifications`, `app/Console/Commands` | Envío de avisos (FASE 23) |
 | `app/Models` | Modelos Eloquent (muchos con `SoftDeletes`) |
 | `app/Http/Resources` | Contrato JSON |
@@ -128,6 +127,7 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 | `app/Support/Decimal.php` | Redondeo BCMath |
 | `app/Traits/ApiResponse.php` | `successResponse` / `errorResponse` |
 | `app/Traits/FileResponse.php` | Descarga de archivos generados (PDF, CSV) |
+| `app/Traits/Auditable.php` | Registro automático de cambios en `audit_logs` |
 | `bootstrap/app.php` | Mapeo de excepciones a JSON |
 | `config/invoice.php`, `maintenance.php`, `notifications.php`, `company.php` | Parámetros de negocio (`invoice.default_tax_rate` es el IVA de presupuestos y facturas; `company` son los datos del taller para los PDF) |
 
@@ -147,7 +147,7 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 * Excepciones de dominio: `BudgetException`, `WorkOrderException`, `WorkOrderPartException`, `PartException`,
   `SupplierException`, `InventoryException`, `ServiceException`, `InvoiceException`, `PaymentException`,
   `VehicleDeliveryException`, `MaintenanceException`, `ReceptionException`, `PurchaseException`,
-  `SupplierPaymentException`, `NotificationException` (todas extienden `AppException(message, status, errorCode, errors)`).
+  `SupplierPaymentException`, `NotificationException`, `AuditException` (todas extienden `AppException(message, status, errorCode, errors)`).
 
 ### Autenticación
 
@@ -160,7 +160,7 @@ Sanctum con tokens Bearer: `POST /api/login` (público) devuelve `data.token`; t
 
 | Rol | Función | Accesos clave |
 |---|---|---|
-| `administrador` | Todo (`Gate::before`) | Exclusivo: usuarios/roles/permisos, costos y margen (`work-orders.view-economics`), liquidar comisiones, anular entregas, timbrados, ABM de planes de mantenimiento, reporte de rentabilidad |
+| `administrador` | Todo (`Gate::before`) | Exclusivo: usuarios/roles/permisos, auditoría (`audit-logs.*`), costos y margen (`work-orders.view-economics`), liquidar comisiones, anular entregas, timbrados, ABM de planes de mantenimiento, reporte de rentabilidad |
 | `mechanic` | Ejecuta la OT | Diagnóstico, iniciar/pausar/completar OT e ítems, consumir/devolver repuestos, sus horas y comisiones, historial, estado de mantenimiento, dashboard (bloque taller) |
 | `recepcionista` | Atiende al cliente | Clientes, vehículos, recepciones, checklist, presupuestos completos, registrar entregas, alertas de mantenimiento, reporte de presupuestos, avisos a clientes (consultar y reenviar) |
 | `jefe-taller` | Organiza el trabajo | OT completas, ítems, repuestos en OT, asignación y horas de todos, diagnóstico, intervalos de mantenimiento por vehículo, reporte de productividad, consulta de compras, pagos a proveedores y cuentas por pagar |
@@ -429,6 +429,28 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   * Una clave nueva en un reporte necesita su etiqueta en `ReportExportService::LABELS`.
 * **Formato de presentación:** `App\Support\Format` (`money`, `integer`, `quantity`). Es solo para mostrar: los
   cálculos siguen con BCMath.
+
+### 6.19 Auditoría
+
+* **Registro automático:** los modelos con el trait `App\Traits\Auditable` se registran solos en `audit_logs`
+  (`AuditLogger`) en el alta, la modificación (solo los campos cambiados, antes y después), la baja y la restauración,
+  con usuario, IP y user agent.
+  * Modelos auditados: `Part`, `Service`, `BudgetItem`, `PartSupplier`, `Invoice`, `InvoiceItem`, `Payment`,
+    `SupplierPayment`, `Purchase`, `PurchaseItem`, `User`, `Role`, `Permission`, `Client`, `Vehicle`, `Mechanic`,
+    `InvoiceStamp` y `MaintenancePlan`.
+  * **Un modelo nuevo con precios, dinero, seguridad o datos maestros debe usar el trait.**
+  * El stock ya se audita en `inventory_movements`.
+* **Exclusiones:** `password`, `remember_token` y `token` se guardan como `********`. Los timestamps no se registran.
+  Cada modelo puede excluir campos con `$auditExclude`. Un pivote sin clave propia se identifica con `auditContext()`.
+* **Eventos sin modelo propio:** se registran con `AuditLogger::record()`.
+  * Login, login fallido y logout, en `AuthController`.
+  * `permissions_synced` y `roles_synced`, porque `syncPermissions` y `syncRoles` de Spatie no disparan eventos.
+    Cualquier sincronización nueva de roles o permisos debe registrarse igual.
+* **Límite:** las actualizaciones masivas por query builder (`DB::table()->update()`, `Model::where()->update()`) no
+  se auditan. Usar el modelo cuando el cambio deba quedar registrado.
+* **Inmutabilidad:** `audit_logs` no se modifica ni se borra (`AUDIT_LOG_IMMUTABLE`, 409) y no se depura.
+* **Consulta:** `GET audit-logs` (filtros `auditable_type`, `auditable_id`, `user_id`, `event`, `date_from`,
+  `date_to`) y `GET audit-logs/{id}`. Permisos `audit-logs.index|show`, solo para el administrador.
 
 ---
 

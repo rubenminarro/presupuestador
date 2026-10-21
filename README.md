@@ -60,6 +60,7 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 | Historial del vehículo | Resumen, visitas (diagnóstico, OT, repuestos, factura, entrega), repuestos usados y lecturas de kilometraje |
 | Mantenimiento preventivo | Planes por km y/o días, registro automático desde la OT, km actual estimado por uso y alertas de vencimiento |
 | Reportes y dashboard | Dashboard por permisos; reportes de ventas, presupuestos, rentabilidad, productividad, inventario y clientes |
+| Auditoría | Quién cambió qué y cuándo (antes/después, IP) en precios, costos, facturación, pagos, compras, usuarios, roles, permisos y datos maestros; login, login fallido y logout. Inmutable, solo para el administrador |
 | Exportación y comprobantes | Reportes en CSV (Excel) y PDF; PDF de presupuesto, factura (representación sin valor fiscal), recibo y comprobante de entrega |
 | Notificaciones | Emails al cliente (presupuesto enviado, vehículo listo, factura por vencer / vencida, mantenimiento próximo / vencido) con registro, reenvío y baja por cliente; bandeja interna por usuario (presupuesto aprobado/rechazado, OT completada, repuesto sin stock, cuentas por pagar vencidas) |
 
@@ -67,8 +68,8 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 
 | Estado | Qué |
 |---|---|
-| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24) y los módulos base. 219 rutas API y 291 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
-| Pendiente, sin diseño | Notificaciones por WhatsApp, auditoría avanzada |
+| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24), auditoría (FASE 25) y los módulos base. 221 rutas API y 297 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
+| Pendiente, sin diseño | Notificaciones por WhatsApp |
 
 ---
 
@@ -282,7 +283,7 @@ vendor/bin/phpunit
 composer test
 ```
 
-291 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
+297 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
 consulta DNS de los emails (`EMAIL_DNS_CHECK=false`).
 
 Si `pdo_sqlite` no está habilitado en el `php.ini` de Laragon:

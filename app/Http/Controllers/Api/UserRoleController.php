@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\AuditEvent;
 use App\Http\Controllers\Controller;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
@@ -92,7 +94,7 @@ class UserRoleController extends Controller implements HasMiddleware
 
     }
 
-    public function store(StoreUserRequest $request)
+    public function store(StoreUserRequest $request, AuditLogger $auditLogger)
     {
         $data = $request->validated();
         $data['password'] = bcrypt($request->password);
@@ -100,6 +102,8 @@ class UserRoleController extends Controller implements HasMiddleware
         $user = User::create($data);
 
         $user->assignRole($request->role);
+
+        $auditLogger->record(AuditEvent::ROLES_SYNCED, $user, ['roles' => []], ['roles' => $user->getRoleNames()->values()->all()]);
     
         return $this->successResponse(
             'Usuario creado correctamente.', 
@@ -118,7 +122,7 @@ class UserRoleController extends Controller implements HasMiddleware
         );
     }
 
-    public function update(UpdateUserRequest $request, User $user)
+    public function update(UpdateUserRequest $request, User $user, AuditLogger $auditLogger)
     {
         $data = $request->validated();
 
@@ -131,7 +135,16 @@ class UserRoleController extends Controller implements HasMiddleware
         $user->update($data);
 
         if (array_key_exists('role', $data)) {
+            $before = $user->getRoleNames()->sort()->values()->all();
+
             $user->syncRoles([$data['role']]);
+
+            $after = $user->load('roles')->getRoleNames()->sort()->values()->all();
+
+            // syncRoles no dispara eventos de modelo: se audita aparte.
+            if ($before !== $after) {
+                $auditLogger->record(AuditEvent::ROLES_SYNCED, $user, ['roles' => $before], ['roles' => $after]);
+            }
         }
 
         return $this->successResponse(
