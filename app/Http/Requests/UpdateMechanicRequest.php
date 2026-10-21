@@ -47,11 +47,13 @@ class UpdateMechanicRequest extends FormRequest
             // hour_cost y commission_percentage no admiten null en la base (default 0).
             'hour_cost' => [
                 'sometimes',
+                'required',
                 'numeric',
                 'min:0',
             ],
             'commission_percentage' => [
                 'sometimes',
+                'required',
                 'numeric',
                 'between:0,100',
             ],
@@ -89,10 +91,12 @@ class UpdateMechanicRequest extends FormRequest
                 'date' => 'El campo fecha de contratación debe ser una fecha válida.',
             ],
             'hour_cost' => [
+                'required' => 'El campo costo por hora no puede quedar vacío.',
                 'numeric' => 'El campo costo por hora debe ser un número.',
                 'min' => 'El campo costo por hora no puede ser negativo.',
             ],
             'commission_percentage' => [
+                'required' => 'El campo porcentaje de comisión no puede quedar vacío.',
                 'numeric' => 'El campo porcentaje de comisión debe ser un número.',
                 'between' => 'El campo porcentaje de comisión debe estar entre 0 y 100.',
             ],

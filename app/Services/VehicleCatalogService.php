@@ -8,7 +8,8 @@ use App\Models\VehicleModel;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Bajas del catálogo de marcas y modelos: no se eliminan si hay vehículos vigentes que los usan.
+ * Bajas del catálogo de marcas y modelos: no se eliminan si hay vehículos vigentes que los usan, ni una marca con
+ * modelos vigentes.
  */
 class VehicleCatalogService
 {
@@ -21,6 +22,15 @@ class VehicleCatalogService
                     'No se puede eliminar la marca porque hay vehículos registrados con ella.',
                     409,
                     'BRAND_HAS_VEHICLES'
+                );
+            }
+
+            // Sin esto sus modelos quedarían sin marca vigente.
+            if ($brand->vehicleModels()->exists()) {
+                throw new VehicleCatalogException(
+                    'No se puede eliminar la marca porque tiene modelos registrados. Elimine primero sus modelos.',
+                    409,
+                    'BRAND_HAS_MODELS'
                 );
             }
 

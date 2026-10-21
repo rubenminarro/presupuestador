@@ -135,6 +135,20 @@ class BrandAndVehicleModelTest extends PartsTestCase
         $this->assertSoftDeleted('brands', ['id' => $brand->id]);
     }
 
+    public function test_brand_with_models_cannot_be_deleted(): void
+    {
+        $brand = $this->postJson('/api/brands', ['name' => 'Toyota'])->json('data');
+        $model = $this->postJson('/api/vehicle-models', ['name' => 'Hilux', 'brand_id' => $brand['id']])->json('data');
+
+        $this->deleteJson("/api/brands/{$brand['id']}")
+            ->assertStatus(409)
+            ->assertJsonPath('error_code', 'BRAND_HAS_MODELS');
+
+        // Un modelo eliminado ya no bloquea la baja.
+        $this->deleteJson("/api/vehicle-models/{$model['id']}")->assertOk();
+        $this->deleteJson("/api/brands/{$brand['id']}")->assertOk();
+    }
+
     public function test_mechanic_cannot_manage_brands_or_models(): void
     {
         $this->actingAsMechanic();

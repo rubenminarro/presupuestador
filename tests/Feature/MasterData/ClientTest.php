@@ -33,7 +33,10 @@ class ClientTest extends PartsTestCase
             ->assertJsonPath('data.document_number', 'QA-2001')
             ->json('data');
 
-        $this->getJson('/api/clients?search=Benitez')->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson('/api/clients?search=Benitez')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.document_number', 'QA-2001');
         $this->getJson("/api/clients/{$client['id']}")->assertOk()->assertJsonPath('data.vehicles', []);
 
         $this->patchJson("/api/clients/{$client['id']}", ['phone' => '+595981999888', 'first_name' => 'Lucía'])
