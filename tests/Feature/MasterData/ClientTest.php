@@ -50,6 +50,15 @@ class ClientTest extends PartsTestCase
         $this->postJson('/api/clients', $this->payload())->assertCreated();
     }
 
+    public function test_notes_can_be_cleared_on_update(): void
+    {
+        $client = $this->postJson('/api/clients', $this->payload())->assertCreated()->json('data');
+
+        $this->patchJson("/api/clients/{$client['id']}", ['notes' => null])
+            ->assertOk()
+            ->assertJsonPath('data.notes', null);
+    }
+
     public function test_client_validation(): void
     {
         $this->postJson('/api/clients', [])

@@ -31,16 +31,20 @@ class UpdateMechanicRequest extends FormRequest
                 'max:50',
                 Rule::unique('mechanics', 'employee_code')->ignore($Idmechanic),
             ],
+            // Los opcionales del alta (nullable) también se pueden vaciar al editar.
             'specialty' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'max:100',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?%]*$/u',
             ],
             'hire_date' => [
                 'sometimes',
+                'nullable',
                 'date',
             ],
+            // hour_cost y commission_percentage no admiten null en la base (default 0).
             'hour_cost' => [
                 'sometimes',
                 'numeric',
@@ -57,6 +61,7 @@ class UpdateMechanicRequest extends FormRequest
             ],
             'notes' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?%]*$/u',
             ],

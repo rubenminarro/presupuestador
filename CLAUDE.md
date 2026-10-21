@@ -18,7 +18,7 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 * **Backend/API:** Laravel 12.70, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
   proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24) y auditoría
-  (FASE 25). 222 rutas API, 300 tests en verde.
+  (FASE 25). 222 rutas API, 305 tests en verde.
 * **Frontend:** **no está en este repositorio**, sino en `../presupuestador-frontend` (React 19 + TypeScript + Vite +
   Tabler; ver su `CLAUDE.md` y `docs/plan-desarrollo.md`). CORS y Sanctum están configurados para
   `http://localhost:5173`. `package.json` y `resources/` de este repositorio son el scaffold de Laravel (Vite +
@@ -118,7 +118,7 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 |---|---|
 | `app/Http/Controllers/Api` | 46 controllers |
 | `app/Http/Requests` | Validación (mensajes en español) |
-| `app/Services` | Reglas de negocio (27 services, incluido `AuditLogger`) |
+| `app/Services` | Reglas de negocio (28 services, incluido `AuditLogger`) |
 | `app/Jobs`, `app/Mail`, `app/Notifications`, `app/Console/Commands` | Envío de avisos (FASE 23) |
 | `app/Models` | Modelos Eloquent (muchos con `SoftDeletes`) |
 | `app/Http/Resources` | Contrato JSON |
@@ -147,7 +147,7 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 * Excepciones de dominio: `BudgetException`, `WorkOrderException`, `WorkOrderPartException`, `PartException`,
   `SupplierException`, `InventoryException`, `ServiceException`, `InvoiceException`, `PaymentException`,
   `VehicleDeliveryException`, `MaintenanceException`, `ReceptionException`, `PurchaseException`,
-  `SupplierPaymentException`, `NotificationException`, `AuditException` (todas extienden `AppException(message, status, errorCode, errors)`).
+  `SupplierPaymentException`, `NotificationException`, `AuditException`, `VehicleCatalogException` (todas extienden `AppException(message, status, errorCode, errors)`).
 
 ### Autenticación
 
@@ -189,6 +189,10 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   `year` ≤ año actual; color, combustible y transmisión por enum. Rutas anidadas `clients/{client}/vehicles` (index,
   store, show; el `client_id` sale de la URL); editar y eliminar solo en `vehicles/{vehicle}`. La tabla es `vehicles`
   (el vehículo es una entidad propia; su dueño puede cambiar).
+* Marca o modelo con vehículos vigentes no se elimina (`BRAND_HAS_VEHICLES`, `VEHICLE_MODEL_HAS_VEHICLES`, 409;
+  `VehicleCatalogService`). `GET vehicle-models` filtra por `brand_id`.
+* Ediciones: los opcionales que el alta acepta como `null` también se pueden vaciar al editar (cliente, vehículo,
+  mecánico), salvo `hour_cost` y `commission_percentage` del mecánico (columnas `NOT NULL`).
 * Usuario: contraseña ≥ 12 con mayúsculas, minúsculas, números, símbolos y `uncompromised()`.
 
 ### 6.2 Recepción y checklist

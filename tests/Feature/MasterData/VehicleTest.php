@@ -67,6 +67,36 @@ class VehicleTest extends PartsTestCase
         $this->postJson('/api/vehicles', $this->payload())->assertCreated();
     }
 
+    public function test_optional_fields_can_be_cleared_on_update(): void
+    {
+        $vehicle = $this->postJson('/api/vehicles', $this->payload(['engine_number' => 'MOTOR12345', 'notes' => 'Llantas nuevas.']))
+            ->assertCreated()
+            ->json('data');
+
+        $this->patchJson("/api/vehicles/{$vehicle['id']}", $this->payload([
+            'year' => null,
+            'color' => null,
+            'engine_number' => null,
+            'mileage' => null,
+            'fuel_type' => null,
+            'transmission' => null,
+            'notes' => null,
+        ]))
+            ->assertOk()
+            ->assertJsonPath('data.year', null)
+            ->assertJsonPath('data.color', null)
+            ->assertJsonPath('data.engine_number', null)
+            ->assertJsonPath('data.mileage', null)
+            ->assertJsonPath('data.fuel_type', null)
+            ->assertJsonPath('data.transmission', null)
+            ->assertJsonPath('data.notes', null);
+
+        // La chapa sigue siendo obligatoria si el vehículo tiene chapa.
+        $this->patchJson("/api/vehicles/{$vehicle['id']}", $this->payload(['plate' => null]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['plate']);
+    }
+
     public function test_vehicle_without_plate_requires_chassis(): void
     {
         $this->postJson('/api/vehicles', $this->payload(['plate' => null, 'no_plate' => true]))

@@ -7,7 +7,7 @@
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
 FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes), FASE 25 (auditoría); 6 roles;
-300 tests en verde (2026-10-21)
+305 tests en verde (2026-10-21)
 **Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -1108,6 +1108,25 @@ Fuera de alcance: auditar lecturas (quién vio qué), depuración automática, e
 alertas por eventos sospechosos.
 
 Tests: `tests/Feature/Audit/AuditLogTest`.
+
+---
+
+# 2.39 Ajustes de datos maestros para el frontend (2026-10-21)
+
+Surgen de construir las pantallas de datos maestros del frontend (`../presupuestador-frontend`, fase F1):
+
+- **Bajas del catálogo de vehículos:** `VehicleCatalogService::deleteBrand()` / `deleteVehicleModel()` (antes la
+  lógica estaba en los controllers). Si hay vehículos vigentes (no eliminados) con esa marca o modelo →
+  `BRAND_HAS_VEHICLES` / `VEHICLE_MODEL_HAS_VEHICLES` (409, `VehicleCatalogException`), igual criterio que
+  `SERVICE_IN_USE`. Una marca con modelos pero sin vehículos sí se elimina (sus modelos quedan sin marca vigente):
+  pendiente de decidir si también debe bloquearse.
+- **Filtro `brand_id`** en `GET vehicle-models` (para el select de modelos del formulario de vehículo).
+- **Vaciar opcionales al editar:** las ediciones de cliente (`notes`), vehículo (`chassis`, `plate`, `year`, `color`,
+  `engine_number`, `mileage`, `fuel_type`, `transmission`, `notes`) y mecánico (`specialty`, `hire_date`, `notes`)
+  aceptan `null`, igual que el alta. Antes `sometimes` sin `nullable` respondía 422 y el campo no se podía vaciar.
+  `hour_cost` y `commission_percentage` del mecánico quedan sin `nullable` (columna `NOT NULL`; ver 14, punto 10).
+
+Tests: `tests/Feature/MasterData/BrandAndVehicleModelTest`, `VehicleTest`, `ClientTest`, `MechanicTest`.
 
 ---
 
@@ -3666,4 +3685,5 @@ comprobarlo desde aquí. Cada deuda nueva necesita una decisión antes de tocar 
 | 6 | ~~Middleware sin registrar~~ **Resuelto el 2026-10-19** | `App\Http\Middleware\EnsureJsonResponse` no aparecía en `bootstrap/app.php` ni en las rutas (y respondía `406 {"error": "JSON only"}`, fuera del contrato). Sin `Accept: application/json`: request sin token → `500` HTML (redirección a una ruta `login` inexistente), validación → `302`, ruta inexistente → `404` HTML | Ahora es middleware global: fija `Accept: application/json` en `api/*` y todo responde con el contrato (`401`, `422`, `404`, `405`…). Test: `tests/Feature/Http/JsonResponseTest` |
 | 7 | ~~Seeders no idempotentes~~ **Resuelto el 2026-10-19** | `BrandSeeder` (`insert`), `VehicleModelSeeder`, `ClientsSeeder`, `VehiclesSeeder`, `ReceptionSeeder`, `DiagnosticItemSeeder`, `BudgetSeeder` y `BudgetItemSeeder` creaban sin verificar si el dato existía, y referenciaban marcas, clientes, vehículos, categorías y presupuestos por id fijo (`VehiclesSeeder` además combinaba marcas con modelos de otra marca, p. ej. Hyundai + Corolla Cross) | Ahora omiten lo existente por clave natural (nombre, documento, placa, código de categoría; recepción si el vehículo ya tiene, presupuesto si la recepción ya tiene, ítems si el presupuesto ya tiene) y resuelven las relaciones por esas claves. `BudgetSeeder` crea por `BudgetService::create()` (código y estado derivado de la recepción). `DatabaseSeederTest` corre todo dos veces y compara conteos |
 | 8 | ~~Tests que dependen de la red~~ **Resuelto el 2026-10-19** | `Store/UpdateUserRequest` y `Store/UpdateClientRequest` usan `email:rfc,dns`; los de usuario además `Password::uncompromised()` (simulado con `Http::fake` en los tests) | Los tests necesitaban resolver DNS (`gmail.com`). Ahora la consulta DNS depende de `config('validation.email_dns')` (`EMAIL_DNS_CHECK`, `true` por defecto); `phpunit.xml` la desactiva y los tests corren sin red. `ClientTest` verifica ambos modos con un dominio `.invalid` |
+| 10 | **Abierto (2026-10-21)**: alta de mecánico con costo o comisión `null` → `500` | `StoreMechanicRequest` declara `hour_cost` y `commission_percentage` como `nullable`, pero las columnas son `NOT NULL DEFAULT 0` (migración `000001`). `POST /api/mechanics` con `"hour_cost": null` responde `500 INTERNAL_SERVER_ERROR` (verificado con un test temporal) | Pendiente de decisión: rechazar `null` con `422` (quitar `nullable`) o tomarlo como `0`. En la edición (`UpdateMechanicRequest`) esos dos campos siguen sin `nullable` a propósito |
 | 9 | ~~Rama remota antigua~~ **Resuelto el 2026-10-17** | `origin/feature/diagnostic-item-seeders-controllers-migrations-models` (commit `795d830519b28d1abc22ba7fee92da04e50af4a5`, 2026-08-12) sin mergear | Eliminada a pedido del usuario: sus archivos existían en `main` en versiones posteriores. Ese día también se eliminaron todas las ramas ya integradas en `main` (locales y remotas); su contenido sigue en el historial de `main` |

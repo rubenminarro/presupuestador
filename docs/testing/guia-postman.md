@@ -272,6 +272,16 @@ Esperado: `201` → `vehicle_id`.
 | Color fuera del enum | `"color": "fucsia"` | 422 | `VALIDATION_ERROR` (`errors.color`) |
 | Chapa repetida | mismo body | 422 | `VALIDATION_ERROR` (`errors.plate`) |
 
+**M.4b Ajustes de datos maestros (2026-10-21)**
+
+| Caso | Request | HTTP | Esperado |
+|---|---|---|---|
+| Modelos de una marca | `GET {{base_url}}/vehicle-models?brand_id={{brand_id}}` | 200 | Solo modelos con `brand.id = {{brand_id}}` |
+| Eliminar marca con vehículos | `DELETE {{base_url}}/brands/{{brand_id}}` | 409 | `BRAND_HAS_VEHICLES` |
+| Eliminar modelo con vehículos | `DELETE {{base_url}}/vehicle-models/{{model_id}}` | 409 | `VEHICLE_MODEL_HAS_VEHICLES` |
+| Vaciar opcionales del vehículo | `PATCH {{base_url}}/vehicles/{{vehicle_id}}` con el body de M.4 y `"notes": null, "year": null` | 200 | `data.notes` y `data.year` en `null` |
+| Vaciar notas del cliente | `PATCH {{base_url}}/clients/{{client_id}}` con `{ "notes": null }` | 200 | `data.notes = null` |
+
 ### M.5 Vehículos por cliente (rutas anidadas)
 
 Complementan a `/vehicles`. El propietario se toma de la URL.
