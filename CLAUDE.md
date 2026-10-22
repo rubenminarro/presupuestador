@@ -482,5 +482,6 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 
 ## 7. Deuda técnica conocida
 
-`docs/handoff.md`, sección 14: todos los puntos registrados están resueltos (2026-10-19). Las deudas nuevas se
-registran ahí y no se corrigen sin decisión previa del usuario.
+`docs/handoff.md`, sección 14. Las deudas nuevas se registran ahí y no se corrigen sin decisión previa del usuario.
+Pendiente: **#11, repuestos extra en la OT sin aprobación del cliente** (se facturan aunque no estaban en el
+presupuesto aprobado; decisión en espera de los clientes del taller, 2026-10-22).
