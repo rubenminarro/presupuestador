@@ -1204,6 +1204,17 @@ Tests: `tests/Feature/WorkOrders/WorkOrderLifecycleTest`.
 
 ---
 
+# 2.44 Contrato de cobros (2026-10-22)
+
+Surge de la pantalla de cobros del frontend (fase F6):
+
+- **Cliente en el listado de pagos:** `PaymentResource` suma `customer_name` (de la factura, igual que
+  `invoice_number`, solo con la factura cargada). La búsqueda ya filtraba por cliente pero el listado no lo mostraba.
+
+Tests: `tests/Feature/Payments/PaymentTest`.
+
+---
+
 # 2.2 Autenticación
 
 Existe:

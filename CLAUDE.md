@@ -338,6 +338,8 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   (`amount_received` ≥ `amount`; se guarda `change_amount`).
 * Recibo `REC-000001` solo para facturas a crédito. El pago no se edita: se anula con motivo.
 * Saldo y estado de cobro (`unpaid|partial|paid`) se calculan; resumen de caja por medio de pago.
+* Contrato: el listado de pagos trae `invoice_number` y `customer_name` de la factura (no en los pagos del detalle de
+  la factura).
 
 ### 6.12 Entrega del vehículo
 

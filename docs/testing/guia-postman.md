@@ -1950,7 +1950,7 @@ Volver a pagar el saldo: `POST {{base_url}}/invoices/{{invoice4_id}}/payments` c
 
 | Caso | Método / Endpoint | HTTP | Resultado / error_code |
 |---|---|---|---|
-| Todos | `GET {{base_url}}/payments` | 200 | 5 pagos con `meta.pagination` |
+| Todos | `GET {{base_url}}/payments` | 200 | 5 pagos con `meta.pagination`; cada uno con `invoice_number` y `customer_name` |
 | Por factura | `GET {{base_url}}/payments?invoice_id={{invoice4_id}}` | 200 | 3 pagos |
 | Por medio | `GET {{base_url}}/payments?method=card` | 200 | 1 pago |
 | Anulados | `GET {{base_url}}/payments?status=cancelled` | 200 | 1 pago (`REC-000002`) |

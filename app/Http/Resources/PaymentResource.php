@@ -13,6 +13,7 @@ class PaymentResource extends JsonResource
             'id' => $this->id,
             'invoice_id' => $this->invoice_id,
             'invoice_number' => $this->whenLoaded('invoice', fn () => $this->invoice?->number),
+            'customer_name' => $this->whenLoaded('invoice', fn () => $this->invoice?->customer_name),
             'receipt_number' => $this->receipt_number,
             'payment_date' => $this->payment_date?->toDateString(),
             'amount' => $this->amount,

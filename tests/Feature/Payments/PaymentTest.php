@@ -267,7 +267,14 @@ class PaymentTest extends InvoiceTestCase
         $this->getJson('/api/payments?method=card')
             ->assertOk()
             ->assertJsonCount(2, 'data')
-            ->assertJsonPath('meta.pagination.total', 2);
+            ->assertJsonPath('meta.pagination.total', 2)
+            ->assertJsonPath('data.0.invoice_number', $invoice['number'])
+            ->assertJsonPath('data.0.customer_name', $invoice['customer']['name']);
+
+        // En el detalle de la factura los pagos no repiten la factura.
+        $this->getJson("/api/invoices/{$invoice['id']}")
+            ->assertOk()
+            ->assertJsonMissingPath('data.payments.0.customer_name');
 
         $this->getJson('/api/payments?status=cancelled')->assertOk()->assertJsonCount(1, 'data');
         $this->getJson("/api/payments/{$cancelled['id']}")->assertOk()->assertJsonPath('data.invoice.id', $invoice['id']);
