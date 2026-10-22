@@ -349,6 +349,7 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 * La recepción pasa a `delivered`; `vehicles.mileage` solo avanza; la OT sigue `completed`. Anular con motivo devuelve
   la recepción a su estado anterior; si eso la reabre y el vehículo ya tiene otra recepción abierta, se rechaza
   (`DELIVERY_VEHICLE_HAS_OPEN_RECEPTION`, 409).
+* Contrato: el listado de entregas trae `plate` y `client_name`.
 
 ### 6.13 Historial y mantenimiento preventivo
 

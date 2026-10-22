@@ -41,7 +41,7 @@ class VehicleDeliveryController extends Controller implements HasMiddleware
         $search = trim($request->input('search', ''));
 
         $deliveries = VehicleDelivery::query()
-            ->with('vehicle')
+            ->with(['vehicle', 'client'])
             ->when($request->filled('reception_id'), fn ($q) => $q->where('reception_id', $request->reception_id))
             ->when($request->filled('vehicle_id'), fn ($q) => $q->where('vehicle_id', $request->vehicle_id))
             ->when($request->filled('client_id'), fn ($q) => $q->where('client_id', $request->client_id))

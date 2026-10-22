@@ -2113,7 +2113,7 @@ Volver a entregar con el body de 17.3 → `201`, `delivery_number` `"ENT-000002"
 
 | Caso | Método / Endpoint | HTTP | Resultado / error_code |
 |---|---|---|---|
-| Todas | `GET {{base_url}}/vehicle-deliveries` | 200 | 2 entregas con `meta.pagination` |
+| Todas | `GET {{base_url}}/vehicle-deliveries` | 200 | 2 entregas con `meta.pagination`; cada una con `plate` y `client_name` |
 | Por recepción | `GET {{base_url}}/vehicle-deliveries?reception_id={{reception2_id}}` | 200 | 2 entregas |
 | Vigentes | `GET {{base_url}}/vehicle-deliveries?status=delivered` | 200 | Solo `ENT-000002` |
 | Por número, chapa o quien retira | `GET {{base_url}}/vehicle-deliveries?search=QAB456` | 200 | Filtrado |

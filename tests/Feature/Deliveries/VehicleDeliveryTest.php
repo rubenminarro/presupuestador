@@ -89,7 +89,10 @@ class VehicleDeliveryTest extends InvoiceTestCase
         Storage::disk('public')->assertExists(VehicleDelivery::findOrFail($delivery['id'])->signature_path);
 
         $this->getJson("/api/vehicle-deliveries/{$delivery['id']}")->assertOk()->assertJsonPath('data.client.id', $reception->client_id);
-        $this->getJson("/api/vehicle-deliveries?reception_id={$receptionId}")->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson("/api/vehicle-deliveries?reception_id={$receptionId}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.client_name', trim("{$reception->client->first_name} {$reception->client->last_name}"));
         $this->getJson('/api/vehicle-deliveries?search=ENT-000001')->assertOk()->assertJsonCount(1, 'data');
 
         $this->deliver($receptionId)

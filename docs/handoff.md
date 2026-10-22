@@ -1215,6 +1215,17 @@ Tests: `tests/Feature/Payments/PaymentTest`.
 
 ---
 
+# 2.45 Contrato de entregas (2026-10-22)
+
+Surge de la pantalla de entregas del frontend (fase F7):
+
+- **Cliente en el listado de entregas:** `VehicleDeliveryResource` suma `client_name` (con el cliente cargado, como
+  `plate` con el vehículo); el listado carga además el cliente. Antes solo traía `client_id`.
+
+Tests: `tests/Feature/Deliveries/VehicleDeliveryTest`.
+
+---
+
 # 2.2 Autenticación
 
 Existe:
