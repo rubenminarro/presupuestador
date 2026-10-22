@@ -50,7 +50,8 @@ class WorkOrderController extends Controller implements HasMiddleware
             ->with([
                 'reception',
                 'reception.client',
-                'reception.vehicle',
+                'reception.vehicle.brand',
+                'reception.vehicle.vehicleModel',
                 'budget',
                 'mechanic',
                 'mechanic.user',
@@ -158,7 +159,8 @@ class WorkOrderController extends Controller implements HasMiddleware
         $workOrder->load([
             'reception',
             'reception.client',
-            'reception.vehicle',
+            'reception.vehicle.brand',
+            'reception.vehicle.vehicleModel',
             'budget',
             'mechanic',
             'mechanic.user',
@@ -210,7 +212,8 @@ class WorkOrderController extends Controller implements HasMiddleware
         $workOrder->load([
             'reception',
             'reception.client',
-            'reception.vehicle',
+            'reception.vehicle.brand',
+            'reception.vehicle.vehicleModel',
             'budget',
             'mechanic',
             'mechanic.user',

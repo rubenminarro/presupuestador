@@ -23,6 +23,8 @@ class WorkOrderItemMechanicResource extends JsonResource
                 'id' => $this->mechanic->id,
                 'employee_code' => $this->mechanic->employee_code,
                 'full_name' => $this->mechanic->fullName(),
+                // Para que el frontend ofrezca al mecánico cargar solo sus propias horas.
+                'user_id' => $this->mechanic->user_id,
             ]),
             'share_percentage' => $this->share_percentage,
             'commission_percentage' => $this->commission_percentage,

@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\WorkOrders;
 
+use App\Models\Mechanic;
+use App\Models\WorkOrder;
 use Tests\Feature\WorkOrderParts\WorkOrderPartsTestCase;
 
 class WorkOrderLifecycleTest extends WorkOrderPartsTestCase
@@ -90,6 +92,24 @@ class WorkOrderLifecycleTest extends WorkOrderPartsTestCase
             ->assertJsonCount(2, 'data.items');
 
         $this->getJson('/api/work-orders/999999')->assertNotFound()->assertJsonPath('error_code', 'RESOURCE_NOT_FOUND');
+    }
+
+    public function test_detail_includes_vehicle_and_the_user_of_each_assigned_mechanic(): void
+    {
+        $workOrder = $this->pendingWorkOrder();
+        $model = WorkOrder::findOrFail($workOrder['id'])->reception->vehicle->load(['brand', 'vehicleModel']);
+        $responsible = Mechanic::findOrFail($workOrder['mechanic_id']);
+
+        $this->getJson("/api/work-orders/{$workOrder['id']}")
+            ->assertOk()
+            ->assertJsonPath('data.reception.vehicle.brand', $model->brand->name)
+            ->assertJsonPath('data.reception.vehicle.model', $model->vehicleModel->name)
+            ->assertJsonPath('data.items.0.mechanics.0.mechanic.id', $responsible->id)
+            ->assertJsonPath('data.items.0.mechanics.0.mechanic.user_id', $responsible->user_id);
+
+        $this->getJson('/api/work-orders')
+            ->assertOk()
+            ->assertJsonPath('data.0.reception.vehicle.model', $model->vehicleModel->name);
     }
 
     public function test_status_transitions(): void

@@ -7,7 +7,7 @@
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
 FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes), FASE 25 (auditoría); 6 roles;
-319 tests en verde (2026-10-22)
+320 tests en verde (2026-10-22)
 **Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -1189,6 +1189,18 @@ Surgen de las pantallas de presupuestos del frontend (fase F4):
   acepta `null`.
 
 Tests: `tests/Feature/Budgets/BudgetLifecycleTest`.
+
+---
+
+# 2.43 Contrato de órdenes de trabajo (2026-10-22)
+
+Surgen de las pantallas de OT del frontend (fase F5):
+
+- **Mecánico de cada asignación:** `WorkOrderItemMechanicResource.mechanic` suma `user_id`. El mecánico solo puede
+  cargar sus propias horas (si no, 403); sin el usuario el frontend no podía saber qué asignación es suya.
+- **Vehículo de la recepción:** listado y detalle (también las acciones sobre ítems) cargan marca y modelo.
+
+Tests: `tests/Feature/WorkOrders/WorkOrderLifecycleTest`.
 
 ---
 

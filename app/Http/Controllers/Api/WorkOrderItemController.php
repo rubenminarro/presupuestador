@@ -75,7 +75,8 @@ class WorkOrderItemController extends Controller implements HasMiddleware
         return $workOrder->load([
             'reception',
             'reception.client',
-            'reception.vehicle',
+            'reception.vehicle.brand',
+            'reception.vehicle.vehicleModel',
             'budget',
             'mechanic',
             'mechanic.user',
