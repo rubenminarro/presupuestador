@@ -235,7 +235,8 @@ class DiagnosticController extends Controller implements HasMiddleware
 
             DB::commit();
 
-            $diagnostic->load([
+            // refresh: los defaults de la base (p. ej. priority = medium) no quedan en el modelo recién creado.
+            $diagnostic->refresh()->load([
                 'reception',
                 'mechanic'
             ]);
@@ -257,7 +258,8 @@ class DiagnosticController extends Controller implements HasMiddleware
     {
         $diagnostic->load([
             'reception.client',
-            'reception.vehicle',
+            'reception.vehicle.brand',
+            'reception.vehicle.vehicleModel',
             'reception.photos',
             'mechanic.user',
             'items.photos',

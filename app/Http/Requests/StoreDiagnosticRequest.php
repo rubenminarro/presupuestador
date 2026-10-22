@@ -43,8 +43,10 @@ class StoreDiagnosticRequest extends FormRequest
                 'max:1000',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
             ],
+            // Opcional pero no vacío: la columna es NOT NULL DEFAULT medium (sin enviar, queda en medium).
             'priority' => [
-                'nullable',
+                'sometimes',
+                'required',
                 Rule::enum(Priority::class),
             ],
             'requires_parts' => [
@@ -84,6 +86,7 @@ class StoreDiagnosticRequest extends FormRequest
                 'regex' => 'La recomendación contiene caracteres no permitidos.',
             ],
             'priority' => [
+                'required' => 'La prioridad no puede quedar vacía.',
                 Enum::class => 'La prioridad debe ser uno de los siguientes: low, medium, high.',
             ],
             'requires_parts' => [

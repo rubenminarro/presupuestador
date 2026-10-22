@@ -41,6 +41,50 @@ class ReceptionTest extends ReceptionTestCase
         $this->getJson('/api/receptions')->assertOk()->assertJsonPath('meta.pagination.total', 1);
     }
 
+    public function test_reception_resources_expose_raw_values_and_the_checklist(): void
+    {
+        $reception = $this->createReception(['estimated_delivery_date' => now()->addDays(2)->toDateString()]);
+        $this->vehicle->load(['brand', 'vehicleModel']);
+
+        $this->getJson("/api/receptions/{$reception['id']}")
+            ->assertOk()
+            ->assertJsonPath('data.reception_date', now()->toDateString())
+            ->assertJsonPath('data.estimated_delivery_date', now()->addDays(2)->toDateString())
+            ->assertJsonPath('data.mileage', 45000)
+            ->assertJsonPath('data.problem_description', 'Ruido en el motor')
+            ->assertJsonPath('data.client_id', $this->client->id)
+            ->assertJsonPath('data.vehicle.brand', $this->vehicle->brand->name)
+            ->assertJsonPath('data.vehicle.model', $this->vehicle->vehicleModel->name)
+            ->assertJsonPath('data.check_list.id', $this->checkList($reception)->id)
+            ->assertJsonPath('data.check_list.status', 'pending');
+
+        $this->getJson('/api/receptions')
+            ->assertOk()
+            ->assertJsonPath('data.0.reception_date', now()->toDateString())
+            ->assertJsonPath('data.0.client.id', $this->client->id)
+            ->assertJsonPath('data.0.vehicle.id', $this->vehicle->id)
+            ->assertJsonPath('data.0.vehicle.model', $this->vehicle->vehicleModel->name);
+    }
+
+    public function test_fuel_level_cannot_be_null(): void
+    {
+        // La columna es NOT NULL DEFAULT empty: sin enviarlo queda en empty; en null se rechaza.
+        $this->postJson('/api/receptions', $this->receptionPayload(['fuel_level' => null]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['fuel_level']);
+
+        $payload = $this->receptionPayload();
+        unset($payload['fuel_level']);
+        $reception = $this->postJson('/api/receptions', $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.fuel.value', 'empty')
+            ->json('data');
+
+        $this->patchJson("/api/receptions/{$reception['id']}", ['fuel_level' => null])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['fuel_level']);
+    }
+
     public function test_reception_validation(): void
     {
         $this->postJson('/api/receptions', [])

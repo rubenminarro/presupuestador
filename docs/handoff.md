@@ -7,7 +7,7 @@
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
 FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes), FASE 25 (auditoría); 6 roles;
-314 tests en verde (2026-10-21)
+318 tests en verde (2026-10-22)
 **Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -1148,6 +1148,33 @@ Surgen de las pantallas de repuestos e inventario del frontend (fase F2), con el
   negativos.
 
 Tests: `tests/Feature/Parts/PartTest`, `SupplierTest`, `PartSupplierTest`.
+
+---
+
+# 2.41 Contrato de recepciones y diagnósticos (2026-10-22)
+
+Surgen de las pantallas de recepción y diagnóstico del frontend (fase F3):
+
+- **Valores crudos (decisión del usuario):** `ReceptionResource`, `ShowReceptionResource` y `DiagnosticResource`
+  devuelven las fechas como `Y-m-d` y `mileage` entero (antes `"11/10/2026"` y `"Km: 125000"`); `diagnosed_at`,
+  `created_at` y `updated_at` de diagnósticos y fotos, en ISO. El frontend formatea.
+- **Checklist alcanzable:** el detalle de la recepción trae `check_list` (`id`, `status`); antes no había forma de
+  conocer el id para `reception-check-lists/{id}`.
+- **Vehículo en la recepción:** `chassis`, `brand`, `model` y `color` con `value`/`label` (antes `vin`, columna
+  inexistente, siempre `null`). El listado suma `client_id`, `vehicle_id`, ids de cliente y vehículo y
+  `estimated_delivery_date`; el detalle, `problem_description`.
+- **Modelo del vehículo en diagnósticos:** `DiagnosticResource` usaba `vehicle->model` (relación inexistente) y el
+  modelo salía siempre `null`; ahora `vehicleModel`. El mecánico suma `id`.
+- **`ShowDiagnosticResource`:** suma `requires_parts` y `requires_repair`.
+- **Opcionales y columnas `NOT NULL`:** la edición del diagnóstico vacía mecánico, queja, diagnóstico y recomendación
+  con `null`. `priority` en `null` daba 500 en el alta (`NOT NULL DEFAULT medium`), igual que `fuel_level` de la
+  recepción (`NOT NULL DEFAULT empty`, alta y edición) y `severity`/`status` del ítem en la edición: ahora `422`. El alta del diagnóstico refresca el modelo para devolver la prioridad por defecto.
+
+Entorno local (no versionado): `public/storage` apuntaba a la carpeta anterior al renombrado
+(`www/presupuestador/...`) y `APP_URL` era `http://localhost:8000`; se rehízo el enlace (`storage:link`, en Windows
+borrar antes el junction con `rmdir`) y `APP_URL=http://synctaller-backend.test`.
+
+Tests: `tests/Feature/Receptions/ReceptionTest`, `DiagnosticTest`.
 
 ---
 

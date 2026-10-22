@@ -21,17 +21,18 @@ class DiagnosticResource extends JsonResource
             'status' => $this->status,
             'requires_parts' => $this->requires_parts,
             'requires_repair' => $this->requires_repair,
-            'diagnosed_at' => optional($this->diagnosed_at)->format('d/m/Y H:i'),
+            'diagnosed_at' => $this->diagnosed_at,
             'reception' => $this->whenLoaded('reception', function () {
 
                 $fuelEnum = $this->reception->fuel_level instanceof FuelLevel
                     ? $this->reception->fuel_level
                     : FuelLevel::tryFrom($this->reception->fuel_level);
 
+                // Valores crudos (fechas Y-m-d, kilometraje entero): el frontend los formatea.
                 return [
-                    'reception_date' => optional($this->reception->reception_date)->format('d/m/Y'),
-                    'estimated_delivery_date' => optional($this->reception->estimated_delivery_date)->format('d/m/Y'),
-                    'mileage' => 'Km: ' . $this->reception->mileage,
+                    'reception_date' => $this->reception->reception_date?->toDateString(),
+                    'estimated_delivery_date' => $this->reception->estimated_delivery_date?->toDateString(),
+                    'mileage' => $this->reception->mileage,
                     'fuel' => [
                         'value' => $fuelEnum?->value,
                         'label' => $fuelEnum?->label(),
@@ -50,13 +51,14 @@ class DiagnosticResource extends JsonResource
                         'id' => $this->reception->vehicle->id,
                         'plate' => $this->reception->vehicle->plate,
                         'brand' => $this->reception->vehicle->brand?->name,
-                        'model' => $this->reception->vehicle->model?->name,
+                        'model' => $this->reception->vehicle->vehicleModel?->name,
                     ]
                     : null,
                 ];
             }),
             'mechanic' => $this->whenLoaded('mechanic', function () {
                 return [
+                    'id' => $this->mechanic->id,
                     'name' => $this->mechanic->user->name,
                     'first_name' => $this->mechanic->user->first_name,
                     'last_name' => $this->mechanic->user->last_name,

@@ -15,8 +15,8 @@ class ReceptionPhotoResource extends JsonResource
             'original_name' => $this->original_name,
             'description' => $this->description,
             'url' => $this->path ? asset('storage/' . $this->path) : null,
-            'created_at' => $this->created_at->format('d/m/Y H:i'),
-            'updated_at' => $this->updated_at->format('d/m/Y H:i'),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

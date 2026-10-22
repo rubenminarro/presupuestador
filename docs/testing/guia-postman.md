@@ -353,7 +353,8 @@ Esperado: `200`, solo los vehículos del cliente (`QAA123`, `QAB456`), con `meta
 }
 ```
 
-Esperado: `201` → `reception_id`.
+Esperado: `201` → `reception_id`. La respuesta trae `reception_date` `"2026-10-10"` (Y-m-d), `mileage` `45000`
+(entero), `vehicle.brand` / `vehicle.model` y `check_list.id` → `reception_check_list_id` (para editar el checklist).
 
 | Caso | Body | HTTP | error_code |
 |---|---|---|---|
@@ -386,6 +387,22 @@ Esperado: `200`, `status.value` `cancelled` ("Cancelado"), `cancellation_reason`
 | Diagnosticar sobre la cancelada | `POST {{base_url}}/diagnostics` | `{ "reception_id": {{reception_cancel_id}}, "mechanic_id": {{mechanic_id}}, "requires_parts": false, "requires_repair": true }` | 422 | `RECEPTION_CLOSED` |
 | Con OT vigentes | sobre una recepción con una OT no cancelada (por ejemplo `{{reception_id}}` después de O.1) | `{ "reason": "x" }` | 422 | `RECEPTION_HAS_ACTIVE_WORK_ORDERS` |
 | Mecánico (token = `{{token_mec}}`) | `POST .../receptions/{{reception_id}}/cancel` | `{ "reason": "x" }` | 403 | `FORBIDDEN` |
+
+### M.6c Checklist y diagnóstico
+
+Checklist: `GET {{base_url}}/reception-check-lists/{{reception_check_list_id}}` (id en `check_list.id` de M.6) →
+`items[]` con `id`, `name`, `type`, `required`, `value`, `observation`. Para cargar valores:
+`PATCH` al mismo endpoint con `{ "items": [{ "id": <id del ítem>, "value": true, "observation": null }] }` → `200`,
+`status` recalculado.
+
+Diagnóstico: `POST {{base_url}}/diagnostics` con `{ "reception_id": {{reception_id}}, "mechanic_id": {{mechanic_id}},
+"requires_parts": false, "requires_repair": true }` → `201`, `priority` `medium` por defecto.
+
+| Caso | Método / Endpoint | Body | HTTP | Resultado / error_code |
+|---|---|---|---|---|
+| Prioridad vacía | `POST {{base_url}}/diagnostics` | `{ ..., "priority": null }` | 422 | `VALIDATION_ERROR` (`errors.priority`) |
+| Vaciar textos y mecánico | `PATCH {{base_url}}/diagnostics/{id}` | `{ "mechanic_id": null, "diagnosis": null }` | 200 | Ambos en `null` |
+| Severidad vacía en un ítem | `PATCH {{base_url}}/diagnostic-items/{id}` | `{ "severity": null }` | 422 | `VALIDATION_ERROR` (`errors.severity`) |
 
 > Una recepción cancelada no cuenta como abierta: el vehículo puede volver a ingresar.
 

@@ -59,9 +59,10 @@ class UpdateReceptionRequest extends FormRequest
                 'integer',
                 'min:0',
             ],
+            // fuel_level no admite null en la base (default empty).
             'fuel_level' => [
                 'sometimes',
-                'nullable',
+                'required',
                 'string',
                 Rule::enum(FuelLevel::class),
             ],
@@ -113,6 +114,7 @@ class UpdateReceptionRequest extends FormRequest
                 'min' => 'El kilometraje no puede ser negativo.',
             ],
             'fuel_level' => [
+                'required' => 'El nivel de combustible no puede quedar vacío.',
                 'string' => 'El nivel de combustible debe ser una cadena de texto.',
                 Enum::class => 'El nivel de combustible seleccionado no es válido.',
             ],

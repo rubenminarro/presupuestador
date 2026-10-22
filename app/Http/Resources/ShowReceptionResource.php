@@ -5,22 +5,27 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Enums\FuelLevel;
+use App\Enums\VehicleColor;
 
 class ShowReceptionResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        
-        $fuelEnum = $this->fuel_level instanceof FuelLevel 
-            ? $this->fuel_level 
+
+        $fuelEnum = $this->fuel_level instanceof FuelLevel
+            ? $this->fuel_level
             : FuelLevel::tryFrom($this->fuel_level);
-    
+
+        // Valores crudos (fechas Y-m-d, kilometraje entero): el frontend los formatea y los usa en los formularios.
         return [
             'id' => $this->id,
-            'reception_date' => optional($this->reception_date)->format('d/m/Y'),
-            'estimated_delivery_date' => optional($this->estimated_delivery_date)->format('d/m/Y'),
+            'client_id' => $this->client_id,
+            'vehicle_id' => $this->vehicle_id,
+            'reception_date' => $this->reception_date?->toDateString(),
+            'estimated_delivery_date' => $this->estimated_delivery_date?->toDateString(),
+            'problem_description' => $this->problem_description,
             'observations' => $this->observations,
-            'mileage' => 'Km: ' . $this->mileage,
+            'mileage' => $this->mileage,
             'fuel' => [
                 'value' => $fuelEnum?->value,
                 'label' => $fuelEnum?->label()
@@ -56,12 +61,21 @@ class ShowReceptionResource extends JsonResource
                 ];
             }),
             'vehicle' => $this->whenLoaded('vehicle', function () {
+                $colorEnum = $this->vehicle->color instanceof VehicleColor
+                    ? $this->vehicle->color
+                    : VehicleColor::tryFrom((string) $this->vehicle->color);
+
                 return [
                     'id' => $this->vehicle->id,
                     'plate' => $this->vehicle->plate,
+                    'chassis' => $this->vehicle->chassis,
+                    'brand' => $this->vehicle->relationLoaded('brand') ? $this->vehicle->brand?->name : null,
+                    'model' => $this->vehicle->relationLoaded('vehicleModel') ? $this->vehicle->vehicleModel?->name : null,
                     'year' => $this->vehicle->year,
-                    'color' => $this->vehicle->color,
-                    'vin' => $this->vehicle->vin,
+                    'color' => [
+                        'value' => $colorEnum?->value,
+                        'label' => $colorEnum?->label(),
+                    ],
                     'engine_number' => $this->vehicle->engine_number,
                 ];
             }),
@@ -73,6 +87,14 @@ class ShowReceptionResource extends JsonResource
                     ];
                 });
             }),
+            // El checklist se consulta y edita en reception-check-lists/{id}.
+            'check_list' => $this->whenLoaded('checkList', function () {
+                return $this->checkList ? [
+                    'id' => $this->checkList->id,
+                    'status' => $this->checkList->status,
+                ] : null;
+            }),
+            'created_at' => $this->created_at,
         ];
     }
 }

@@ -18,7 +18,7 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 * **Backend/API:** Laravel 12.70, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
   proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24) y auditoría
-  (FASE 25). 222 rutas API, 314 tests en verde.
+  (FASE 25). 222 rutas API, 318 tests en verde.
 * **Nombre:** el proyecto se llamaba **Presupuestador**; desde el 2026-10-21 es **SyncTaller** (repos
   `synctaller-backend` y `synctaller-frontend`, base de datos y conexión `synctaller`).
 * **Frontend:** **no está en este repositorio**, sino en `../synctaller-frontend` (React 19 + TypeScript + Vite +
@@ -222,12 +222,17 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   `cancellation_reason`.
 * Recepción cerrada (`delivered|cancelled`): no admite diagnósticos, presupuestos ni OT nuevos (`RECEPTION_CLOSED`).
 * Fotos en el disco `public` (`receptions/`), con scoped binding a la recepción.
+* Contrato: fechas `Y-m-d` y `mileage` entero (sin formatear); el detalle trae `check_list` (`id`, `status`) para
+  `reception-check-lists/{id}`, y el vehículo con `chassis`, `brand`, `model` y `color` (`value`/`label`).
+  `fuel_level` es opcional pero no vacío (`NOT NULL DEFAULT empty`): `null` → 422 en alta y edición.
 
 ### 6.3 Diagnóstico
 
 * `mechanic_id` referencia `mechanics` (no `users`). Nace `pending`.
 * Ítems con `severity` y `status` por enum; fotos en `diagnostic-items/{id}`; eliminar el ítem elimina sus fotos.
 * Fotos de diagnóstico con permisos `diagnostic-item-photos.*`.
+* Editar vacía `mechanic_id`, `customer_complaint`, `diagnosis` y `recommendation` con `null`. `priority` (diagnóstico)
+  y `severity`/`status` (ítem) son opcionales pero no vacíos (columnas `NOT NULL` con default): `null` → 422.
 
 ### 6.4 Presupuestos
 

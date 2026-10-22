@@ -22,30 +22,37 @@ class UpdateDiagnosticRequest extends FormRequest
                 'sometimes',
                 Rule::exists('receptions', 'id')
             ],
+            // Los opcionales del alta (nullable) también se pueden vaciar al editar.
             'mechanic_id' => [
                 'sometimes',
+                'nullable',
                 Rule::exists('mechanics', 'id')->withoutTrashed()
             ],
             'customer_complaint' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'max:1000',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
             ],
             'diagnosis' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'max:1000',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
             ],
             'recommendation' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'max:1000',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
             ],
+            // priority no admite null en la base (default medium).
             'priority' => [
                 'sometimes',
+                'required',
                 Rule::enum(Priority::class),
             ],
             'status' => [
@@ -86,6 +93,7 @@ class UpdateDiagnosticRequest extends FormRequest
                 'regex' => 'La recomendación contiene caracteres no permitidos.',
             ],
             'priority' => [
+                'required' => 'La prioridad no puede quedar vacía.',
                 Enum::class => 'La prioridad debe ser uno de los siguientes: low, medium, high.',
             ],
             'status' => [

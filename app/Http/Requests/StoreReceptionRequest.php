@@ -57,8 +57,10 @@ class StoreReceptionRequest extends FormRequest
                 'integer',
                 'min:0',
             ],
+            // Opcional pero no vacío: la columna es NOT NULL DEFAULT empty (sin enviar, queda en empty).
             'fuel_level' => [
-                'nullable',
+                'sometimes',
+                'required',
                 'string',
                 Rule::enum(FuelLevel::class),
             ],
@@ -109,6 +111,7 @@ class StoreReceptionRequest extends FormRequest
                 'min' => 'El kilometraje no puede ser negativo.',
             ],
             'fuel_level' => [
+                'required' => 'El nivel de combustible no puede quedar vacío.',
                 'string' => 'El nivel de combustible debe ser una cadena de texto.',
                 Enum::class => 'El nivel de combustible seleccionado no es válido.',
             ],

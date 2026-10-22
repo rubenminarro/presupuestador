@@ -11,16 +11,21 @@ class ReceptionResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        
-        $statusEnum = $this->status instanceof ReceptionStatus 
-            ? $this->status 
+
+        $statusEnum = $this->status instanceof ReceptionStatus
+            ? $this->status
             : ReceptionStatus::tryFrom($this->status);
 
+        // Fechas como Y-m-d (el frontend las formatea).
         return [
             'id' => $this->id,
-            'reception_date' => optional($this->reception_date)->format('d/m/Y'),
+            'client_id' => $this->client_id,
+            'vehicle_id' => $this->vehicle_id,
+            'reception_date' => $this->reception_date?->toDateString(),
+            'estimated_delivery_date' => $this->estimated_delivery_date?->toDateString(),
             'client' => $this->whenLoaded('client', function () {
                 return [
+                    'id' => $this->client->id,
                     'full_name' => trim(
                         $this->client->first_name . ' ' . $this->client->last_name
                     ),
@@ -30,13 +35,16 @@ class ReceptionResource extends JsonResource
                 ];
             }),
             'vehicle' => $this->whenLoaded('vehicle', function () {
-
-                $colorEnum = $this->vehicle->color instanceof VehicleColor 
-                    ? $this->vehicle->color 
-                    : VehicleColor::tryFrom($this->vehicle->color);
+                $colorEnum = $this->vehicle->color instanceof VehicleColor
+                    ? $this->vehicle->color
+                    : VehicleColor::tryFrom((string) $this->vehicle->color);
 
                 return [
+                    'id' => $this->vehicle->id,
                     'plate' => $this->vehicle->plate,
+                    'chassis' => $this->vehicle->chassis,
+                    'brand' => $this->vehicle->relationLoaded('brand') ? $this->vehicle->brand?->name : null,
+                    'model' => $this->vehicle->relationLoaded('vehicleModel') ? $this->vehicle->vehicleModel?->name : null,
                     'color' => [
                         'value' => $colorEnum?->value,
                         'label' => $colorEnum?->label()

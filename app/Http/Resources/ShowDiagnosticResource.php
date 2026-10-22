@@ -18,7 +18,9 @@ class ShowDiagnosticResource extends JsonResource
             'recommendation' => $this->recommendation,
             'priority' => $this->priority,
             'status' => $this->status,
-            'diagnosed_at' => optional($this->diagnosed_at)->format('d/m/Y H:i'),
+            'requires_parts' => $this->requires_parts,
+            'requires_repair' => $this->requires_repair,
+            'diagnosed_at' => $this->diagnosed_at,
             'reception' => new ShowReceptionResource(
                 $this->whenLoaded('reception')
             ),
@@ -28,8 +30,8 @@ class ShowDiagnosticResource extends JsonResource
             'items' => DiagnosticItemResource::collection(
                 $this->whenLoaded('items')
             ),
-            'created_at' => $this->created_at->format('d/m/Y H:i'),
-            'updated_at' => $this->updated_at->format('d/m/Y H:i'),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

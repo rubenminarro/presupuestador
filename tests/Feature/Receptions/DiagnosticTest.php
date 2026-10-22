@@ -120,6 +120,66 @@ class DiagnosticTest extends ReceptionTestCase
         $this->getJson("/api/diagnostic-items/{$item['id']}")->assertNotFound();
     }
 
+    public function test_diagnostic_resources_expose_flags_and_vehicle_model(): void
+    {
+        $diagnostic = $this->postJson('/api/diagnostics', $this->diagnosticPayload(['requires_parts' => false]))
+            ->assertCreated()
+            ->json('data');
+
+        $vehicle = $this->vehicle->load('vehicleModel');
+
+        $this->getJson("/api/diagnostics/{$diagnostic['id']}")
+            ->assertOk()
+            ->assertJsonPath('data.requires_parts', false)
+            ->assertJsonPath('data.requires_repair', true)
+            ->assertJsonPath('data.reception.vehicle.model', $vehicle->vehicleModel->name);
+
+        $this->getJson('/api/diagnostics')
+            ->assertOk()
+            ->assertJsonPath('data.0.reception.vehicle.model', $vehicle->vehicleModel->name)
+            ->assertJsonPath('data.0.reception.mileage', 45000)
+            ->assertJsonPath('data.0.reception.reception_date', now()->toDateString());
+    }
+
+    public function test_optional_fields_can_be_cleared_and_priority_cannot_be_null(): void
+    {
+        $mechanic = $this->createMechanic();
+
+        // Sin prioridad queda en medium; en null se rechaza (columna NOT NULL).
+        $this->postJson('/api/diagnostics', $this->diagnosticPayload(['priority' => null]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['priority']);
+
+        $payload = $this->diagnosticPayload(['mechanic_id' => $mechanic->id]);
+        unset($payload['priority']);
+        $diagnostic = $this->postJson('/api/diagnostics', $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.priority', 'medium')
+            ->json('data');
+
+        $this->patchJson("/api/diagnostics/{$diagnostic['id']}", [
+            'mechanic_id' => null,
+            'customer_complaint' => null,
+            'diagnosis' => null,
+            'recommendation' => null,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.mechanic_id', null)
+            ->assertJsonPath('data.customer_complaint', null)
+            ->assertJsonPath('data.diagnosis', null)
+            ->assertJsonPath('data.recommendation', null);
+
+        $this->patchJson("/api/diagnostics/{$diagnostic['id']}", ['priority' => null])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['priority']);
+
+        $item = $this->postJson('/api/diagnostic-items', $this->itemPayload($diagnostic['id']))->assertCreated()->json('data');
+
+        $this->patchJson("/api/diagnostic-items/{$item['id']}", ['severity' => null, 'status' => null])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['severity', 'status']);
+    }
+
     public function test_diagnostic_item_validation(): void
     {
         $diagnostic = $this->postJson('/api/diagnostics', $this->diagnosticPayload())->json('data');

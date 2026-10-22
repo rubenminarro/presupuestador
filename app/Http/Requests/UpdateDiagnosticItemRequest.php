@@ -30,14 +30,15 @@ class UpdateDiagnosticItemRequest extends FormRequest
                 'string',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?%]*$/u'
             ],
+            // severity y status no admiten null en la base (columnas NOT NULL con default).
             'severity' => [
                 'sometimes',
-                'nullable',
+                'required',
                 Rule::enum(Severity::class),
             ],
             'status' => [
                 'sometimes',
-                'nullable',
+                'required',
                 Rule::enum(DiagnosticItemStatus::class)
             ],
             'requires_repair' => [
@@ -82,9 +83,11 @@ class UpdateDiagnosticItemRequest extends FormRequest
                 'regex' => 'La descripción solo pueden contener letras, números, espacios y los siguientes caracteres: . , ; : ( ) - # @ ! ? %',
             ],
             'severity' => [
+                'required' => 'La severidad no puede quedar vacía.',
                 Enum::class => 'La prioridad debe ser uno de los siguientes: low, medium, high, critical.',
             ],
             'status' => [
+                'required' => 'El estado no puede quedar vacío.',
                 Enum::class => 'El estado debe ser uno de los siguientes: pending, ok, observation, repair_required, replace_required, not_applicable.',
             ],
             'requires_repair' => [
