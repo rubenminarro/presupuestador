@@ -37,7 +37,8 @@ class UpdateBudgetItemRequest extends FormRequest
                 'sometimes',
                 'string',
                 'max:255',
-                'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
+                // Mismos caracteres que el alta (incluye %).
+                'regex:/^[\pL\pN\s.,;:()\-#@!?%]*$/u'
             ],
             'quantity' => [
                 'sometimes',
@@ -57,8 +58,10 @@ class UpdateBudgetItemRequest extends FormRequest
                 'min:0',
                 'max:999999.99',
             ],
+            // Opcional en el alta: también se puede vaciar al editar.
             'notes' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'max:500',
                 'regex:/^[\pL\pN\s.,;:()\-#@!?]*$/u'
@@ -83,7 +86,7 @@ class UpdateBudgetItemRequest extends FormRequest
             'description' => [
                 'string' => 'La descripción debe ser una cadena de texto.',
                 'max' => 'La descripción no puede exceder los 255 caracteres.',
-                'regex' => 'La descripción solo puede contener letras, números, espacios y los siguientes caracteres: . , ; : ( ) - # @ ! ?',
+                'regex' => 'La descripción solo puede contener letras, números, espacios y los siguientes caracteres: . , ; : ( ) - # @ ! ? %',
             ],
             'quantity' => [
                 'numeric' => 'La cantidad debe ser un número.',

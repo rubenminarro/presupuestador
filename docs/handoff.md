@@ -7,7 +7,7 @@
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
 FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes), FASE 25 (auditoría); 6 roles;
-318 tests en verde (2026-10-22)
+319 tests en verde (2026-10-22)
 **Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -1175,6 +1175,20 @@ Entorno local (no versionado): `public/storage` apuntaba a la carpeta anterior a
 borrar antes el junction con `rmdir`) y `APP_URL=http://synctaller-backend.test`.
 
 Tests: `tests/Feature/Receptions/ReceptionTest`, `DiagnosticTest`.
+
+---
+
+# 2.42 Contrato de presupuestos (2026-10-22)
+
+Surgen de las pantallas de presupuestos del frontend (fase F4):
+
+- **Ítems con su catálogo:** el detalle (`GET budgets/{id}` y las acciones que lo devuelven) carga `items.part` e
+  `items.service`; antes traía `part_id` / `service_id` sin código ni nombre.
+- **Vehículo de la recepción:** listado y detalle cargan marca y modelo (`ReceptionResource` ya los expone, 2.41).
+- **Editar ítems:** la descripción admite `%` como el alta (un ítem creado con `%` no se podía editar) y `notes`
+  acepta `null`.
+
+Tests: `tests/Feature/Budgets/BudgetLifecycleTest`.
 
 ---
 

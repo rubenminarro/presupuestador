@@ -51,7 +51,8 @@ class BudgetController extends Controller implements HasMiddleware
             ->with([
                 'reception',
                 'reception.client',
-                'reception.vehicle',
+                'reception.vehicle.brand',
+                'reception.vehicle.vehicleModel',
                 'creator',
             ]);
 
@@ -269,9 +270,11 @@ class BudgetController extends Controller implements HasMiddleware
     private function loadShowRelations(Budget $budget): void
     {
         $budget->load([
-            'items',
+            'items.part',
+            'items.service',
             'reception.client',
-            'reception.vehicle',
+            'reception.vehicle.brand',
+            'reception.vehicle.vehicleModel',
             'creator',
         ]);
     }

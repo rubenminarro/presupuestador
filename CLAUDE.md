@@ -18,7 +18,7 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 * **Backend/API:** Laravel 12.70, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
   proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24) y auditoría
-  (FASE 25). 222 rutas API, 318 tests en verde.
+  (FASE 25). 222 rutas API, 319 tests en verde.
 * **Nombre:** el proyecto se llamaba **Presupuestador**; desde el 2026-10-21 es **SyncTaller** (repos
   `synctaller-backend` y `synctaller-frontend`, base de datos y conexión `synctaller`).
 * **Frontend:** **no está en este repositorio**, sino en `../synctaller-frontend` (React 19 + TypeScript + Vite +
@@ -247,6 +247,8 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   → `INVENTORY_FRACTIONAL_QUANTITY_NOT_ALLOWED`). `service_id` solo en `service` (sin `unit_price` toma
   `standard_price`; inactivo → `SERVICE_NOT_USABLE`). `estimated_hours`: service = catálogo × cantidad si no se informa;
   labor opcional; part prohibido.
+* Contrato: el detalle trae cada ítem con `part` / `service` (`id`, `code`, `name`) y la recepción con marca y modelo
+  del vehículo. Editar un ítem acepta los mismos caracteres que el alta y vacía `notes` con `null`.
 
 ### 6.5 Orden de trabajo
 

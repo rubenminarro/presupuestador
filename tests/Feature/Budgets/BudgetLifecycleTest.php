@@ -3,6 +3,7 @@
 namespace Tests\Feature\Budgets;
 
 use App\Models\Budget;
+use App\Models\ServiceCategory;
 use Tests\Feature\WorkOrderParts\WorkOrderPartsTestCase;
 
 class BudgetLifecycleTest extends WorkOrderPartsTestCase
@@ -86,6 +87,46 @@ class BudgetLifecycleTest extends WorkOrderPartsTestCase
         $this->getJson("/api/budgets/{$budgetId}")
             ->assertJsonPath('data.subtotal', '0.00')
             ->assertJsonPath('data.total', '0.00');
+    }
+
+    public function test_detail_includes_catalog_items_and_vehicle_and_items_notes_can_be_cleared(): void
+    {
+        $part = $this->createPartViaApi(null, ['name' => 'Filtro de aceite']);
+        $service = $this->postJson('/api/services', [
+            'service_category_id' => ServiceCategory::create(['code' => 'mech', 'name' => 'Mecánica'])->id,
+            'name' => 'Alineación',
+            'standard_price' => 120000,
+        ])->assertCreated()->json('data');
+
+        $budgetId = $this->createBudgetWithItems([
+            ['type' => 'part', 'part_id' => $part['id'], 'description' => 'Filtro 100%', 'quantity' => 1, 'unit_price' => 50000],
+            ['type' => 'service', 'service_id' => $service['id'], 'description' => 'Alineación', 'quantity' => 1, 'notes' => 'Con balanceo'],
+        ]);
+        $vehicle = Budget::findOrFail($budgetId)->reception->vehicle->load(['brand', 'vehicleModel']);
+
+        $budget = $this->getJson("/api/budgets/{$budgetId}")
+            ->assertOk()
+            ->assertJsonPath('data.reception.vehicle.brand', $vehicle->brand->name)
+            ->assertJsonPath('data.reception.vehicle.model', $vehicle->vehicleModel->name)
+            ->json('data');
+
+        $items = collect($budget['items'])->keyBy('type');
+        $this->assertSame('Filtro de aceite', $items['part']['part']['name']);
+        $this->assertSame($part['code'], $items['part']['part']['code']);
+        $this->assertSame('Alineación', $items['service']['service']['name']);
+
+        $this->getJson('/api/budgets')
+            ->assertOk()
+            ->assertJsonPath('data.0.reception.vehicle.model', $vehicle->vehicleModel->name);
+
+        // Editar acepta lo mismo que el alta (descripción con %) y vacía las notas.
+        $this->patchJson("/api/budgets/{$budgetId}/items/{$items['part']['id']}", ['description' => 'Filtro 100% original'])
+            ->assertOk()
+            ->assertJsonPath('data.description', 'Filtro 100% original');
+
+        $this->patchJson("/api/budgets/{$budgetId}/items/{$items['service']['id']}", ['notes' => null])
+            ->assertOk()
+            ->assertJsonPath('data.notes', null);
     }
 
     public function test_totals_use_exact_decimals_with_half_up_rounding(): void
