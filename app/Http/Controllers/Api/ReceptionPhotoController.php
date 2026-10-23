@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\UploadReceptionPhotosRequest;
 use App\Http\Requests\UpdateReceptionPhotoRequest;
 use App\Http\Resources\ReceptionPhotoResource;
+use App\Services\ReceptionStatusService;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -38,8 +39,9 @@ class ReceptionPhotoController extends Controller implements HasMiddleware
         );
     }
 
-    public function store(UploadReceptionPhotosRequest $request, Reception $reception) 
+    public function store(UploadReceptionPhotosRequest $request, Reception $reception, ReceptionStatusService $receptionStatusService)
     {
+        $receptionStatusService->ensureEditable($reception);
 
         $data = $request->validated();
         $uploadedFiles = [];
@@ -82,8 +84,9 @@ class ReceptionPhotoController extends Controller implements HasMiddleware
         }
     }
 
-    public function update(UpdateReceptionPhotoRequest $request, Reception $reception, ReceptionPhoto $photo)
+    public function update(UpdateReceptionPhotoRequest $request, Reception $reception, ReceptionPhoto $photo, ReceptionStatusService $receptionStatusService)
     {
+        $receptionStatusService->ensureEditable($reception);
 
         $data = $request->validated();
         $oldPath = null;
@@ -113,9 +116,10 @@ class ReceptionPhotoController extends Controller implements HasMiddleware
         );
     }
 
-    public function destroy(Reception $reception, ReceptionPhoto $photo)
+    public function destroy(Reception $reception, ReceptionPhoto $photo, ReceptionStatusService $receptionStatusService)
     {
-        
+        $receptionStatusService->ensureEditable($reception);
+
         if ($photo->path && Storage::disk('public')->exists($photo->path)) {
             Storage::disk('public')->delete($photo->path);
         }

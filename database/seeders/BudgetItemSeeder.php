@@ -5,8 +5,10 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Budget;
 use App\Models\BudgetItem;
+use App\Models\Diagnostic;
 use App\Models\Service;
 use App\Enums\BudgetItemType;
+use App\Enums\DiagnosticStatus;
 use App\Services\BudgetService;
 use Illuminate\Support\Facades\DB;
 
@@ -107,6 +109,13 @@ class BudgetItemSeeder extends Seeder
                 }
 
                 $budgetService->recalculateBudget($budget);
+
+                // Enviar exige los diagnósticos de la recepción cerrados: en los ejemplos enviados se dan por terminados.
+                if (in_array($payload['target_status'], ['SENT', 'APPROVED'], true)) {
+                    Diagnostic::where('reception_id', $budget->reception_id)
+                        ->whereIn('status', [DiagnosticStatus::PENDING->value, DiagnosticStatus::IN_PROGRESS->value])
+                        ->update(['status' => DiagnosticStatus::COMPLETED->value]);
+                }
 
                 if ($payload['target_status'] === 'SENT') {
                     $budgetService->send($budget);

@@ -231,6 +231,60 @@ class DiagnosticTest extends ReceptionTestCase
         Storage::disk('public')->assertMissing($path);
     }
 
+    public function test_closed_diagnostics_freeze_items_and_photos(): void
+    {
+        Storage::fake('public');
+
+        $diagnostic = $this->postJson('/api/diagnostics', $this->diagnosticPayload())->json('data');
+        $item = $this->postJson('/api/diagnostic-items', $this->itemPayload($diagnostic['id']))->assertCreated()->json('data');
+        $photos = "/api/diagnostic-items/{$item['id']}/photos";
+        $photo = $this->postJson($photos, ['photos' => [['file' => UploadedFile::fake()->image('a.jpg'), 'description' => 'Antes']]])->json('data.0');
+
+        foreach (['completed', 'cancelled'] as $status) {
+            $this->patchJson("/api/diagnostics/{$diagnostic['id']}", ['status' => $status])->assertOk();
+
+            $this->postJson('/api/diagnostic-items', $this->itemPayload($diagnostic['id'], ['title' => 'Discos']))
+                ->assertStatus(422)
+                ->assertJsonPath('error_code', 'DIAGNOSTIC_NOT_EDITABLE');
+            $this->patchJson("/api/diagnostic-items/{$item['id']}", ['severity' => 'low'])->assertJsonPath('error_code', 'DIAGNOSTIC_NOT_EDITABLE');
+            $this->deleteJson("/api/diagnostic-items/{$item['id']}")->assertJsonPath('error_code', 'DIAGNOSTIC_NOT_EDITABLE');
+            $this->postJson($photos, ['photos' => [['file' => UploadedFile::fake()->image('b.jpg')]]])->assertJsonPath('error_code', 'DIAGNOSTIC_NOT_EDITABLE');
+            $this->patchJson("{$photos}/{$photo['id']}", ['description' => 'Después'])->assertJsonPath('error_code', 'DIAGNOSTIC_NOT_EDITABLE');
+            $this->deleteJson("{$photos}/{$photo['id']}")->assertJsonPath('error_code', 'DIAGNOSTIC_NOT_EDITABLE');
+        }
+
+        // Vuelto a "en proceso", se corrige.
+        $this->patchJson("/api/diagnostics/{$diagnostic['id']}", ['status' => 'in_progress'])->assertOk();
+        $this->patchJson("/api/diagnostic-items/{$item['id']}", ['severity' => 'low'])->assertOk()->assertJsonPath('data.severity', 'low');
+    }
+
+    public function test_diagnostics_of_a_closed_reception_cannot_change(): void
+    {
+        $diagnostic = $this->postJson('/api/diagnostics', $this->diagnosticPayload())->json('data');
+        $item = $this->postJson('/api/diagnostic-items', $this->itemPayload($diagnostic['id']))->json('data');
+
+        $this->postJson("/api/receptions/{$this->reception['id']}/cancel", ['reason' => 'El cliente desistió'])->assertOk();
+
+        $this->patchJson("/api/diagnostics/{$diagnostic['id']}", ['diagnosis' => 'Otro'])->assertStatus(422)->assertJsonPath('error_code', 'RECEPTION_CLOSED');
+        $this->deleteJson("/api/diagnostics/{$diagnostic['id']}")->assertJsonPath('error_code', 'RECEPTION_CLOSED');
+        $this->patchJson("/api/diagnostic-items/{$item['id']}", ['severity' => 'low'])->assertJsonPath('error_code', 'RECEPTION_CLOSED');
+        $this->postJson('/api/diagnostic-items', $this->itemPayload($diagnostic['id'], ['title' => 'Discos']))->assertJsonPath('error_code', 'RECEPTION_CLOSED');
+    }
+
+    public function test_diagnostics_are_listed_by_diagnosis_date(): void
+    {
+        $older = $this->postJson('/api/diagnostics', $this->diagnosticPayload())->json('data.id');
+        $newer = $this->postJson('/api/diagnostics', $this->diagnosticPayload())->json('data.id');
+
+        // Cargados en otro orden que el de diagnóstico.
+        \App\Models\Diagnostic::whereKey($older)->update(['diagnosed_at' => now()->subDays(5)]);
+        \App\Models\Diagnostic::whereKey($newer)->update(['diagnosed_at' => now()->subDays(10)]);
+
+        $ids = collect($this->getJson("/api/diagnostics?reception_id={$this->reception['id']}")->assertOk()->json('data'))->pluck('id')->all();
+
+        $this->assertSame([$older, $newer], $ids);
+    }
+
     public function test_diagnostic_permissions(): void
     {
         $diagnostic = $this->postJson('/api/diagnostics', $this->diagnosticPayload())->json('data');

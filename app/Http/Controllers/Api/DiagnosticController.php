@@ -12,6 +12,7 @@ use App\Models\Diagnostic;
 use App\Traits\ApiResponse;
 use App\Enums\DiagnosticStatus;
 use Illuminate\Support\Facades\DB;
+use App\Services\DiagnosticService;
 use App\Services\ReceptionStatusService;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -199,8 +200,10 @@ class DiagnosticController extends Controller implements HasMiddleware
             });
         });
 
+        // Por fecha del diagnóstico (la que se muestra), no de carga del registro.
         $diagnostics = $query
-            ->latest()
+            ->orderByDesc('diagnosed_at')
+            ->orderByDesc('id')
             ->paginate($request->per_page ?? 10);
 
         return $this->successResponse(
@@ -271,8 +274,10 @@ class DiagnosticController extends Controller implements HasMiddleware
         );
     }
 
-    public function update(UpdateDiagnosticRequest $request, Diagnostic $diagnostic)
+    public function update(UpdateDiagnosticRequest $request, Diagnostic $diagnostic, DiagnosticService $diagnosticService)
     {
+        $diagnosticService->ensureEditable($diagnostic);
+
         $diagnostic->update(
             $request->validated()
         );
@@ -288,8 +293,10 @@ class DiagnosticController extends Controller implements HasMiddleware
         );
     }
 
-     public function destroy(Diagnostic $diagnostic)
+     public function destroy(Diagnostic $diagnostic, DiagnosticService $diagnosticService)
     {
+        $diagnosticService->ensureEditable($diagnostic);
+
         $diagnostic->delete();
 
         return $this->successResponse(

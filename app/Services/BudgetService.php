@@ -4,10 +4,12 @@ namespace App\Services;
 
 use App\Models\Budget;
 use App\Models\BudgetItem;
+use App\Models\Diagnostic;
 use App\Models\Part;
 use App\Models\Service;
 use App\Enums\BudgetItemType;
 use App\Enums\BudgetStatus;
+use App\Enums\DiagnosticStatus;
 use App\Enums\ClientNotificationType;
 use App\Exceptions\BudgetException;
 use App\Exceptions\PartException;
@@ -63,11 +65,28 @@ class BudgetService
             );
         }
 
+        $this->receptionStatusService->ensureEditable($budget->reception_id);
+
         if (!$budget->items()->exists()) {
             throw new BudgetException(
                 'No se puede enviar un presupuesto sin ítems.',
                 422,
                 'BUDGET_WITHOUT_ITEMS'
+            );
+        }
+
+        // El borrador se arma libremente; al cliente se le envía con el diagnóstico cerrado.
+        $openDiagnostics = Diagnostic::where('reception_id', $budget->reception_id)
+            ->whereIn('status', [DiagnosticStatus::PENDING->value, DiagnosticStatus::IN_PROGRESS->value])
+            ->orderBy('id')
+            ->pluck('id');
+
+        if ($openDiagnostics->isNotEmpty()) {
+            throw new BudgetException(
+                'La recepción tiene diagnósticos sin terminar (' . $openDiagnostics->map(fn ($id) => "#{$id}")->implode(', ')
+                    . '): termínelos o cancélelos antes de enviar el presupuesto.',
+                422,
+                'BUDGET_DIAGNOSTICS_PENDING'
             );
         }
 
@@ -96,6 +115,8 @@ class BudgetService
                 'BUDGET_NOT_APPROVABLE'
             );
         }
+
+        $this->receptionStatusService->ensureEditable($budget->reception_id);
 
         if (! $budget->items()->exists()) {
             throw new BudgetException(
@@ -128,6 +149,8 @@ class BudgetService
                 'BUDGET_NOT_REJECTABLE'
             );
         }
+
+        $this->receptionStatusService->ensureEditable($budget->reception_id);
 
         return DB::transaction(function () use ($budget) {
             $budget->update([
@@ -169,6 +192,8 @@ class BudgetService
                 'BUDGET_NOT_REOPENABLE'
             );
         }
+
+        $this->receptionStatusService->ensureEditable($budget->reception_id);
 
         $budget->update([
             'status' => BudgetStatus::DRAFT,
@@ -285,6 +310,9 @@ class BudgetService
         return $data;
     }
 
+    /**
+     * Solo el borrador de una recepción abierta. (Cancelar se permite aun con la recepción cerrada.)
+     */
     public function ensureEditable(Budget $budget): void
     {
         if ($budget->status !== BudgetStatus::DRAFT) {
@@ -294,6 +322,8 @@ class BudgetService
                 'BUDGET_NOT_EDITABLE'
             );
         }
+
+        $this->receptionStatusService->ensureEditable($budget->reception_id);
     }
 
     public function create(array $data, int $userId): Budget

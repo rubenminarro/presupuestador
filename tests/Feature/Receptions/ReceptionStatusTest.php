@@ -5,6 +5,8 @@ namespace Tests\Feature\Receptions;
 use App\Models\Budget;
 use App\Models\Reception;
 use App\Models\ServiceCategory;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\Feature\WorkOrderParts\WorkOrderPartsTestCase;
 
 /**
@@ -167,6 +169,48 @@ class ReceptionStatusTest extends WorkOrderPartsTestCase
 
         // El estado cancelado no se recalcula.
         $this->assertReceptionStatus($reception, 'cancelled', 'Cancelado');
+    }
+
+    public function test_cancelling_cancels_open_budgets_and_freezes_the_reception(): void
+    {
+        $draftId = $this->createBudgetWithItems([$this->labor()]);
+        $reception = $this->receptionOf($draftId);
+        $sentId = $this->postJson('/api/budgets', ['reception_id' => $reception->id])->assertCreated()->json('data.id');
+        $this->postJson("/api/budgets/{$sentId}/items", $this->labor())->assertCreated();
+        $this->postJson("/api/budgets/{$sentId}/send")->assertOk();
+        $approvedId = $this->approvedBudgetFor($reception);
+
+        $this->postJson("/api/receptions/{$reception->id}/cancel", ['reason' => 'El cliente desistió'])->assertOk();
+
+        // Borrador y enviado se cancelan; el aprobado (sin OT) queda como está.
+        $this->assertSame('cancelled', Budget::findOrFail($draftId)->status->value);
+        $this->assertSame('cancelled', Budget::findOrFail($sentId)->status->value);
+        $this->assertSame('approved', Budget::findOrFail($approvedId)->status->value);
+
+        $this->patchJson("/api/receptions/{$reception->id}", ['observations' => 'Nota posterior'])
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'RECEPTION_CLOSED');
+        Storage::fake('public');
+        $this->postJson("/api/receptions/{$reception->id}/photos", ['photos' => [['file' => UploadedFile::fake()->image('frente.jpg')]]])
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'RECEPTION_CLOSED');
+    }
+
+    public function test_budgets_of_a_closed_reception_cannot_change(): void
+    {
+        $budgetId = $this->createBudgetWithItems([$this->labor()]);
+        $reception = $this->receptionOf($budgetId);
+
+        // Cerrada por fuera del flujo (p. ej. entregada con un borrador complementario sin enviar).
+        $reception->update(['status' => \App\Enums\ReceptionStatus::DELIVERED]);
+
+        $this->patchJson("/api/budgets/{$budgetId}", ['notes' => 'Cambio'])->assertStatus(422)->assertJsonPath('error_code', 'RECEPTION_CLOSED');
+        $this->postJson("/api/budgets/{$budgetId}/items", $this->labor())->assertStatus(422)->assertJsonPath('error_code', 'RECEPTION_CLOSED');
+        $this->postJson("/api/budgets/{$budgetId}/send")->assertStatus(422)->assertJsonPath('error_code', 'RECEPTION_CLOSED');
+        $this->deleteJson("/api/budgets/{$budgetId}")->assertStatus(422)->assertJsonPath('error_code', 'RECEPTION_CLOSED');
+
+        // Cancelarlo sí: deja de estar pendiente.
+        $this->postJson("/api/budgets/{$budgetId}/cancel")->assertOk()->assertJsonPath('data.status', 'cancelled');
     }
 
     public function test_a_processed_reception_cannot_change_categories_or_be_deleted(): void

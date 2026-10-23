@@ -180,8 +180,12 @@ class ReceptionController extends Controller implements HasMiddleware
     public function update(
         UpdateReceptionRequest $request,
         Reception $reception,
-        ReceptionChecklistService $checklistService
+        ReceptionChecklistService $checklistService,
+        ReceptionStatusService $receptionStatusService
     ) {
+        // Entregada o cancelada: no se modifica.
+        $receptionStatusService->ensureEditable($reception);
+
         $data = $request->validated();
 
         $hasServiceCategories = array_key_exists('service_category_ids', $data);

@@ -196,6 +196,33 @@ class BudgetLifecycleTest extends WorkOrderPartsTestCase
         $this->deleteJson("/api/budgets/{$budgetId}")->assertStatus(422)->assertJsonPath('error_code', 'BUDGET_NOT_EDITABLE');
     }
 
+    public function test_sending_requires_the_reception_diagnostics_to_be_closed(): void
+    {
+        $budgetId = $this->draftWithItem();
+        $receptionId = Budget::findOrFail($budgetId)->reception_id;
+        $diagnostic = fn () => $this->postJson('/api/diagnostics', [
+            'reception_id' => $receptionId,
+            'requires_parts' => false,
+            'requires_repair' => true,
+        ])->assertCreated()->json('data.id');
+
+        $pending = $diagnostic();
+        $inProgress = $diagnostic();
+        $this->patchJson("/api/diagnostics/{$inProgress}", ['status' => 'in_progress'])->assertOk();
+
+        // El borrador se sigue editando; enviarlo no.
+        $this->postJson("/api/budgets/{$budgetId}/items", $this->labor(5000))->assertCreated();
+        $this->action($budgetId, 'send')
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'BUDGET_DIAGNOSTICS_PENDING')
+            ->assertJsonPath('message', "La recepción tiene diagnósticos sin terminar (#{$pending}, #{$inProgress}): termínelos o cancélelos antes de enviar el presupuesto.");
+
+        $this->patchJson("/api/diagnostics/{$pending}", ['status' => 'completed'])->assertOk();
+        $this->patchJson("/api/diagnostics/{$inProgress}", ['status' => 'cancelled'])->assertOk();
+
+        $this->action($budgetId, 'send')->assertOk()->assertJsonPath('data.status', 'sent');
+    }
+
     public function test_mechanic_cannot_manage_budgets(): void
     {
         $budgetId = $this->draftWithItem();

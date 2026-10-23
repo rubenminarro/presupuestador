@@ -149,7 +149,7 @@ class ReceptionTest extends ReceptionTestCase
             ->assertJsonPath('data.vehicle.id', $otherVehicle->id);
     }
 
-    public function test_a_closed_reception_can_be_edited_after_the_vehicle_returns(): void
+    public function test_a_closed_reception_cannot_be_edited_even_after_the_vehicle_returns(): void
     {
         $old = $this->createReception();
         $this->markAs($old, ReceptionStatus::DELIVERED);
@@ -157,9 +157,11 @@ class ReceptionTest extends ReceptionTestCase
         // El vehículo reingresa con una recepción nueva (abierta).
         $this->createReception();
 
-        // Corregir datos de la recepción entregada no abre una segunda recepción.
+        // La entregada no se modifica (decisión del 2026-10-22): el rechazo es por estar cerrada, no por la
+        // recepción abierta del vehículo.
         $this->patchJson("/api/receptions/{$old['id']}", ['observations' => 'Corrección posterior'])
-            ->assertOk();
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'RECEPTION_CLOSED');
     }
 
     public function test_changing_categories_regenerates_the_checklist_only_while_pending(): void

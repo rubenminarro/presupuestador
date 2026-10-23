@@ -18,4 +18,12 @@ enum DiagnosticStatus: string
             self::CANCELLED => 'Cancelado',
         };
     }
+
+    /**
+     * Terminado o cancelado: sus ítems y fotos no se modifican (se puede volver a in_progress para corregir).
+     */
+    public function isClosed(): bool
+    {
+        return in_array($this, [self::COMPLETED, self::CANCELLED], true);
+    }
 }

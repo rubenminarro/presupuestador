@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Requests\UploadDiagnosticItemPhotosRequest;
 use App\Http\Requests\UpdateDiagnosticItemPhotoRequest;
 use App\Http\Resources\DiagnosticItemPhotoResource;
+use App\Services\DiagnosticService;
 use App\Traits\ApiResponse;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -42,8 +43,9 @@ class DiagnosticItemPhotoController extends Controller implements HasMiddleware
         );
     }
 
-    public function store(UploadDiagnosticItemPhotosRequest $request, DiagnosticItem $diagnosticItem) 
+    public function store(UploadDiagnosticItemPhotosRequest $request, DiagnosticItem $diagnosticItem, DiagnosticService $diagnosticService)
     {
+        $diagnosticService->ensureItemsEditable($diagnosticItem->diagnostic);
 
         $data = $request->validated();
 
@@ -92,9 +94,10 @@ class DiagnosticItemPhotoController extends Controller implements HasMiddleware
         );
     }
 
-    public function update(UpdateDiagnosticItemPhotoRequest $request, DiagnosticItem $diagnosticItem, DiagnosticItemPhoto $photo) 
+    public function update(UpdateDiagnosticItemPhotoRequest $request, DiagnosticItem $diagnosticItem, DiagnosticItemPhoto $photo, DiagnosticService $diagnosticService)
     {
-        
+        $diagnosticService->ensureItemsEditable($diagnosticItem->diagnostic);
+
         $data = $request->validated();
 
         if (
@@ -164,8 +167,9 @@ class DiagnosticItemPhotoController extends Controller implements HasMiddleware
         );
     }
 
-    public function destroy(DiagnosticItem $diagnosticItem, DiagnosticItemPhoto $photo) 
+    public function destroy(DiagnosticItem $diagnosticItem, DiagnosticItemPhoto $photo, DiagnosticService $diagnosticService)
     {
+        $diagnosticService->ensureItemsEditable($diagnosticItem->diagnostic);
 
         $path = $photo->path;
 

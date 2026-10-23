@@ -385,6 +385,8 @@ Esperado: `200`, `status.value` `cancelled` ("Cancelado"), `cancellation_reason`
 | Cancelar otra vez | mismo endpoint | `{ "reason": "x" }` | 422 | `RECEPTION_NOT_CANCELLABLE` |
 | Presupuestar sobre la cancelada | `POST {{base_url}}/budgets` | `{ "reception_id": {{reception_cancel_id}} }` | 422 | `RECEPTION_CLOSED` |
 | Diagnosticar sobre la cancelada | `POST {{base_url}}/diagnostics` | `{ "reception_id": {{reception_cancel_id}}, "mechanic_id": {{mechanic_id}}, "requires_parts": false, "requires_repair": true }` | 422 | `RECEPTION_CLOSED` |
+| Editar la cancelada (o entregada) | `PATCH {{base_url}}/receptions/{{reception_cancel_id}}` | `{ "observations": "Nota" }` | 422 | `RECEPTION_CLOSED` |
+| Sus presupuestos borrador o enviados | `GET {{base_url}}/budgets?reception_id={{reception_cancel_id}}` | — | 200 | Quedaron `cancelled` al cancelar la recepción |
 | Con OT vigentes | sobre una recepción con una OT no cancelada (por ejemplo `{{reception_id}}` después de O.1) | `{ "reason": "x" }` | 422 | `RECEPTION_HAS_ACTIVE_WORK_ORDERS` |
 | Mecánico (token = `{{token_mec}}`) | `POST .../receptions/{{reception_id}}/cancel` | `{ "reason": "x" }` | 403 | `FORBIDDEN` |
 
@@ -403,6 +405,10 @@ Diagnóstico: `POST {{base_url}}/diagnostics` con `{ "reception_id": {{reception
 | Prioridad vacía | `POST {{base_url}}/diagnostics` | `{ ..., "priority": null }` | 422 | `VALIDATION_ERROR` (`errors.priority`) |
 | Vaciar textos y mecánico | `PATCH {{base_url}}/diagnostics/{id}` | `{ "mechanic_id": null, "diagnosis": null }` | 200 | Ambos en `null` |
 | Severidad vacía en un ítem | `PATCH {{base_url}}/diagnostic-items/{id}` | `{ "severity": null }` | 422 | `VALIDATION_ERROR` (`errors.severity`) |
+| Terminar el diagnóstico | `PATCH {{base_url}}/diagnostics/{id}` | `{ "status": "completed" }` | 200 | — |
+| Ítem en un diagnóstico terminado o cancelado | `POST {{base_url}}/diagnostic-items` (también editar, eliminar y sus fotos) | `{ "diagnostic_id": {id}, ... }` | 422 | `DIAGNOSTIC_NOT_EDITABLE` |
+| Volver a "en proceso" | `PATCH {{base_url}}/diagnostics/{id}` | `{ "status": "in_progress" }` | 200 | Los ítems vuelven a editarse |
+| Listado | `GET {{base_url}}/diagnostics` | — | 200 | Ordenado por `diagnosed_at` descendente |
 
 > Una recepción cancelada no cuenta como abierta: el vehículo puede volver a ingresar.
 
@@ -467,6 +473,7 @@ Permisos del mecánico (token = `{{token_mec}}`):
 | Aprobar en `draft` | `POST {{base_url}}/budgets/{{budget_id}}/approve` | — | 422 | `BUDGET_NOT_APPROVABLE` |
 | Rechazar en `draft` | `POST {{base_url}}/budgets/{{budget_id}}/reject` | — | 422 | `BUDGET_NOT_REJECTABLE` |
 | Reabrir no rechazado | `POST {{base_url}}/budgets/{{budget_id}}/reopen` | — | 422 | `BUDGET_NOT_REOPENABLE` |
+| Enviar con diagnósticos pendientes o en proceso en la recepción | `POST {{base_url}}/budgets/{{budget_id}}/send` | — | 422 | `BUDGET_DIAGNOSTICS_PENDING` (el mensaje lista los números); terminarlos o cancelarlos |
 | Enviar | `POST {{base_url}}/budgets/{{budget_id}}/send` | — | 200 | `sent` |
 | Enviar de nuevo | `POST {{base_url}}/budgets/{{budget_id}}/send` | — | 422 | `BUDGET_NOT_SENDABLE` |
 | Agregar ítem con `sent` | `POST {{base_url}}/budgets/{{budget_id}}/items` | body de P.2 | 422 | `BUDGET_NOT_EDITABLE` |

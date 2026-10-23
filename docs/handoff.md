@@ -7,7 +7,7 @@
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
 FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes), FASE 25 (auditoría); 6 roles;
-320 tests en verde (2026-10-22)
+326 tests en verde (2026-10-22)
 **Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -1223,6 +1223,29 @@ Surge de la pantalla de entregas del frontend (fase F7):
   `plate` con el vehículo); el listado carga además el cliente. Antes solo traía `client_id`.
 
 Tests: `tests/Feature/Deliveries/VehicleDeliveryTest`.
+
+---
+
+# 2.46 Recepción cerrada, diagnóstico cerrado y envío de presupuestos (2026-10-22)
+
+Surgen de las pruebas del usuario en el frontend; las cuatro reglas son decisión suya:
+
+- **Recepción cerrada (`delivered|cancelled`) no se modifica:** editar la recepción y sus fotos, editar o eliminar sus
+  diagnósticos (con ítems y fotos) y editar, enviar, aprobar, rechazar, reabrir o eliminar sus presupuestos →
+  `RECEPTION_CLOSED` (`ReceptionStatusService::ensureEditable()`). Cancelar un presupuesto sí se permite (deja de estar
+  pendiente). Reemplaza lo anterior: una recepción entregada se podía corregir (`ReceptionTest` lo exigía; ahora exige
+  el rechazo).
+- **Cancelar la recepción cancela sus presupuestos `draft|sent`** (uno por uno, quedan en la auditoría). El aprobado
+  sin OT queda aprobado.
+- **Diagnóstico terminado o cancelado:** sus ítems y fotos no se agregan, editan ni eliminan (`DIAGNOSTIC_NOT_EDITABLE`,
+  nueva `DiagnosticException` y `DiagnosticService`); volver el diagnóstico a `in_progress` permite corregirlos.
+- **Enviar un presupuesto exige los diagnósticos de la recepción terminados o cancelados**
+  (`BUDGET_DIAGNOSTICS_PENDING`, el mensaje lista los números). El borrador se arma igual. `BudgetItemSeeder` da por
+  terminados los diagnósticos de ejemplo antes de enviar.
+- **Orden del listado de diagnósticos:** por `diagnosed_at` descendente (antes `latest()`, por fecha de carga: los
+  datos de ejemplo salían desordenados).
+
+Tests: `ReceptionStatusTest`, `ReceptionTest`, `DiagnosticTest`, `BudgetLifecycleTest`.
 
 ---
 

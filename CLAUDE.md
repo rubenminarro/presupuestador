@@ -18,7 +18,7 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 * **Backend/API:** Laravel 12.70, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
   proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24) y auditoría
-  (FASE 25). 222 rutas API, 320 tests en verde.
+  (FASE 25). 222 rutas API, 326 tests en verde.
 * **Nombre:** el proyecto se llamaba **Presupuestador**; desde el 2026-10-21 es **SyncTaller** (repos
   `synctaller-backend` y `synctaller-frontend`, base de datos y conexión `synctaller`).
 * **Frontend:** **no está en este repositorio**, sino en `../synctaller-frontend` (React 19 + TypeScript + Vite +
@@ -219,8 +219,10 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   cancelar OT. `delivered` y `cancelled` no se recalculan. La migración 000045 repite la regla en SQL.
 * Cancelar (`POST receptions/{reception}/cancel`, motivo obligatorio, permiso `receptions.cancel`): solo sin OT vigentes
   (`RECEPTION_HAS_ACTIVE_WORK_ORDERS`); cerrada → `RECEPTION_NOT_CANCELLABLE`. Guarda `cancelled_at`, `cancelled_by` y
-  `cancellation_reason`.
-* Recepción cerrada (`delivered|cancelled`): no admite diagnósticos, presupuestos ni OT nuevos (`RECEPTION_CLOSED`).
+  `cancellation_reason`. Cancela además sus presupuestos `draft|sent` (el aprobado sin OT queda como está).
+* Recepción cerrada (`delivered|cancelled`): no admite diagnósticos, presupuestos ni OT nuevos, y nada de lo existente
+  se modifica: datos y fotos de la recepción, diagnósticos (con sus ítems y fotos) ni presupuestos (salvo cancelarlos):
+  `RECEPTION_CLOSED` (`ReceptionStatusService::ensureEditable()`; decisión del 2026-10-22).
 * Fotos en el disco `public` (`receptions/`), con scoped binding a la recepción.
 * Contrato: fechas `Y-m-d` y `mileage` entero (sin formatear); el detalle trae `check_list` (`id`, `status`) para
   `reception-check-lists/{id}`, y el vehículo con `chassis`, `brand`, `model` y `color` (`value`/`label`).
@@ -233,6 +235,9 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 * Fotos de diagnóstico con permisos `diagnostic-item-photos.*`.
 * Editar vacía `mechanic_id`, `customer_complaint`, `diagnosis` y `recommendation` con `null`. `priority` (diagnóstico)
   y `severity`/`status` (ítem) son opcionales pero no vacíos (columnas `NOT NULL` con default): `null` → 422.
+* Diagnóstico `completed|cancelled`: no se agregan, editan ni eliminan ítems ni fotos (`DIAGNOSTIC_NOT_EDITABLE`); el
+  diagnóstico sí se edita, y volverlo a `in_progress` permite corregirlos (`DiagnosticService`).
+* El listado se ordena por `diagnosed_at` descendente (antes por fecha de carga).
 
 ### 6.4 Presupuestos
 
@@ -240,6 +245,9 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   cancelar desde `draft` o `sent`.
 * Solo `draft` es editable (cabecera e ítems): `BUDGET_NOT_EDITABLE`. Enviar y aprobar exigen ítems
   (`BUDGET_WITHOUT_ITEMS`). Transición inválida: `BUDGET_NOT_SENDABLE|APPROVABLE|REJECTABLE|CANCELLABLE|REOPENABLE`.
+* Enviar exige los diagnósticos de la recepción `completed|cancelled` (`BUDGET_DIAGNOSTICS_PENDING`, con los números
+  pendientes); el borrador se arma sin esa condición. Con la recepción cerrada solo se puede cancelar: editar, enviar,
+  aprobar, rechazar, reabrir o eliminar → `RECEPTION_CLOSED` (6.2).
 * Totales con BCMath (`BudgetService::itemTotal()` y `recalculateBudget()`), redondeo half-up a 2 decimales: ítem =
   cantidad × precio; `subtotal` = suma de ítems; `tax` = subtotal × `config('invoice.default_tax_rate')` (10) / 100;
   precios sin IVA.

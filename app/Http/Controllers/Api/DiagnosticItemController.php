@@ -7,7 +7,9 @@ use App\Http\Requests\StoreDiagnosticItemRequest;
 use App\Http\Requests\UpdateDiagnosticItemRequest;
 use App\Http\Resources\DiagnosticItemResource;
 use App\Http\Resources\ShowDiagnosticItemResource;
+use App\Models\Diagnostic;
 use App\Models\DiagnosticItem;
+use App\Services\DiagnosticService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -99,10 +101,11 @@ class DiagnosticItemController extends Controller implements HasMiddleware
         );
     }
 
-    public function store(StoreDiagnosticItemRequest $request)
+    public function store(StoreDiagnosticItemRequest $request, DiagnosticService $diagnosticService)
     {
-        
         $data = $request->validated();
+
+        $diagnosticService->ensureItemsEditable(Diagnostic::findOrFail($data['diagnostic_id']));
 
         $diagnosticItem = DiagnosticItem::create($data);
 
@@ -130,8 +133,10 @@ class DiagnosticItemController extends Controller implements HasMiddleware
         );
     }
 
-    public function update(UpdateDiagnosticItemRequest $request, DiagnosticItem $diagnosticItem) 
+    public function update(UpdateDiagnosticItemRequest $request, DiagnosticItem $diagnosticItem, DiagnosticService $diagnosticService)
     {
+        $diagnosticService->ensureItemsEditable($diagnosticItem->diagnostic);
+
         $diagnosticItem->update(
             $request->validated()
         );
@@ -146,8 +151,10 @@ class DiagnosticItemController extends Controller implements HasMiddleware
         );
     }
 
-    public function destroy(DiagnosticItem $diagnosticItem)
+    public function destroy(DiagnosticItem $diagnosticItem, DiagnosticService $diagnosticService)
     {
+        $diagnosticService->ensureItemsEditable($diagnosticItem->diagnostic);
+
         $diagnosticItem->load('photos');
 
         foreach ($diagnosticItem->photos as $photo) {

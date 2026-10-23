@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Enums\BudgetStatus;
 use App\Enums\ClientNotificationType;
 use App\Enums\ReceptionStatus;
 use App\Enums\WorkOrderStatus;
 use App\Exceptions\ReceptionException;
+use App\Models\Budget;
 use App\Models\Reception;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -80,7 +82,25 @@ class ReceptionStatusService
     }
 
     /**
-     * Cancelación manual (por ejemplo, el cliente desiste). Solo sin OT vigentes.
+     * Una recepción cerrada (entregada o cancelada) no se modifica: ni sus datos, ni sus fotos, ni sus diagnósticos o
+     * presupuestos.
+     */
+    public function ensureEditable(Reception|int $reception): void
+    {
+        $reception = $reception instanceof Reception ? $reception : Reception::findOrFail($reception);
+
+        if ($reception->status->isClosed()) {
+            throw new ReceptionException(
+                "La recepción está {$this->lower($reception->status)} y no puede modificarse.",
+                422,
+                'RECEPTION_CLOSED'
+            );
+        }
+    }
+
+    /**
+     * Cancelación manual (por ejemplo, el cliente desiste). Solo sin OT vigentes. Cancela también los presupuestos en
+     * borrador o enviados: ya no pueden aprobarse.
      */
     public function cancel(Reception $reception, string $reason, User $user): Reception
     {
@@ -114,6 +134,12 @@ class ReceptionStatusService
                 'cancelled_by' => $user->id,
                 'cancellation_reason' => $reason,
             ]);
+
+            // Uno por uno para que cada cambio quede en la auditoría.
+            $reception->budgets()
+                ->whereIn('status', [BudgetStatus::DRAFT, BudgetStatus::SENT])
+                ->get()
+                ->each(fn (Budget $budget) => $budget->update(['status' => BudgetStatus::CANCELLED]));
 
             return $reception;
         });
