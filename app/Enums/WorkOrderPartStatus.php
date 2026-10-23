@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum WorkOrderPartStatus: string
 {
+    case AWAITING_APPROVAL = 'awaiting_approval';
     case PENDING = 'pending';
     case RESERVED = 'reserved';
     case CONSUMED = 'consumed';
@@ -12,6 +13,7 @@ enum WorkOrderPartStatus: string
 
     public function label(): string {
         return match($this) {
+            self::AWAITING_APPROVAL => 'Pendiente de aprobación',
             self::PENDING => 'Pendiente de stock',
             self::RESERVED => 'Reservado',
             self::CONSUMED => 'Consumido',
@@ -21,7 +23,8 @@ enum WorkOrderPartStatus: string
     }
 
     /**
-     * Línea sin resolver: todavía no se consumió ni se canceló.
+     * Línea sin resolver: todavía no se consumió ni se canceló (un extra sin
+     * la decisión del cliente también impide completar la OT).
      */
     public function isOpen(): bool
     {
@@ -30,7 +33,7 @@ enum WorkOrderPartStatus: string
 
     public static function openStatuses(): array
     {
-        return [self::PENDING, self::RESERVED];
+        return [self::AWAITING_APPROVAL, self::PENDING, self::RESERVED];
     }
 
     public static function values(): array

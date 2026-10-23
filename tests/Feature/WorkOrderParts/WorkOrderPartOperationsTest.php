@@ -19,7 +19,8 @@ class WorkOrderPartOperationsTest extends WorkOrderPartsTestCase
             ->assertJsonPath('data.work_order_item_id', null)
             ->assertJsonPath('data.is_budgeted', false)
             ->assertJsonPath('data.unit_price', '72000.00')
-            ->assertJsonPath('data.status.value', 'reserved');
+            ->assertJsonPath('data.status.value', 'awaiting_approval')
+            ->assertJsonPath('data.client_decision', null);
 
         $this->postJson($this->partsUrl($workOrder), ['part_id' => $extra['id'], 'quantity' => 1, 'unit_price' => 65000])
             ->assertCreated()

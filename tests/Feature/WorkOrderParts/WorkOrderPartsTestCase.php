@@ -119,6 +119,18 @@ abstract class WorkOrderPartsTestCase extends InventoryTestCase
         return $action !== '' ? "{$url}/{$action}" : $url;
     }
 
+    /**
+     * Agrega un repuesto extra y registra la aprobación del cliente.
+     */
+    protected function addApprovedExtra(array $workOrder, array $data): array
+    {
+        $line = $this->postJson($this->partsUrl($workOrder), $data)->assertCreated()->json('data');
+
+        return $this->postJson($this->partsUrl($workOrder, $line['id'], 'approve'), ['channel' => 'phone'])
+            ->assertOk()
+            ->json('data');
+    }
+
     protected function startWorkOrder(array $workOrder): TestResponse
     {
         return $this->postJson("/api/work-orders/{$workOrder['id']}/start")->assertOk();

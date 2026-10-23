@@ -88,11 +88,11 @@ class WorkOrderClosingTest extends WorkOrderPartsTestCase
         $filter = $this->createPartViaApi();
         $this->purchase($filter['id'], 5, 30)->assertOk();
 
-        $extra = $this->postJson($this->partsUrl($workOrder), [
+        $extra = $this->addApprovedExtra($workOrder, [
             'part_id' => $filter['id'],
             'quantity' => 1,
             'unit_price' => 80,
-        ])->assertCreated()->json('data');
+        ]);
 
         $this->postJson($this->partsUrl($workOrder, $extra['id'], 'consume'), ['quantity_used' => 1])->assertOk();
 

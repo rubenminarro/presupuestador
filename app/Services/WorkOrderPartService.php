@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ClientDecision;
 use App\Enums\WorkOrderPartStatus;
 use App\Enums\WorkOrderStatus;
 use App\Exceptions\InventoryException;
@@ -13,6 +14,7 @@ use App\Models\User;
 use App\Models\WorkOrder;
 use App\Models\WorkOrderItem;
 use App\Models\WorkOrderPart;
+use App\Support\Decimal;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -65,17 +67,62 @@ class WorkOrderPartService
 
             $this->ensurePartUsable($part);
 
+            // El extra no reserva stock hasta que se registre la aprobación del cliente.
             $line = $workOrder->parts()->create([
                 'work_order_item_id' => null,
                 'part_id' => $part->id,
-                'status' => WorkOrderPartStatus::PENDING,
+                'status' => WorkOrderPartStatus::AWAITING_APPROVAL,
                 'quantity' => $this->inventoryService->normalizeQuantity($part, $data['quantity']),
                 'unit_price' => $data['unit_price'] ?? $part->sale_price,
                 'notes' => $data['notes'] ?? null,
                 'added_by' => $user->id,
             ]);
 
-            $this->tryReserve($line, $part);
+            $this->internalNotificationService->extraPartAwaitingApproval($line, $part);
+
+            return $this->loadLine($line);
+        });
+    }
+
+    /**
+     * Registra la aprobación del cliente de un extra e intenta reservarlo.
+     */
+    public function approve(WorkOrder $workOrder, WorkOrderPart $line, array $data, User $user): WorkOrderPart
+    {
+        return DB::transaction(function () use ($workOrder, $line, $data, $user) {
+
+            [$workOrder, $line] = $this->lockLine($workOrder, $line);
+
+            $this->ensurePartsEditable($workOrder);
+            $this->ensureStatus($line, [WorkOrderPartStatus::AWAITING_APPROVAL], 'aprobarse');
+
+            $line->update([
+                ...$this->decisionAttributes(ClientDecision::APPROVED, $data, $user),
+                'status' => WorkOrderPartStatus::PENDING,
+            ]);
+
+            $this->tryReserve($line, $line->part);
+
+            return $this->loadLine($line);
+        });
+    }
+
+    /**
+     * Registra el rechazo del cliente de un extra: la línea queda cancelada.
+     */
+    public function reject(WorkOrder $workOrder, WorkOrderPart $line, array $data, User $user): WorkOrderPart
+    {
+        return DB::transaction(function () use ($workOrder, $line, $data, $user) {
+
+            [$workOrder, $line] = $this->lockLine($workOrder, $line);
+
+            $this->ensurePartsEditable($workOrder);
+            $this->ensureStatus($line, [WorkOrderPartStatus::AWAITING_APPROVAL], 'rechazarse');
+
+            $line->update([
+                ...$this->decisionAttributes(ClientDecision::REJECTED, $data, $user),
+                'status' => WorkOrderPartStatus::CANCELLED,
+            ]);
 
             return $this->loadLine($line);
         });
@@ -89,6 +136,7 @@ class WorkOrderPartService
 
             $this->ensurePartsEditable($workOrder);
             $this->ensureStatus($line, WorkOrderPartStatus::openStatuses(), 'modificarse');
+            $this->ensureApprovedTermsUnchanged($line, $data);
 
             $attributes = array_intersect_key($data, array_flip(['unit_price', 'notes']));
 
@@ -123,6 +171,7 @@ class WorkOrderPartService
             [$workOrder, $line] = $this->lockLine($workOrder, $line);
 
             $this->ensurePartsEditable($workOrder);
+            $this->ensureApproved($line);
             $this->ensureStatus($line, [WorkOrderPartStatus::PENDING], 'reservarse');
 
             $this->inventoryService->reserve($line->part, $line->quantity);
@@ -140,7 +189,21 @@ class WorkOrderPartService
             [$workOrder, $line] = $this->lockLine($workOrder, $line);
 
             $this->ensureInProgress($workOrder, 'consumir');
+            $this->ensureApproved($line);
             $this->ensureStatus($line, WorkOrderPartStatus::openStatuses(), 'consumirse');
+
+            // En un extra no se usa más de lo que aprobó el cliente.
+            if ($line->isExtra()) {
+                $used = $this->inventoryService->normalizeQuantity($line->part, $data['quantity_used']);
+
+                if (bccomp($used, $line->quantity, 3) > 0) {
+                    throw new WorkOrderPartException(
+                        "No se puede usar {$used}; el cliente aprobó {$line->quantity}.",
+                        422,
+                        'WORK_ORDER_PART_EXCEEDS_APPROVED'
+                    );
+                }
+            }
 
             $reserved = $line->status === WorkOrderPartStatus::RESERVED ? $line->quantity : '0';
 
@@ -341,6 +404,54 @@ class WorkOrderPartService
                 'WORK_ORDER_PART_INVALID_STATUS_TRANSITION'
             );
         }
+    }
+
+    private function ensureApproved(WorkOrderPart $line): void
+    {
+        if ($line->status === WorkOrderPartStatus::AWAITING_APPROVAL) {
+            throw new WorkOrderPartException(
+                'El repuesto extra está pendiente de la aprobación del cliente.',
+                422,
+                'WORK_ORDER_PART_NOT_APPROVED'
+            );
+        }
+    }
+
+    /**
+     * Lo que aprobó el cliente (cantidad y precio) no cambia; para otro
+     * número se cancela el extra y se agrega uno nuevo.
+     */
+    private function ensureApprovedTermsUnchanged(WorkOrderPart $line, array $data): void
+    {
+        if ($line->client_decision !== ClientDecision::APPROVED) {
+            return;
+        }
+
+        $quantityChanged = array_key_exists('quantity', $data)
+            && bccomp($this->inventoryService->normalizeQuantity($line->part, $data['quantity']), $line->quantity, 3) !== 0;
+
+        $priceChanged = array_key_exists('unit_price', $data)
+            && bccomp(Decimal::of($data['unit_price'], 2), $line->unit_price, 2) !== 0;
+
+        if ($quantityChanged || $priceChanged) {
+            throw new WorkOrderPartException(
+                'La cantidad y el precio del repuesto extra ya fueron aprobados por el cliente y no pueden modificarse.',
+                422,
+                'WORK_ORDER_PART_APPROVED_NOT_EDITABLE'
+            );
+        }
+    }
+
+    private function decisionAttributes(ClientDecision $decision, array $data, User $user): array
+    {
+        return [
+            'client_decision' => $decision,
+            'decided_at' => now(),
+            'decided_by' => $user->id,
+            'decision_channel' => $data['channel'],
+            'decision_contact' => $data['contact'] ?? null,
+            'decision_notes' => $data['notes'] ?? null,
+        ];
     }
 
     private function ensurePartUsable(Part $part): void

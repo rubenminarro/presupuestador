@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ConsumeWorkOrderPartRequest;
+use App\Http\Requests\DecideWorkOrderPartRequest;
 use App\Http\Requests\ReturnWorkOrderPartRequest;
 use App\Http\Requests\StoreWorkOrderPartRequest;
 use App\Http\Requests\UpdateWorkOrderPartRequest;
@@ -34,6 +35,7 @@ class WorkOrderPartController extends Controller implements HasMiddleware
             new Middleware('permission:work-order-parts.consume', only: ['consume']),
             new Middleware('permission:work-order-parts.return', only: ['returnToStock']),
             new Middleware('permission:work-order-parts.cancel', only: ['cancel']),
+            new Middleware('permission:work-order-parts.approve', only: ['approve', 'reject']),
         ];
     }
 
@@ -69,6 +71,38 @@ class WorkOrderPartController extends Controller implements HasMiddleware
 
         return $this->successResponse(
             'Repuesto de la orden de trabajo actualizado correctamente.',
+            new WorkOrderPartResource($line),
+            200
+        );
+    }
+
+    public function approve(DecideWorkOrderPartRequest $request, WorkOrder $workOrder, WorkOrderPart $part)
+    {
+        $line = $this->workOrderPartService->approve(
+            $workOrder,
+            $part,
+            $request->validated(),
+            $request->user()
+        );
+
+        return $this->successResponse(
+            'Aprobación del cliente registrada correctamente.',
+            new WorkOrderPartResource($line),
+            200
+        );
+    }
+
+    public function reject(DecideWorkOrderPartRequest $request, WorkOrder $workOrder, WorkOrderPart $part)
+    {
+        $line = $this->workOrderPartService->reject(
+            $workOrder,
+            $part,
+            $request->validated(),
+            $request->user()
+        );
+
+        return $this->successResponse(
+            'Rechazo del cliente registrado correctamente.',
             new WorkOrderPartResource($line),
             200
         );

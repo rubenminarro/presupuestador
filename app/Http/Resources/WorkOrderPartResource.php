@@ -36,6 +36,18 @@ class WorkOrderPartResource extends JsonResource
             'unit_price' => $this->unit_price,
             'total_cost' => $this->totalCost(),
             'total_price' => $this->totalPrice(),
+            'client_decision' => $this->client_decision === null ? null : [
+                'value' => $this->client_decision->value,
+                'label' => $this->client_decision->label(),
+                'decided_at' => $this->decided_at,
+                'decided_by' => $this->decided_by,
+                'channel' => [
+                    'value' => $this->decision_channel?->value,
+                    'label' => $this->decision_channel?->label(),
+                ],
+                'contact' => $this->decision_contact,
+                'notes' => $this->decision_notes,
+            ],
             'notes' => $this->notes,
             'added_by' => $this->added_by,
             'consumed_by' => $this->consumed_by,

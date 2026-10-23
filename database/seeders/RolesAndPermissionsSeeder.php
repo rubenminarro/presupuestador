@@ -170,6 +170,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'work-order-parts.consume',
             'work-order-parts.return',
             'work-order-parts.cancel',
+            'work-order-parts.approve',
 
             /* part category permissions */
             'part-categories.index',
@@ -419,6 +420,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'service-categories.index', 'services.index', 'services.show',
                     'parts.index', 'parts.show', 'part-categories.index', 'inventory.index',
                     'work-orders.index', 'work-orders.show',
+                    'work-order-parts.index', 'work-order-parts.approve',
                     'invoices.index', 'invoices.show',
                     'vehicle-deliveries.index', 'vehicle-deliveries.show', 'vehicle-deliveries.store',
                     'vehicle-history.view',
@@ -446,6 +448,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'work-order-items.start', 'work-order-items.complete', 'work-order-items.cancel',
                     'work-order-parts.index', 'work-order-parts.store', 'work-order-parts.update', 'work-order-parts.reserve',
                     'work-order-parts.consume', 'work-order-parts.return', 'work-order-parts.cancel',
+                    'work-order-parts.approve',
                     'work-order-item-mechanics.index', 'work-order-item-mechanics.sync',
                     'work-order-item-mechanics.log-hours', 'work-order-item-mechanics.log-hours-any',
                     'mechanic-commissions.index', 'mechanic-commissions.view-all',
