@@ -58,11 +58,19 @@ class AuthController extends Controller
             ? Permission::where('guard_name', 'api')->pluck('name')
             : $user->getAllPermissions()->pluck('name');
 
+        // Ficha de mecánico vinculada: sin mechanics.index, el mecánico la necesita para consultar sus comisiones.
+        $mechanic = $user->mechanic;
+
         return $this->successResponse(
             'Usuario autenticado.',
             [
                 'user'        => new UserResource($user->load('roles')),
                 'permissions' => $permissions->sort()->values(),
+                'mechanic'    => $mechanic ? [
+                    'id'            => $mechanic->id,
+                    'employee_code' => $mechanic->employee_code,
+                    'full_name'     => $mechanic->fullName(),
+                ] : null,
             ]
         );
     }

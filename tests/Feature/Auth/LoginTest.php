@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Mechanic;
 use App\Models\Permission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -94,6 +95,26 @@ class LoginTest extends TestCase
         $this->assertEqualsCanonicalizing($user->getAllPermissions()->pluck('name')->all(), $permissions);
         $this->assertContains('invoices.index', $permissions);
         $this->assertNotContains('users.index', $permissions);
+        $this->assertNull($response->json('data.mechanic'));
+    }
+
+    public function test_me_returns_the_linked_mechanic(): void
+    {
+        $user = User::create([
+            'name' => 'mecanico_test',
+            'first_name' => 'Juan',
+            'last_name' => 'Perez',
+            'email' => 'mecanico@test.local',
+            'password' => bcrypt('secreto123'),
+        ])->assignRole('mechanic');
+
+        $mechanic = Mechanic::create(['user_id' => $user->id, 'employee_code' => 'EMP-001']);
+
+        $this->actingAs($user, 'sanctum')->getJson('/api/me')
+            ->assertOk()
+            ->assertJsonPath('data.mechanic.id', $mechanic->id)
+            ->assertJsonPath('data.mechanic.employee_code', 'EMP-001')
+            ->assertJsonPath('data.mechanic.full_name', 'Juan Perez');
     }
 
     public function test_me_returns_every_permission_for_the_administrator(): void

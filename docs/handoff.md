@@ -1305,6 +1305,11 @@ los IDs de los permisos de cada rol y no había forma de revalidar el token al r
 frontend adapta menús y botones sin duplicar el seeder. Al administrador se le devuelven todos los permisos del guard
 `api`, coherente con el `Gate::before`. No se audita (es lectura). Tests: `tests/Feature/Auth/LoginTest`.
 
+**Mecánico vinculado en `/me` (2026-10-23).** `GET /api/me` agrega `data.mechanic` (`id`, `employee_code`,
+`full_name`), o `null` si el usuario no tiene ficha de mecánico. Motivo: el rol `mechanic` no tiene `mechanics.index`
+y `GET /mechanics/{mechanic}/commissions` sin `mechanic-commissions.view-all` solo admite el propio mecánico, así que
+el frontend (F10, comisiones) no tenía cómo conocer su `id`. Cambio aditivo; el login no cambia.
+
 El login inválido devuelve una respuesta API estandarizada.
 
 Ejemplo conceptual:

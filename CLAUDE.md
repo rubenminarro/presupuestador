@@ -161,7 +161,8 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 Sanctum con tokens Bearer: `POST /api/login` (público) devuelve `data.token`; todo lo demás está bajo
 `auth:sanctum`. `POST /api/logout` revoca el token actual. Los tokens no expiran (`sanctum.expiration = null`).
 `GET /api/me` (sin permiso específico) devuelve `data.user` (`UserResource`, como el login) y `data.permissions` (nombres
-de los permisos, ordenados; el administrador recibe todos los del guard `api` por el `Gate::before`). Lo usa el
+de los permisos, ordenados; el administrador recibe todos los del guard `api` por el `Gate::before`), más
+`data.mechanic` (`id`, `employee_code`, `full_name` de la ficha de mecánico vinculada, o `null`). Lo usa el
 frontend para hidratar la sesión y adaptar menús y botones.
 
 ---

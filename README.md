@@ -231,7 +231,8 @@ responde JSON con el formato de la API aunque no se envíe `Accept: application/
 `EnsureJsonResponse`); se recomienda enviarlo igual.
 
 Autenticación con Sanctum: `POST /api/login` devuelve `data.token` y `data.user` (con roles); `GET /api/me` devuelve
-el usuario autenticado (`data.user`) y los nombres de sus permisos (`data.permissions`); `POST /api/logout` revoca
+el usuario autenticado (`data.user`), los nombres de sus permisos (`data.permissions`) y su ficha de mecánico, si
+la tiene (`data.mechanic`); `POST /api/logout` revoca
 el token actual. Los tokens no expiran. Cada endpoint exige un permiso (`recurso.acción`) asignado al rol del usuario.
 
 ```http

@@ -120,8 +120,8 @@ Esperado: `200`. Copiar `data.token` en `token_mec`.
 
 | Caso | Token | HTTP | Esperado |
 |---|---|---|---|
-| Administrador | `{{token_admin}}` | 200 | `data.user` con rol `administrador`; `data.permissions` con **todos** los permisos (incluye `users.index`, `audit-logs.index`) |
-| Mecánico | `{{token_mec}}` | 200 | `data.user.roles[0].name = "mechanic"`; `data.permissions` solo con los del rol (no incluye `users.index`) |
+| Administrador | `{{token_admin}}` | 200 | `data.user` con rol `administrador`; `data.permissions` con **todos** los permisos (incluye `users.index`, `audit-logs.index`); `data.mechanic` `null` |
+| Mecánico | `{{token_mec}}` | 200 | `data.user.roles[0].name = "mechanic"`; `data.permissions` solo con los del rol (no incluye `users.index`); `data.mechanic` con `id`, `employee_code` y `full_name` de su ficha (`null` si aún no tiene) |
 | Sin token | — | 401 | `UNAUTHENTICATED` |
 
 ### B.3 Accesos sin autenticación
