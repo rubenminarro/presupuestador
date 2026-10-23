@@ -45,9 +45,12 @@ class WorkOrder extends Model
         return $this->belongsTo(Budget::class);
     }
 
+    /**
+     * Con withTrashed: la OT conserva su responsable aunque el mecánico se elimine.
+     */
     public function mechanic(): BelongsTo
     {
-        return $this->belongsTo(Mechanic::class);
+        return $this->belongsTo(Mechanic::class)->withTrashed();
     }
 
     public function creator(): BelongsTo
