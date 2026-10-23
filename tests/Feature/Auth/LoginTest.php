@@ -4,7 +4,6 @@ namespace Tests\Feature\Auth;
 
 use App\Models\Permission;
 use App\Models\User;
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,8 +14,6 @@ class LoginTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        $this->seed(RolesAndPermissionsSeeder::class);
 
         User::create([
             'name' => 'admin_test',

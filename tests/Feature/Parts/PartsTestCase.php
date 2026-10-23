@@ -5,7 +5,6 @@ namespace Tests\Feature\Parts;
 use App\Models\PartCategory;
 use App\Models\Supplier;
 use App\Models\User;
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
@@ -13,14 +12,8 @@ use Tests\TestCase;
 
 abstract class PartsTestCase extends TestCase
 {
+    // Roles y permisos: los siembra RefreshDatabase una vez (Tests\TestCase::$seeder).
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(RolesAndPermissionsSeeder::class);
-    }
 
     protected function actingAsRole(string $role): User
     {
