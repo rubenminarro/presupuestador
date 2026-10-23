@@ -288,6 +288,11 @@ composer test
 326 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
 consulta DNS de los emails (`EMAIL_DNS_CHECK=false`).
 
+Usan una base SQLite en archivo, `database/testing.sqlite` (la crea `tests/bootstrap.php`; está en `.gitignore`):
+`RefreshDatabase` migra y siembra roles y permisos **una vez por ejecución** (`Tests\TestCase::$seeder`) y cada test
+corre en una transacción que se revierte. Con `:memory:` migraba y sembraba en cada test (la suite tardaba ~4 min; ahora
+~2,5). Un test nuevo que necesite roles y permisos no tiene que sembrarlos.
+
 Si `pdo_sqlite` no está habilitado en el `php.ini` de Laragon:
 
 ```bash

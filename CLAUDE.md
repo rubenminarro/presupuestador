@@ -97,7 +97,8 @@ resultados esperados y casos de error).
 
 ### Entorno (Windows / Laragon)
 
-* Tests: `php artisan test` o `vendor/bin/phpunit` (SQLite en memoria). Si `pdo_sqlite` está deshabilitado:
+* Tests: `php artisan test` o `vendor/bin/phpunit` (SQLite en archivo, `database/testing.sqlite`: migra y siembra roles y
+  permisos una vez por ejecución, cada test en una transacción; no sembrarlos en `setUp`). Si `pdo_sqlite` está deshabilitado:
   `php -d extension=pdo_sqlite -d extension=sqlite3 vendor/bin/phpunit`. Los tests no necesitan red:
   `phpunit.xml` fija `EMAIL_DNS_CHECK=false` (sin consulta DNS de emails) y `uncompromised()` se simula con `Http::fake`.
 * No editar archivos con `Get-Content`/`Set-Content` de PowerShell 5.1: corrompen UTF-8 y agregan BOM. Usar las
