@@ -30,11 +30,11 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 | Autenticación | Laravel Sanctum 4.3 (tokens Bearer) |
 | Roles y permisos | spatie/laravel-permission 6.25 (guard `api`) |
 | PDF | barryvdh/laravel-dompdf 3.1 (dompdf 3.1; requiere la extensión `gd` para imágenes) |
-| Base de datos | MySQL (Laragon con MySQL 8.4); SQLite en memoria para los tests |
+| Base de datos | MySQL (Laragon con MySQL 8.4); SQLite en archivo (`database/testing.sqlite`) para los tests |
 | Tests | PHPUnit 11.5 |
 | Assets | Vite 7 + Tailwind CSS 4 + axios (scaffold por defecto de Laravel, sin uso: la app es solo API) |
 | Frontend | **No incluido en este repositorio** (ver [Frontend](#frontend)) |
-| Entorno local | Laragon (Windows) |
+| Entorno local | Laragon (Windows) con **Nginx** en el puerto 80 (no Apache: ver `docs/handoff.md`, sección 14, #12) |
 
 ---
 
