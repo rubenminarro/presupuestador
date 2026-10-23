@@ -1114,7 +1114,7 @@ Body vacío salvo indicación.
 }
 ```
 
-Esperado: `201`, `work_order_item_id` `null`, `is_budgeted` `false`, `unit_price` `"50000.00"` (precio de catálogo), `status.value` `reserved` → `extra_line_id`.
+Esperado: `201`, `work_order_item_id` `null`, `is_budgeted` `false`, `unit_price` `"50000.00"` (precio de catálogo), `status.value` `awaiting_approval` ("Pendiente de aprobación"), `client_decision` `null` → `extra_line_id`. No reserva stock (`stock.reserved` no cambia). Recepcionista y jefe de taller reciben el aviso `extra_part_awaiting_approval` en `GET {{base_url}}/me/notifications`.
 
 Con precio informado:
 
@@ -1137,6 +1137,42 @@ Esperado: `201`, `unit_price` `"45000.00"`.
 | Sin cantidad | `{ "part_id": {{part_unit_id}} }` | 422 | `VALIDATION_ERROR` |
 | Precio negativo | `{ "part_id": {{part_unit_id}}, "quantity": 1, "unit_price": -5 }` | 422 | `VALIDATION_ERROR` |
 
+### 12.6.1 Respuesta del cliente al extra
+
+Mientras espera la respuesta, el extra no se reserva ni se consume. Aprobar (permiso `work-order-parts.approve`:
+administrador, recepcionista y jefe de taller):
+
+`POST {{base_url}}/work-orders/{{work_order2_id}}/parts/{{extra_line_id}}/approve`
+
+```json
+{
+  "channel": "phone",
+  "contact": "Titular",
+  "notes": "Aceptó por teléfono"
+}
+```
+
+Esperado: `200`, `status.value` `reserved` (o `pending` si no hay stock), `client_decision.value` `approved`,
+`client_decision.channel.value` `phone`, `decided_by` = usuario del token, `decided_at` con la fecha.
+
+`channel`: `phone | whatsapp | in_person | email | other`. Para rechazar, `POST .../parts/{id}/reject` con el mismo body
+y `notes` obligatorio (motivo): la línea queda `cancelled` con `client_decision.value` `rejected`.
+
+| Caso | Método / Endpoint | Body | HTTP | error_code |
+|---|---|---|---|---|
+| Reservar o consumir sin respuesta | `POST .../parts/{id}/reserve` (o `consume`) sobre un extra `awaiting_approval` | — | 422 | `WORK_ORDER_PART_NOT_APPROVED` |
+| Sin medio | `POST .../parts/{id}/approve` | `{}` | 422 | `VALIDATION_ERROR` (`errors.channel`) |
+| Rechazar sin motivo | `POST .../parts/{id}/reject` | `{ "channel": "phone" }` | 422 | `VALIDATION_ERROR` (`errors.notes`) |
+| Aprobar de nuevo / línea presupuestada | `POST .../parts/{{extra_line_id}}/approve` o sobre `{{line_id}}` | `{ "channel": "phone" }` | 422 | `WORK_ORDER_PART_INVALID_STATUS_TRANSITION` |
+| Cambiar cantidad o precio aprobados | `PATCH .../parts/{{extra_line_id}}` | `{ "quantity": 2 }` | 422 | `WORK_ORDER_PART_APPROVED_NOT_EDITABLE` |
+| Aprobar con token de depósito o mecánico | `POST .../parts/{{extra_line_id}}/approve` | `{ "channel": "phone" }` | 403 | `FORBIDDEN` |
+
+Antes de la respuesta, cantidad y precio se corrigen con `PATCH`. Aprobados, solo cambian las notas (reenviar los
+mismos valores es válido); para otro número se cancela el extra y se carga uno nuevo.
+
+Si en 12.6 se creó la línea con precio informado, aprobarla o rechazarla también: un extra sin respuesta impide
+completar la OT (12.12).
+
 ### 12.7 Línea sin stock (pendiente) y reserva manual
 
 `POST {{base_url}}/work-orders/{{work_order2_id}}/parts`
@@ -1148,14 +1184,14 @@ Esperado: `201`, `unit_price` `"45000.00"`.
 }
 ```
 
-Esperado: `201`, `status.value` `pending` (no hay 10 unidades disponibles) → `pending_line_id`.
+Esperado: `201`, `status.value` `awaiting_approval` → `pending_line_id`.
 
 | Paso | Método / Endpoint | Body | HTTP | Resultado / error_code |
 |---|---|---|---|---|
+| Aprobar | `POST {{base_url}}/work-orders/{{work_order2_id}}/parts/{{pending_line_id}}/approve` | `{ "channel": "in_person" }` | 200 | `pending` (no hay 10 unidades disponibles) |
 | Reservar sin stock | `POST {{base_url}}/work-orders/{{work_order2_id}}/parts/{{pending_line_id}}/reserve` | — | 422 | `INSUFFICIENT_STOCK` |
-| Bajar cantidad a 1 | `PATCH {{base_url}}/work-orders/{{work_order2_id}}/parts/{{pending_line_id}}` | `{ "quantity": 1 }` | 200 | Sigue `pending` |
-| Reservar | `POST {{base_url}}/work-orders/{{work_order2_id}}/parts/{{pending_line_id}}/reserve` | — | 200 | `reserved` |
-| Cancelar línea | `POST {{base_url}}/work-orders/{{work_order2_id}}/parts/{{pending_line_id}}/cancel` | — | 200 | `cancelled`; se libera la reserva |
+| Bajar cantidad a 1 | `PATCH {{base_url}}/work-orders/{{work_order2_id}}/parts/{{pending_line_id}}` | `{ "quantity": 1 }` | 422 | `WORK_ORDER_PART_APPROVED_NOT_EDITABLE` (lo aprobado no cambia) |
+| Cancelar línea | `POST {{base_url}}/work-orders/{{work_order2_id}}/parts/{{pending_line_id}}/cancel` | — | 200 | `cancelled` (no tenía reserva) |
 | Cancelar de nuevo | `POST {{base_url}}/work-orders/{{work_order2_id}}/parts/{{pending_line_id}}/cancel` | — | 422 | `WORK_ORDER_PART_INVALID_STATUS_TRANSITION` |
 
 ### 12.8 Iniciar la OT
@@ -1195,13 +1231,14 @@ Verificar:
 | Sin cantidad | `{}` | 422 | `VALIDATION_ERROR` |
 | Cantidad cero | `{ "quantity_used": 0 }` | 422 | `VALIDATION_ERROR` |
 
-Consumo mayor al disponible (sobre `{{extra_line_id}}`, reservada con 1 unidad):
+Consumo mayor a lo aprobado (sobre `{{extra_line_id}}`, aprobada y reservada con 1 unidad):
 
 ```json
-{ "quantity_used": 100 }
+{ "quantity_used": 2 }
 ```
 
-Esperado: `422 INSUFFICIENT_STOCK`; la reserva y el stock no cambian.
+Esperado: `422 WORK_ORDER_PART_EXCEEDS_APPROVED`; la reserva y el stock no cambian. Una línea presupuestada sí puede
+usar más de lo reservado (el excedente sale del disponible; sin disponible, `INSUFFICIENT_STOCK`).
 
 ### 12.10 Devolver (token = `{{token_mec}}`)
 
@@ -1231,6 +1268,7 @@ Esperado: `200`, `status.value` `consumed`, `quantity_returned` `"0.200"`, `quan
 | Modificar línea | `PATCH {{base_url}}/work-orders/{{work_order2_id}}/parts/{{extra_line_id}}` | `{ "quantity": 2 }` | 403 | `FORBIDDEN` |
 | Reservar | `POST .../parts/{{extra_line_id}}/reserve` | — | 403 | `FORBIDDEN` |
 | Cancelar | `POST .../parts/{{extra_line_id}}/cancel` | — | 403 | `FORBIDDEN` |
+| Aprobar o rechazar un extra | `POST .../parts/{{extra_line_id}}/approve` | `{ "channel": "phone" }` | 403 | `FORBIDDEN` |
 
 ### 12.12 Completar la OT con repuestos sin resolver
 
@@ -1242,7 +1280,8 @@ Token: administrador. Iniciar y completar cada ítem de la OT (`.../items/{id}/s
 | Cancelar la línea extra | `POST {{base_url}}/work-orders/{{work_order2_id}}/parts/{{extra_line_id}}/cancel` | — | 200 | `cancelled` |
 | Completar | `POST {{base_url}}/work-orders/{{work_order2_id}}/complete` | — | 200 | `completed` |
 
-> Si en 12.6 se creó también la línea con precio informado, cancelarla o consumirla antes de completar.
+> Si en 12.6 se creó también la línea con precio informado, cancelarla, rechazarla o consumirla antes de completar:
+> un extra `awaiting_approval` también da `WORK_ORDER_HAS_UNRESOLVED_PARTS`.
 
 Verificar en la respuesta de completar: `parts_summary.total_cost` `"165.00"`, `parts_summary.total_price` `"225.00"`, `parts_summary.unresolved_count` `0`.
 

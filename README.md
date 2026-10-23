@@ -49,7 +49,7 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 | Diagnóstico | Diagnóstico técnico con ítems y fotos |
 | Presupuestos | Ítems de mano de obra, servicio y repuesto; estados `draft → sent → approved` |
 | Órdenes de trabajo | Nace de un presupuesto aprobado; estados, ítems, mecánico responsable |
-| Repuestos e inventario | Catálogo, proveedores, stock con movimientos inmutables, reservas y consumo en la OT |
+| Repuestos e inventario | Catálogo, proveedores, stock con movimientos inmutables, reservas y consumo en la OT; repuestos extra con la aprobación del cliente registrada |
 | Compras | Factura del proveedor con IVA incluido (10% / 5% / exento por línea), borrador → recibida (ingresa el stock al costo sin IVA y actualiza el costo del proveedor) → anulada (revierte el stock) |
 | Pagos a proveedores | Pagos parciales contra compras recibidas (contado o crédito), comprobante `PAG-000001`, anulación con motivo, resumen de egresos y cuentas por pagar por proveedor (vencido / por vencer) |
 | Servicios y mano de obra | Catálogo de servicios, reparto entre mecánicos, horas reales, comisiones |
@@ -68,7 +68,7 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 
 | Estado | Qué |
 |---|---|
-| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24), auditoría (FASE 25) y los módulos base. 222 rutas API y 332 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
+| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24), auditoría (FASE 25) y los módulos base. 224 rutas API y 347 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
 | Pendiente, sin diseño | Notificaciones por WhatsApp |
 
 ---
@@ -286,7 +286,7 @@ vendor/bin/phpunit
 composer test
 ```
 
-332 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
+347 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
 consulta DNS de los emails (`EMAIL_DNS_CHECK=false`).
 
 Usan una base SQLite en archivo, `database/testing.sqlite` (la crea `tests/bootstrap.php`; está en `.gitignore`):

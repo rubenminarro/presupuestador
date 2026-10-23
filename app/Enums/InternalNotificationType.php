@@ -11,6 +11,7 @@ enum InternalNotificationType: string
     case BUDGET_REJECTED = 'budget_rejected';
     case WORK_ORDER_COMPLETED = 'work_order_completed';
     case PART_OUT_OF_STOCK = 'part_out_of_stock';
+    case EXTRA_PART_AWAITING_APPROVAL = 'extra_part_awaiting_approval';
     case ACCOUNTS_PAYABLE_OVERDUE = 'accounts_payable_overdue';
 
     public function label(): string {
@@ -19,6 +20,7 @@ enum InternalNotificationType: string
             self::BUDGET_REJECTED => 'Presupuesto rechazado',
             self::WORK_ORDER_COMPLETED => 'Orden de trabajo completada',
             self::PART_OUT_OF_STOCK => 'Repuesto sin stock',
+            self::EXTRA_PART_AWAITING_APPROVAL => 'Repuesto extra pendiente de aprobación',
             self::ACCOUNTS_PAYABLE_OVERDUE => 'Cuentas por pagar vencidas',
         };
     }

@@ -66,6 +66,22 @@ class InternalNotificationService
     }
 
     /**
+     * Repuesto extra agregado a la OT: hay que consultar al cliente.
+     */
+    public function extraPartAwaitingApproval(WorkOrderPart $line, Part $part): void
+    {
+        $workOrder = $line->workOrder;
+        $quantity = rtrim(rtrim(Decimal::of($line->quantity, 3), '0'), '.');
+
+        $this->send(new WorkshopNotification(
+            InternalNotificationType::EXTRA_PART_AWAITING_APPROVAL,
+            'Repuesto extra pendiente de aprobación',
+            "La orden de trabajo {$workOrder->code} agregó {$quantity} {$part->unit->label()} de {$part->name} ({$part->sku}), fuera del presupuesto. Registrá la respuesta del cliente.",
+            ['type' => 'work_order', 'id' => $workOrder->id, 'code' => $workOrder->code]
+        ));
+    }
+
+    /**
      * Resumen diario: un aviso por usuario y día.
      */
     public function accountsPayableOverdue(string $overdue, int $suppliersCount): int

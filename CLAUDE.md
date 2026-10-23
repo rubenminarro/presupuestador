@@ -18,7 +18,7 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 * **Backend/API:** Laravel 12.70, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
   proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24) y auditoría
-  (FASE 25). 222 rutas API, 332 tests en verde.
+  (FASE 25). 224 rutas API, 347 tests en verde.
 * **Nombre:** el proyecto se llamaba **Presupuestador**; desde el 2026-10-21 es **SyncTaller** (repos
   `synctaller-backend` y `synctaller-frontend`, base de datos y conexión `synctaller`).
 * **Frontend:** **no está en este repositorio**, sino en `../synctaller-frontend` (React 19 + TypeScript + Vite +
@@ -173,8 +173,8 @@ frontend para hidratar la sesión y adaptar menús y botones.
 |---|---|---|
 | `administrador` | Todo (`Gate::before`) | Exclusivo: usuarios/roles/permisos, auditoría (`audit-logs.*`), costos y margen (`work-orders.view-economics`), liquidar comisiones, anular entregas, timbrados, ABM de planes de mantenimiento, reporte de rentabilidad |
 | `mechanic` | Ejecuta la OT | Diagnóstico, iniciar/pausar/completar OT e ítems, consumir/devolver repuestos, sus horas y comisiones, historial, estado de mantenimiento, dashboard (bloque taller) |
-| `recepcionista` | Atiende al cliente | Clientes, vehículos, recepciones, checklist, presupuestos completos, registrar entregas, alertas de mantenimiento, reporte de presupuestos, avisos a clientes (consultar y reenviar) |
-| `jefe-taller` | Organiza el trabajo | OT completas, ítems, repuestos en OT, asignación y horas de todos, diagnóstico, intervalos de mantenimiento por vehículo, reporte de productividad, consulta de compras, pagos a proveedores y cuentas por pagar |
+| `recepcionista` | Atiende al cliente | Clientes, vehículos, recepciones, checklist, presupuestos completos, registrar entregas, alertas de mantenimiento, reporte de presupuestos, avisos a clientes (consultar y reenviar), ver repuestos de la OT y registrar la respuesta del cliente a los extras |
+| `jefe-taller` | Organiza el trabajo | OT completas, ítems, repuestos en OT (incluida la respuesta del cliente a los extras), asignación y horas de todos, diagnóstico, intervalos de mantenimiento por vehículo, reporte de productividad, consulta de compras, pagos a proveedores y cuentas por pagar |
 | `cajero` | Cobra y paga | Facturas, pagos, resumen de caja, reportes de ventas y clientes, consulta de compras, pagos a proveedores completos (registrar, anular, resumen de egresos), cuentas por pagar y avisos a clientes (consultar y reenviar) |
 | `deposito` | Stock | Repuestos, proveedores, inventario, compras completas, repuestos en OT, reporte de inventario, consulta de pagos a proveedores y cuentas por pagar |
 
@@ -318,6 +318,21 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   OT cerrada: `WORK_ORDER_PARTS_NOT_EDITABLE`. Un consumo por línea; lo usado puede diferir de lo reservado.
 * `unit_cost` sale del movimiento de consumo; `unit_price` del `BudgetItem` o del `sale_price`. Totales sobre la
   cantidad neta (consumida − devuelta), no se persisten.
+* **Extras** (`POST work-orders/{id}/parts`, `work_order_item_id` `null`, decisión del 2026-10-23; resuelve la deuda
+  #11). Nacen `awaiting_approval`: no reservan ni se consumen hasta registrar la respuesta del cliente
+  (`WORK_ORDER_PART_NOT_APPROVED`).
+  * `POST …/parts/{part}/approve` pasa la línea a `pending` e intenta reservar. `POST …/parts/{part}/reject` la deja
+    `cancelled`. Ambos con permiso `work-order-parts.approve` (administrador, recepcionista, jefe-taller) y la OT
+    `pending|in_progress|paused`.
+  * Se guardan `client_decision` (`ClientDecision`), `decided_at`, `decided_by` (quien lo registró),
+    `decision_channel` (`ClientDecisionChannel`: `phone|whatsapp|in_person|email|other`, obligatorio),
+    `decision_contact` y `decision_notes` (obligatorio al rechazar).
+  * Lo aprobado no cambia: cantidad y precio → `WORK_ORDER_PART_APPROVED_NOT_EDITABLE` (las notas sí; para otro
+    número se cancela y se carga otro extra). No se consume más de lo aprobado (`WORK_ORDER_PART_EXCEEDS_APPROVED`);
+    las líneas presupuestadas sí pueden usar más de lo reservado.
+  * `awaiting_approval` está en `openStatuses()`: la OT no se completa (`WORK_ORDER_HAS_UNRESOLVED_PARTS`) y por lo
+    tanto no se factura con extras sin respuesta. `WorkOrderPart` usa el trait `Auditable`.
+  * El presupuesto complementario (otro presupuesto y otra OT en la misma recepción) sigue disponible.
 
 ### 6.8 Servicios, mecánicos y comisiones
 
@@ -450,6 +465,7 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
   * presupuesto aprobado/rechazado → recepcionista y jefe-taller;
   * OT completada → cajero y recepcionista;
   * repuesto sin stock al reservar → depósito y jefe-taller;
+  * repuesto extra pendiente de aprobación del cliente → recepcionista y jefe-taller;
   * cuentas por pagar vencidas → cajero, una vez por día.
 
   El administrador no recibe avisos internos salvo que se agregue su rol a la configuración.
@@ -516,5 +532,4 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 ## 7. Deuda técnica conocida
 
 `docs/handoff.md`, sección 14. Las deudas nuevas se registran ahí y no se corrigen sin decisión previa del usuario.
-Pendiente: **#11, repuestos extra en la OT sin aprobación del cliente** (se facturan aunque no estaban en el
-presupuesto aprobado; decisión en espera de los clientes del taller, 2026-10-22).
+Sin deudas pendientes (la #11, repuestos extra sin aprobación del cliente, se resolvió el 2026-10-23; ver 6.7).

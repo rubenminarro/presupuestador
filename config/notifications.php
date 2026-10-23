@@ -16,6 +16,7 @@ return [
         'budget_rejected' => ['recepcionista', 'jefe-taller'],
         'work_order_completed' => ['cajero', 'recepcionista'],
         'part_out_of_stock' => ['deposito', 'jefe-taller'],
+        'extra_part_awaiting_approval' => ['recepcionista', 'jefe-taller'],
         'accounts_payable_overdue' => ['cajero'],
     ],
 

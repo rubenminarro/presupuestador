@@ -7,7 +7,7 @@
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
 FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes), FASE 25 (auditoría); 6 roles;
-332 tests en verde (2026-10-22)
+347 tests en verde (2026-10-23)
 **Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -465,7 +465,7 @@ Componentes:
 ```text
 budget_items.part_id    (nullable; solo type = part; vínculo con el catálogo)
 WorkOrderPart           (repuesto realmente usado en la OT; work_order_item_id nullable = extra no presupuestado)
-WorkOrderPartStatus     (pending, reserved, consumed, returned, cancelled)
+WorkOrderPartStatus     (pending, reserved, consumed, returned, cancelled; awaiting_approval desde el 2026-10-23, ver 2.49)
 WorkOrderPartService    (createFromBudgetItem, add, update, reserve, consume, returnToStock, cancel,
                          cancelOpenLines, ensureResolved)
 WorkOrderPartException
@@ -1274,6 +1274,35 @@ nombre.
   los datos locales, los servicios 2 y 3 ya estaban eliminados con planes que los usan.
 
 Tests: `tests/Feature/MasterData/InUseDeletionTest`.
+
+---
+
+# 2.49 Repuestos extra con aprobación del cliente (2026-10-23)
+
+Resuelve la deuda #11 (sección 14) con la opción 3: el extra se registra con la respuesta del cliente antes de
+reservarse, consumirse o facturarse. Las decisiones de negocio son del usuario.
+
+| Tema | Decisión |
+|---|---|
+| Flujo | `POST work-orders/{id}/parts` crea el extra en `awaiting_approval` (estado nuevo, "Pendiente de aprobación") sin reservar. `POST …/parts/{part}/approve` lo pasa a `pending` e intenta reservar, como una línea presupuestada (sin stock queda `pending` y avisa a depósito). `POST …/parts/{part}/reject` lo deja `cancelled` |
+| Quién decide | Permiso nuevo `work-order-parts.approve`: recepcionista (que además recibe `work-order-parts.index`) y jefe-taller; el administrador por `Gate::before`. Depósito agrega extras pero no los aprueba; el mecánico no agrega ni aprueba |
+| Registro | `client_decision` (`approved\|rejected`), `decided_at`, `decided_by` (usuario que lo cargó), `decision_channel` (`phone\|whatsapp\|in_person\|email\|other`, obligatorio), `decision_contact` (quién respondió, opcional) y `decision_notes` (obligatorio al rechazar). `WorkOrderPart` pasa a usar `Auditable` (tiene precio) |
+| Lo aprobado | Cantidad y precio no cambian después de aprobar (`WORK_ORDER_PART_APPROVED_NOT_EDITABLE`; reenviar los mismos valores es válido); para otro número se cancela y se carga otro extra. No se consume más de lo aprobado (`WORK_ORDER_PART_EXCEEDS_APPROVED`); menos sí, y se factura lo usado |
+| Líneas presupuestadas | Sin cambios: pueden usar más de lo reservado (decisión del usuario: queda como está) |
+| Cierre y factura | `awaiting_approval` está en `openStatuses()`: con extras sin respuesta la OT no se completa (`WORK_ORDER_HAS_UNRESOLVED_PARTS`), así que no se factura. Cierre, factura y `variance` no cambian |
+| Aviso | Interno `extra_part_awaiting_approval` a recepcionista y jefe-taller al agregar el extra. Sin email al cliente por ahora |
+| Datos existentes | La migración 000051 pasa los extras abiertos (`pending\|reserved`) a `awaiting_approval` y libera su reserva con SQL. Los extras ya consumidos, devueltos o cancelados quedan sin decisión registrada. El `down()` los devuelve a `pending` sin reserva |
+
+Errores nuevos (todos 422, `WorkOrderPartException`): `WORK_ORDER_PART_NOT_APPROVED` (reservar o consumir un extra
+sin respuesta), `WORK_ORDER_PART_APPROVED_NOT_EDITABLE`, `WORK_ORDER_PART_EXCEEDS_APPROVED`. Aprobar o rechazar algo
+que no está `awaiting_approval` (incluidas las líneas presupuestadas) da `WORK_ORDER_PART_INVALID_STATUS_TRANSITION`.
+
+Contrato: `WorkOrderPartResource` agrega `client_decision` (`value`, `label`, `decided_at`, `decided_by`,
+`channel` `{value, label}`, `contact`, `notes`), `null` si no hay decisión. Cambio visible: el alta de un extra devuelve
+`awaiting_approval` en vez de `reserved|pending`. El frontend debe mostrar las acciones de aprobar y rechazar.
+
+Tests: `tests/Feature/WorkOrderParts/ExtraPartApprovalTest` (flujo, errores, permisos por rol, aviso y la migración
+sobre datos previos). Después de actualizar: `php artisan migrate` y `php artisan db:seed --class=RolesAndPermissionsSeeder`.
 
 ---
 
@@ -3847,6 +3876,6 @@ comprobarlo desde aquí. Cada deuda nueva necesita una decisión antes de tocar 
 | 7 | ~~Seeders no idempotentes~~ **Resuelto el 2026-10-19** | `BrandSeeder` (`insert`), `VehicleModelSeeder`, `ClientsSeeder`, `VehiclesSeeder`, `ReceptionSeeder`, `DiagnosticItemSeeder`, `BudgetSeeder` y `BudgetItemSeeder` creaban sin verificar si el dato existía, y referenciaban marcas, clientes, vehículos, categorías y presupuestos por id fijo (`VehiclesSeeder` además combinaba marcas con modelos de otra marca, p. ej. Hyundai + Corolla Cross) | Ahora omiten lo existente por clave natural (nombre, documento, placa, código de categoría; recepción si el vehículo ya tiene, presupuesto si la recepción ya tiene, ítems si el presupuesto ya tiene) y resuelven las relaciones por esas claves. `BudgetSeeder` crea por `BudgetService::create()` (código y estado derivado de la recepción). `DatabaseSeederTest` corre todo dos veces y compara conteos |
 | 8 | ~~Tests que dependen de la red~~ **Resuelto el 2026-10-19** | `Store/UpdateUserRequest` y `Store/UpdateClientRequest` usan `email:rfc,dns`; los de usuario además `Password::uncompromised()` (simulado con `Http::fake` en los tests) | Los tests necesitaban resolver DNS (`gmail.com`). Ahora la consulta DNS depende de `config('validation.email_dns')` (`EMAIL_DNS_CHECK`, `true` por defecto); `phpunit.xml` la desactiva y los tests corren sin red. `ClientTest` verifica ambos modos con un dominio `.invalid` |
 | 10 | ~~Alta de mecánico con costo o comisión `null` → `500`~~ **Resuelto el 2026-10-21** | `StoreMechanicRequest` declaraba `hour_cost` y `commission_percentage` como `nullable`, pero las columnas son `NOT NULL DEFAULT 0` (migración `000001`). `POST /api/mechanics` con `"hour_cost": null` respondía `500 INTERNAL_SERVER_ERROR` | Decisión del usuario: rechazar con `422`. Alta y edición validan `sometimes\|required`: sin enviarlos quedan en `0`; vacíos → `422 VALIDATION_ERROR`. Test: `MechanicTest::test_cost_and_commission_cannot_be_null` |
-| 11 | **Pendiente (2026-10-22): repuestos extra sin aprobación del cliente** | `POST work-orders/{id}/parts` agrega repuestos fuera del presupuesto aprobado (`work_order_item_id` `null`, `is_budgeted` `false`, precio de venta del repuesto o el informado) con la OT `pending\|in_progress\|paused`. El cierre (6.9) y la factura (6.10) suman lo realmente usado, extras incluidos | El cliente paga más que el presupuesto que aprobó, sin registro de su conformidad ni aviso. La diferencia solo se ve en el cierre (`variance`, con `work-orders.view-economics`). Hoy se puede formalizar con un presupuesto complementario en la misma recepción y otra OT. Opciones a decidir con los clientes del taller: (1) mantener y mostrar en OT y factura lo no presupuestado y la diferencia; (2) prohibir extras y usar siempre el presupuesto complementario; (3) extras con aprobación registrada del cliente antes de consumir o facturar (diseño nuevo, con migración) |
+| 11 | ~~Repuestos extra sin aprobación del cliente~~ **Resuelto el 2026-10-23 (opción 3, ver 2.49)** | `POST work-orders/{id}/parts` agrega repuestos fuera del presupuesto aprobado (`work_order_item_id` `null`, `is_budgeted` `false`, precio de venta del repuesto o el informado) con la OT `pending\|in_progress\|paused`. El cierre (6.9) y la factura (6.10) suman lo realmente usado, extras incluidos | El cliente paga más que el presupuesto que aprobó, sin registro de su conformidad ni aviso. La diferencia solo se ve en el cierre (`variance`, con `work-orders.view-economics`). Hoy se puede formalizar con un presupuesto complementario en la misma recepción y otra OT. Opciones a decidir con los clientes del taller: (1) mantener y mostrar en OT y factura lo no presupuestado y la diferencia; (2) prohibir extras y usar siempre el presupuesto complementario; (3) extras con aprobación registrada del cliente antes de consumir o facturar (diseño nuevo, con migración). **Se eligió la 3:** el extra nace `awaiting_approval` y se registra la respuesta del cliente (medio, contacto, quién la cargó) antes de reservar, consumir o completar la OT |
 | 12 | ~~Requests ocasionales sin el `.env` (entorno local)~~ **Resuelto el 2026-10-22** | En la revisión visual de F9, un request concurrente del frontend falló y el navegador lo informó como CORS; `laravel.log`: `production.ERROR: Database connection [framework_base] not configured` (sin `APP_ENV` ni `DB_CONNECTION`: corrió sin las variables del `.env`). Reproducido: 13 de 300 requests concurrentes con 500 | Causa: Apache multihilo de Laragon (`mpm_winnt` + PHP como módulo ZTS), `putenv` no es seguro entre hilos. Laragon pasó a **Nginx** (puerto 80, `php-cgi` con procesos hijos, `client_max_body_size 2000M`): 900 de 900 requests concurrentes en 200, sin errores nuevos. Además `database.default` pasó de `framework_base` (resto del scaffold) a `mysql`. No usar `config:cache` en desarrollo: con la config cacheada `php artisan test` usaría MySQL y `RefreshDatabase` borraría la base |
 | 9 | ~~Rama remota antigua~~ **Resuelto el 2026-10-17** | `origin/feature/diagnostic-item-seeders-controllers-migrations-models` (commit `795d830519b28d1abc22ba7fee92da04e50af4a5`, 2026-08-12) sin mergear | Eliminada a pedido del usuario: sus archivos existían en `main` en versiones posteriores. Ese día también se eliminaron todas las ramas ya integradas en `main` (locales y remotas); su contenido sigue en el historial de `main` |

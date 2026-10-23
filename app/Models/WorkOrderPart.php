@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\ClientDecision;
+use App\Enums\ClientDecisionChannel;
 use App\Enums\WorkOrderPartStatus;
 use App\Support\Decimal;
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class WorkOrderPart extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'work_order_id',
         'work_order_item_id',
@@ -21,6 +26,12 @@ class WorkOrderPart extends Model
         'quantity_returned',
         'unit_cost',
         'unit_price',
+        'client_decision',
+        'decided_at',
+        'decided_by',
+        'decision_channel',
+        'decision_contact',
+        'decision_notes',
         'notes',
         'added_by',
         'consumed_by',
@@ -36,6 +47,9 @@ class WorkOrderPart extends Model
             'quantity_returned' => 'decimal:3',
             'unit_cost' => 'decimal:4',
             'unit_price' => 'decimal:2',
+            'client_decision' => ClientDecision::class,
+            'decided_at' => 'datetime',
+            'decision_channel' => ClientDecisionChannel::class,
             'consumed_at' => 'datetime',
         ];
     }
@@ -65,6 +79,11 @@ class WorkOrderPart extends Model
         return $this->belongsTo(User::class, 'added_by');
     }
 
+    public function decider(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'decided_by');
+    }
+
     public function consumer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'consumed_by');
@@ -73,6 +92,14 @@ class WorkOrderPart extends Model
     public function movements(): MorphMany
     {
         return $this->morphMany(InventoryMovement::class, 'reference');
+    }
+
+    /**
+     * Repuesto agregado en la OT, fuera del presupuesto aprobado.
+     */
+    public function isExtra(): bool
+    {
+        return $this->work_order_item_id === null;
     }
 
     /**

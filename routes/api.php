@@ -240,6 +240,10 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
     Route::patch('work-orders/{workOrder}/parts/{part}', [WorkOrderPartController::class, 'update'])->name('work-orders.parts.update');
 
+    Route::post('work-orders/{workOrder}/parts/{part}/approve', [WorkOrderPartController::class, 'approve'])->name('work-orders.parts.approve');
+
+    Route::post('work-orders/{workOrder}/parts/{part}/reject', [WorkOrderPartController::class, 'reject'])->name('work-orders.parts.reject');
+
     Route::post('work-orders/{workOrder}/parts/{part}/reserve', [WorkOrderPartController::class, 'reserve'])->name('work-orders.parts.reserve');
 
     Route::post('work-orders/{workOrder}/parts/{part}/consume', [WorkOrderPartController::class, 'consume'])->name('work-orders.parts.consume');
