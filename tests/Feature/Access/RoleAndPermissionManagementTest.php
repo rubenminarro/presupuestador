@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Access;
 
+use App\Models\Role;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 use Tests\Feature\Parts\PartsTestCase;
@@ -57,8 +58,31 @@ class RoleAndPermissionManagementTest extends PartsTestCase
 
         $this->actingAsAdmin();
 
+        // Con usuarios asignados no se elimina: quedarían sin permisos.
+        $this->deleteJson("/api/roles/{$role['id']}")->assertStatus(409)->assertJsonPath('error_code', 'ROLE_IN_USE');
+
+        $user->syncRoles(['mechanic']);
+
         $this->deleteJson("/api/roles/{$role['id']}")->assertOk();
         $this->getJson("/api/roles/{$role['id']}")->assertNotFound()->assertJsonPath('error_code', 'RESOURCE_NOT_FOUND');
+    }
+
+    public function test_administrator_role_cannot_be_deleted_or_renamed(): void
+    {
+        $admin = Role::where('name', Role::ADMINISTRATOR)->first();
+        $payload = ['name' => 'administrador', 'description' => 'Administra todo el sistema', 'guard_name' => 'api'];
+
+        $this->deleteJson("/api/roles/{$admin->id}")->assertStatus(422)->assertJsonPath('error_code', 'ROLE_PROTECTED');
+        $this->patchJson("/api/roles/{$admin->id}", [...$payload, 'name' => 'superusuario'])
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'ROLE_PROTECTED');
+        $this->patchJson("/api/roles/{$admin->id}", [...$payload, 'guard_name' => 'web'])
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'ROLE_PROTECTED');
+
+        // La descripción sí se puede cambiar.
+        $this->patchJson("/api/roles/{$admin->id}", $payload)->assertOk()->assertJsonPath('data.description', 'Administra todo el sistema');
+        $this->assertDatabaseHas('roles', ['id' => $admin->id, 'name' => 'administrador']);
     }
 
     public function test_role_validation(): void

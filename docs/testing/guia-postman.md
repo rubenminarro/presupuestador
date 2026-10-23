@@ -156,6 +156,16 @@ Esperado: `200`, `data` es una lista de `{ "module": "...", "list": [ { "id", "n
 
 `GET {{base_url}}/roles?per_page=20` (token admin) → `200` con 6 roles: `administrador`, `mechanic`, `recepcionista`, `jefe-taller`, `cajero`, `deposito` (cada uno con `description`).
 
+Protecciones (token admin):
+
+| Caso | Request | HTTP | error_code |
+|---|---|---|---|
+| Eliminar el rol administrador | `DELETE {{base_url}}/roles/{id de administrador}` | 422 | `ROLE_PROTECTED` |
+| Renombrar el rol administrador | `PATCH {{base_url}}/roles/{id de administrador}` con `{ "name": "superusuario", "description": "Administra todo el sistema", "guard_name": "api" }` | 422 | `ROLE_PROTECTED` |
+| Eliminar un rol con usuarios | `DELETE {{base_url}}/roles/{id de mechanic}` | 409 | `ROLE_IN_USE` |
+| Eliminarse a uno mismo | `DELETE {{base_url}}/users/{id del admin autenticado}` | 422 | `USER_SELF_ACTION` |
+| Cambiarse el propio rol | `PATCH {{base_url}}/users/{id del admin autenticado}` con `{ "role": "cajero" }` | 422 | `USER_SELF_ACTION` |
+
 Para probar un rol se crea un usuario con ese rol. Ejemplo con cajero:
 
 `POST {{base_url}}/users`

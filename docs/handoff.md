@@ -1310,6 +1310,15 @@ frontend adapta menús y botones sin duplicar el seeder. Al administrador se le 
 y `GET /mechanics/{mechanic}/commissions` sin `mechanic-commissions.view-all` solo admite el propio mecánico, así que
 el frontend (F10, comisiones) no tenía cómo conocer su `id`. Cambio aditivo; el login no cambia.
 
+**Protección de roles y usuarios (2026-10-23).** Antes de la pantalla de administración del frontend (F12) la API
+permitía eliminar el rol `administrador` o un rol con usuarios (que quedaban sin permisos), y que un administrador se
+eliminara o se quitara el rol a sí mismo y perdiera el acceso. Ahora: `ROLE_PROTECTED` (422) al eliminar, renombrar o
+cambiar el guard de `administrador` (el `Gate::before` lo reconoce por nombre); `ROLE_IN_USE` (409) al eliminar un
+rol con usuarios; `USER_SELF_ACTION` (422) al eliminarse o cambiarse el propio rol. Tests en `tests/Feature/Access`.
+En la misma rama: los mensajes de la regla `Password` (`mixed`, `numbers`, `symbols`, `letters`, `uncompromised`) salían
+en inglés porque la regla registra la falla como `password.<regla>` y Laravel busca `password.password.<regla>`; se
+corrigieron las claves en `StoreUserRequest` y `UpdateUserRequest`.
+
 El login inválido devuelve una respuesta API estandarizada.
 
 Ejemplo conceptual:

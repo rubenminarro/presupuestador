@@ -88,6 +88,18 @@ class RoleController extends Controller implements HasMiddleware
 
         $data = $request->validated();
 
+        // El Gate::before reconoce al administrador por el nombre del rol (y su guard): cambiarlos le quitaría todo.
+        if (
+            $role->name === Role::ADMINISTRATOR &&
+            ($data['name'] !== Role::ADMINISTRATOR || $data['guard_name'] !== $role->guard_name)
+        ) {
+            return $this->errorResponse(
+                'El rol administrador no se puede renombrar ni cambiar de guard.',
+                422,
+                'ROLE_PROTECTED'
+            );
+        }
+
         $role->update($data);
 
         if (array_key_exists('permissions', $data)) {
@@ -119,6 +131,23 @@ class RoleController extends Controller implements HasMiddleware
 
     public function destroy(Role $role)
     {
+        if ($role->name === Role::ADMINISTRATOR) {
+            return $this->errorResponse(
+                'El rol administrador no se puede eliminar.',
+                422,
+                'ROLE_PROTECTED'
+            );
+        }
+
+        // Los usuarios con el rol quedarían sin permisos: primero se les asigna otro.
+        if ($role->users()->exists()) {
+            return $this->errorResponse(
+                'El rol tiene usuarios asignados: asígneles otro rol antes de eliminarlo.',
+                409,
+                'ROLE_IN_USE'
+            );
+        }
+
         $role->delete();
         
         return $this->successResponse(

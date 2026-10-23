@@ -90,11 +90,11 @@ class UpdateUserRequest extends FormRequest
             'password' => [
                 'confirmed' => 'Las contraseñas no coinciden.',
                 'min' => 'La contraseña debe tener mínimo de 12 caracteres.',
-                'mixed' => 'La contraseña debe contener al menos una letra mayúscula y una letra minúscula.',
-                'numbers' => 'La contraseña debe contener al menos un número.',
-                'symbols' => 'La contraseña debe contener al menos un símbolo.',       
-                'letters' => 'La contraseña debe contener al menos una letra.',
-                'uncompromised' => 'La contraseña ha sido expuesta en una filtración de datos. Por favor, elige una contraseña diferente.',
+                'password.mixed' => 'La contraseña debe contener al menos una letra mayúscula y una letra minúscula.',
+                'password.numbers' => 'La contraseña debe contener al menos un número.',
+                'password.symbols' => 'La contraseña debe contener al menos un símbolo.',       
+                'password.letters' => 'La contraseña debe contener al menos una letra.',
+                'password.uncompromised' => 'La contraseña ha sido expuesta en una filtración de datos. Por favor, elige una contraseña diferente.',
             ],
             'password_confirmation' => [
                 'required_with' => 'Debes confirmar la contraseña si deseas cambiarla.',

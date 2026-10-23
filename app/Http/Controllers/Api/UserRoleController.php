@@ -126,6 +126,19 @@ class UserRoleController extends Controller implements HasMiddleware
     {
         $data = $request->validated();
 
+        // Cambiarse el propio rol puede dejar sin acceso a la administración: lo hace otro administrador.
+        if (
+            array_key_exists('role', $data) &&
+            $user->is($request->user()) &&
+            !$user->hasRole($data['role'])
+        ) {
+            return $this->errorResponse(
+                'No puede cambiar su propio rol.',
+                422,
+                'USER_SELF_ACTION'
+            );
+        }
+
         if ($request->filled('password')) {
             $data['password'] = bcrypt($request->password);
         } else {
@@ -154,9 +167,16 @@ class UserRoleController extends Controller implements HasMiddleware
         );
     }
 
-    public function destroy(User $user)
+    public function destroy(Request $request, User $user)
     {
-        
+        if ($user->is($request->user())) {
+            return $this->errorResponse(
+                'No puede eliminar su propio usuario.',
+                422,
+                'USER_SELF_ACTION'
+            );
+        }
+
         $suffix = '//deleted_' . now()->timestamp;
 
         if ($user->name) {

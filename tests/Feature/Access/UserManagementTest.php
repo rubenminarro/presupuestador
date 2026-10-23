@@ -90,6 +90,11 @@ class UserManagementTest extends PartsTestCase
         $this->postJson('/api/users', $this->payload(['password' => 'corta', 'password_confirmation' => 'corta']))
             ->assertJsonValidationErrors(['password']);
 
+        // Las reglas de Password (mayúsculas, números, símbolos) responden en español.
+        $this->postJson('/api/users', $this->payload(['password' => 'solominusculas', 'password_confirmation' => 'solominusculas']))
+            ->assertJsonFragment(['La contraseña debe contener al menos un número.'])
+            ->assertJsonFragment(['La contraseña debe contener al menos un símbolo.']);
+
         $this->postJson('/api/users', $this->payload(['password_confirmation' => 'Otra#Clave2026']))
             ->assertJsonValidationErrors(['password']);
 
@@ -101,6 +106,24 @@ class UserManagementTest extends PartsTestCase
 
         $this->postJson('/api/users', $this->payload(['name' => 'otro_usuario']))->assertJsonValidationErrors(['email']);
         $this->postJson('/api/users', $this->payload(['email' => 'otro@gmail.com']))->assertJsonValidationErrors(['name']);
+    }
+
+    public function test_user_cannot_delete_itself_or_change_its_own_role(): void
+    {
+        $admin = $this->actingAsAdmin();
+
+        $this->deleteJson("/api/users/{$admin->id}")->assertStatus(422)->assertJsonPath('error_code', 'USER_SELF_ACTION');
+        $this->patchJson("/api/users/{$admin->id}", ['role' => 'mechanic'])
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'USER_SELF_ACTION');
+
+        $this->assertNotSoftDeleted('users', ['id' => $admin->id]);
+        $this->assertTrue($admin->fresh()->hasRole('administrador'));
+
+        // Sus datos sí, y reenviar el mismo rol no es un cambio.
+        $this->patchJson("/api/users/{$admin->id}", ['first_name' => 'Ana', 'role' => 'administrador'])
+            ->assertOk()
+            ->assertJsonPath('data.first_name', 'Ana');
     }
 
     public function test_mechanic_cannot_manage_users(): void

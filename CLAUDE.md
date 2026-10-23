@@ -501,6 +501,16 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 * **Consulta:** `GET audit-logs` (filtros `auditable_type`, `auditable_id`, `user_id`, `event`, `date_from`,
   `date_to`) y `GET audit-logs/{id}`. Permisos `audit-logs.index|show`, solo para el administrador.
 
+### 6.20 Usuarios y roles
+
+* Un rol por usuario (`role`, por nombre). La baja de usuario es soft delete y libera `name` y `email` (sufijo).
+* Nadie puede eliminarse a sí mismo ni cambiarse el propio rol (`USER_SELF_ACTION`, 422); otro administrador sí.
+* El rol `administrador` (`Role::ADMINISTRATOR`, del que depende el `Gate::before`) no se elimina ni se renombra ni
+  cambia de guard (`ROLE_PROTECTED`, 422); su descripción y permisos sí se editan.
+* Un rol con usuarios no se elimina (`ROLE_IN_USE`, 409): primero se les asigna otro.
+* Los permisos los define `RolesAndPermissionsSeeder`; el ABM `permissions` existe, pero un permiso nuevo no habilita
+  nada por sí solo (el frontend solo los asigna a roles).
+
 ---
 
 ## 7. Deuda técnica conocida
