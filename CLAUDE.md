@@ -103,6 +103,9 @@ resultados esperados y casos de error).
   `phpunit.xml` fija `EMAIL_DNS_CHECK=false` (sin consulta DNS de emails) y `uncompromised()` se simula con `Http::fake`.
 * No editar archivos con `Get-Content`/`Set-Content` de PowerShell 5.1: corrompen UTF-8 y agregan BOM. Usar las
   herramientas de edición.
+* Errores ocasionales con `APP_ENV=production` o sin `DB_CONNECTION` en `laravel.log` (el frontend los ve como CORS):
+  un request corrió sin el `.env` (Apache multihilo de Laragon; `docs/handoff.md`, sección 14, #12). No usar
+  `config:cache` en desarrollo: los tests correrían contra MySQL.
 * No ejecutar `migrate:fresh`, `db:wipe` ni seeders de datos de ejemplo sobre la base de desarrollo sin pedido
   explícito (ver README, sección de base de datos).
 * Notificaciones: los emails salen por cola (`QUEUE_CONNECTION=database`) y los recordatorios por el scheduler; sin
@@ -493,5 +496,5 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 ## 7. Deuda técnica conocida
 
 `docs/handoff.md`, sección 14. Las deudas nuevas se registran ahí y no se corrigen sin decisión previa del usuario.
-Pendiente: **#11, repuestos extra en la OT sin aprobación del cliente** (se facturan aunque no estaban en el
+Pendientes: **#12, requests ocasionales sin el `.env` en el Apache local** (entorno; ver la sección 3). **#11, repuestos extra en la OT sin aprobación del cliente** (se facturan aunque no estaban en el
 presupuesto aprobado; decisión en espera de los clientes del taller, 2026-10-22).
