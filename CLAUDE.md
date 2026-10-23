@@ -18,7 +18,7 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 * **Backend/API:** Laravel 12.70, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
   proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24) y auditoría
-  (FASE 25). 222 rutas API, 327 tests en verde.
+  (FASE 25). 222 rutas API, 332 tests en verde.
 * **Nombre:** el proyecto se llamaba **Presupuestador**; desde el 2026-10-21 es **SyncTaller** (repos
   `synctaller-backend` y `synctaller-frontend`, base de datos y conexión `synctaller`).
 * **Frontend:** **no está en este repositorio**, sino en `../synctaller-frontend` (React 19 + TypeScript + Vite +
@@ -190,6 +190,12 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 
 * Al eliminar (soft delete) clientes, usuarios, marcas, modelos, vehículos y ítems de checklist se agrega
   `//deleted_<timestamp>` a sus campos únicos para liberarlos.
+* Datos maestros ya usados no se eliminan (decisión del 2026-10-22; los documentos viejos deben seguir mostrándolos
+  intactos), todos `409`: mecánico con OT, asignaciones o diagnósticos (`MECHANIC_IN_USE`: se pasa a inactivo); vehículo
+  con recepciones (`VEHICLE_IN_USE`: si cambió de dueño, se edita su cliente); ítem de checklist usado en recepciones
+  (`CHECKLIST_ITEM_IN_USE`: se desactiva con `is_active`, y los inactivos no entran en checklists nuevos); servicio en
+  presupuestos o en un plan de mantenimiento (`SERVICE_IN_USE`). Un servicio usado en presupuestos no cambia de nombre
+  (`SERVICE_NAME_NOT_EDITABLE`, 422); precio, horas, descripción y categoría sí.
 * Cliente: `document_number` único (letras, números, guiones), `email` único `email:rfc,dns` (el DNS se omite
   con `EMAIL_DNS_CHECK=false`, ver `config/validation.php`), teléfono `+?[1-9]\d{7,14}`.
 * Vehículo: `plate` obligatoria salvo `no_plate = true` (entonces `chassis` obligatorio); placa y chasis únicos;

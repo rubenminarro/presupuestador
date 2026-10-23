@@ -34,6 +34,10 @@ class StoreCheckListRequest extends FormRequest
                 'required',
                 'boolean',
             ],
+            'is_active' => [
+                'sometimes',
+                'boolean',
+            ],
         ];
     }
 
@@ -57,6 +61,7 @@ class StoreCheckListRequest extends FormRequest
             // "required" y Laravel devolvería un array como mensaje (error 500).
             'required.required' => 'El campo required es obligatorio.',
             'required.boolean' => 'El campo required debe ser un valor booleano.',
+            'is_active.boolean' => 'El campo activo debe ser verdadero o falso.',
         ];
     }
 }

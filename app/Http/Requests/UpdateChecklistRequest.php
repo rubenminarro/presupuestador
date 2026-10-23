@@ -37,6 +37,10 @@ class UpdateChecklistRequest extends FormRequest
                 'sometimes',
                 'boolean',
             ],
+            'is_active' => [
+                'sometimes',
+                'boolean',
+            ],
         ];
     }
 
@@ -56,6 +60,7 @@ class UpdateChecklistRequest extends FormRequest
             ],
             // Clave con punto: ver StoreCheckListRequest.
             'required.boolean' => 'El campo required debe ser un valor booleano.',
+            'is_active.boolean' => 'El campo activo debe ser verdadero o falso.',
         ];
     }
 }

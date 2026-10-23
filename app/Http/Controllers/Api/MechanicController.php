@@ -162,6 +162,19 @@ class MechanicController extends Controller implements HasMiddleware
 
     public function destroy(Mechanic $mechanic)
     {
+        // Con trabajo registrado (OT, asignaciones con horas o comisiones, diagnósticos) se desactiva, no se elimina.
+        if (
+            $mechanic->workOrders()->withTrashed()->exists() ||
+            $mechanic->workOrderItemAssignments()->exists() ||
+            $mechanic->diagnostics()->exists()
+        ) {
+            return $this->errorResponse(
+                'El mecánico ya tiene trabajos registrados: desactívelo en lugar de eliminarlo.',
+                409,
+                'MECHANIC_IN_USE'
+            );
+        }
+
         $mechanic->delete();
 
         return $this->successResponse(

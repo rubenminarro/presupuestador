@@ -10,7 +10,8 @@ class ReceptionChecklistService
 {
     public function generateChecklistItems(ReceptionCheckList $checkList, array $serviceCategoryIds): void
     {
-        $items = CheckListItem::whereHas(
+        // Solo los activos: un ítem desactivado deja de pedirse en las recepciones nuevas.
+        $items = CheckListItem::where('is_active', true)->whereHas(
             'serviceCategories',
             fn ($query) => $query->whereIn('service_categories.id', $serviceCategoryIds)
         )

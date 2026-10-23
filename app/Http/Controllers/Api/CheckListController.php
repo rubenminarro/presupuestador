@@ -34,10 +34,12 @@ class CheckListController extends Controller implements HasMiddleware
         
         $checklists = CheckListItem::when($request->filled('search'), function ($query) use ($request) {
             $search = $request->search;
-            $query->where('name', 'like', "%{$search}%")
+            // Agrupado: el OR no debe saltarse el filtro por estado.
+            $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")
                 ->orWhere('type', 'like', "%{$search}%")
-                ->orWhere('required', 'like', "%{$search}%");
+                ->orWhere('required', 'like', "%{$search}%"));
         })
+        ->when($request->has('is_active'), fn ($query) => $query->where('is_active', $request->boolean('is_active')))
         ->latest()
         ->paginate(
             $request->per_page ?? 10
@@ -95,7 +97,15 @@ class CheckListController extends Controller implements HasMiddleware
     
     public function destroy(CheckListItem $checklist)
     {
-        
+        // Usado en recepciones: el checklist viejo debe seguir mostrando su nombre (sin el sufijo de baja).
+        if ($checklist->receptionItems()->exists()) {
+            return $this->errorResponse(
+                'El ítem ya se usó en checklists de recepciones: desactívelo en lugar de eliminarlo.',
+                409,
+                'CHECKLIST_ITEM_IN_USE'
+            );
+        }
+
         $suffix = '//deleted_' . now()->timestamp;
 
         if ($checklist->name) {

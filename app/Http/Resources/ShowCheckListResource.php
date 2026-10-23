@@ -14,6 +14,7 @@ class ShowCheckListResource extends JsonResource
             'name' => $this->name,
             'type' => $this->type,
             'required' => $this->required,
+            'is_active' => $this->is_active,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

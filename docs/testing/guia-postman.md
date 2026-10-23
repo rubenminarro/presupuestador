@@ -1379,7 +1379,11 @@ Casos de error y borde (sobre `{{budget5_id}}` en `draft`):
 | Repuesto con horas estimadas | `{ "type": "part", "description": "Filtro", "quantity": 1, "unit_price": 1, "estimated_hours": 1 }` | 422 | `VALIDATION_ERROR` (`errors.estimated_hours`) |
 | Servicio con horas propias (válido) | `{ "type": "service", "service_id": {{service_id}}, "description": "Compleja", "quantity": 1, "estimated_hours": 2.25 }` | 201 | — (`estimated_hours` `"2.25"`) |
 | Servicio inactivo | crear y desactivar un servicio; `{ "type": "service", "service_id": <inactivo>, "description": "X", "quantity": 1 }` | 422 | `SERVICE_NOT_USABLE` |
-| Eliminar un servicio usado | `DELETE {{base_url}}/services/{{service_id}}` | 409 | `SERVICE_IN_USE` |
+| Eliminar un servicio usado | `DELETE {{base_url}}/services/{{service_id}}` | 409 | `SERVICE_IN_USE` (también si lo usa un plan de mantenimiento) |
+| Renombrar un servicio usado | `PATCH {{base_url}}/services/{{service_id}}` con `{ "name": "Otro" }` | 422 | `SERVICE_NAME_NOT_EDITABLE` (precio, horas, descripción y categoría sí se editan) |
+| Eliminar un mecánico con trabajos | `DELETE {{base_url}}/mechanics/{{mechanic_id}}` | 409 | `MECHANIC_IN_USE` (pasarlo a inactivo) |
+| Eliminar un vehículo con recepciones | `DELETE {{base_url}}/vehicles/{{vehicle_id}}` | 409 | `VEHICLE_IN_USE` |
+| Eliminar un ítem de checklist usado | `DELETE {{base_url}}/checklists/{id}` | 409 | `CHECKLIST_ITEM_IN_USE` (`PATCH` con `{ "is_active": false }` lo saca de los checklists nuevos; `GET checklists?is_active=0` lista los inactivos) |
 
 > Eliminar los ítems "Con descuento" y "Compleja" si se crearon, para mantener los valores esperados (`DELETE {{base_url}}/budgets/{{budget5_id}}/items/{id}`). Al cambiar un ítem a `"type": "labor"` con `PATCH`, el `service_id` vuelve a `null`.
 

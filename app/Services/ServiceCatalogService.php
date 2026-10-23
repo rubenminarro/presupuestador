@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\ServiceStatus;
 use App\Exceptions\ServiceException;
+use App\Models\MaintenancePlan;
 use App\Models\Service;
 use Illuminate\Support\Facades\DB;
 
@@ -30,6 +31,20 @@ class ServiceCatalogService
     {
         return DB::transaction(function () use ($service, $data) {
 
+            // El nombre se ve en los presupuestos que ya lo usan: usado, queda fijo. Precio, horas, descripción y
+            // categoría sí se editan (solo afectan los presupuestos nuevos).
+            if (
+                array_key_exists('name', $data) &&
+                $data['name'] !== $service->name &&
+                $service->budgetItems()->exists()
+            ) {
+                throw new ServiceException(
+                    'El servicio ya se usó en presupuestos: su nombre no puede cambiarse. Desactívelo y cree otro si hace falta.',
+                    422,
+                    'SERVICE_NAME_NOT_EDITABLE'
+                );
+            }
+
             $service->update($data);
 
             return $service->load('category');
@@ -53,6 +68,15 @@ class ServiceCatalogService
             if ($service->budgetItems()->exists()) {
                 throw new ServiceException(
                     'No se puede eliminar el servicio porque está en uso en presupuestos. Desactívelo en su lugar.',
+                    409,
+                    'SERVICE_IN_USE'
+                );
+            }
+
+            // Un plan de mantenimiento lo usa para registrar el mantenimiento al completar la OT.
+            if (MaintenancePlan::where('service_id', $service->id)->exists()) {
+                throw new ServiceException(
+                    'No se puede eliminar el servicio porque lo usa un plan de mantenimiento. Desactívelo en su lugar.',
                     409,
                     'SERVICE_IN_USE'
                 );

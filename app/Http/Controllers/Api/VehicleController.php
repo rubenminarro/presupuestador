@@ -187,6 +187,15 @@ class VehicleController extends Controller implements HasMiddleware
 
     public function destroy(Vehicle $vehicle)
     {
+        // Con recepciones, su chapa debe seguir intacta en recepciones, facturas, entregas e historial.
+        if ($vehicle->receptions()->withTrashed()->exists()) {
+            return $this->errorResponse(
+                'El vehículo ya tiene recepciones registradas y no puede eliminarse. Si cambió de dueño, edite su cliente.',
+                409,
+                'VEHICLE_IN_USE'
+            );
+        }
+
         $suffix = '//deleted_' . now()->timestamp;
 
         if ($vehicle->plate) {

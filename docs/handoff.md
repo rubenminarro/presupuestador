@@ -7,7 +7,7 @@
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
 FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes), FASE 25 (auditoría); 6 roles;
-327 tests en verde (2026-10-22)
+332 tests en verde (2026-10-22)
 **Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -1255,6 +1255,25 @@ Surge de la revisión de F9 sobre datos reales: la OT-000001 mostraba el respons
 historial porque su mecánico estaba eliminado (soft delete). `WorkOrder::mechanic()` y `Diagnostic::mechanic()` eran las
 únicas relaciones con `Mechanic` sin `withTrashed()` (asignaciones, comisiones y el servicio del plan ya lo tenían).
 Ahora lo incluyen. Test: `tests/Feature/WorkOrders/DeletedMechanicTest` (falla sin el cambio).
+
+---
+
+# 2.48 Datos maestros en uso (2026-10-22)
+
+Surgen de las pruebas del usuario; las reglas son decisión suya. Las bajas son lógicas y las claves foráneas no se
+disparaban: se podía eliminar lo ya usado y los documentos viejos lo mostraban deformado (`ABC123//deleted_…`) o sin
+nombre.
+
+- **Mecánico** con OT, asignaciones o diagnósticos: `MECHANIC_IN_USE` (409); se pasa a inactivo (estado existente).
+- **Vehículo** con recepciones: `VEHICLE_IN_USE` (409); si cambió de dueño se edita su cliente.
+- **Ítem de checklist** usado en recepciones: `CHECKLIST_ITEM_IN_USE` (409). Nueva columna `is_active` (migración
+  000050, `true` por defecto): editable, filtrable en `GET checklists?is_active=` y los inactivos no se agregan a los
+  checklists nuevos. El índice agrupa la búsqueda para que el `OR` no se saltee ese filtro.
+- **Servicio**: además de presupuestos, no se elimina si lo usa un plan de mantenimiento (`SERVICE_IN_USE`); usado en
+  presupuestos no cambia de nombre (`SERVICE_NAME_NOT_EDITABLE`, 422; el nombre se ve en los presupuestos viejos). En
+  los datos locales, los servicios 2 y 3 ya estaban eliminados con planes que los usan.
+
+Tests: `tests/Feature/MasterData/InUseDeletionTest`.
 
 ---
 
