@@ -32,9 +32,12 @@ class Diagnostic extends Model
         return $this->belongsTo(Reception::class);
     }
 
+    /**
+     * Con withTrashed: el diagnóstico conserva su mecánico aunque se elimine.
+     */
     public function mechanic(): BelongsTo
     {
-        return $this->belongsTo(Mechanic::class);
+        return $this->belongsTo(Mechanic::class)->withTrashed();
     }
 
     public function items(): HasMany

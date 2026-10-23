@@ -7,7 +7,7 @@
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
 FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes), FASE 25 (auditoría); 6 roles;
-326 tests en verde (2026-10-22)
+327 tests en verde (2026-10-22)
 **Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -1246,6 +1246,15 @@ Surgen de las pruebas del usuario en el frontend; las cuatro reglas son decisió
   datos de ejemplo salían desordenados).
 
 Tests: `ReceptionStatusTest`, `ReceptionTest`, `DiagnosticTest`, `BudgetLifecycleTest`.
+
+---
+
+# 2.47 Mecánicos eliminados en OT y diagnósticos (2026-10-22)
+
+Surge de la revisión de F9 sobre datos reales: la OT-000001 mostraba el responsable vacío en su detalle y en el
+historial porque su mecánico estaba eliminado (soft delete). `WorkOrder::mechanic()` y `Diagnostic::mechanic()` eran las
+únicas relaciones con `Mechanic` sin `withTrashed()` (asignaciones, comisiones y el servicio del plan ya lo tenían).
+Ahora lo incluyen. Test: `tests/Feature/WorkOrders/DeletedMechanicTest` (falla sin el cambio).
 
 ---
 
