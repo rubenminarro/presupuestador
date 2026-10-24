@@ -7,7 +7,7 @@
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
 FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes), FASE 25 (auditoría); 6 roles;
-364 tests en verde (2026-10-24)
+369 tests en verde (2026-10-24)
 **Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -1337,6 +1337,15 @@ una versión que se lea sobre fondo claro.
 | Nombre en los PDF | Con logo, `pdf/layout.blade.php` no muestra el nombre del taller (`legal_name`/`name`): el logo lo reemplaza. Actividad, dirección, teléfono, email y RUC siguen. Sin logo, el nombre como antes |
 
 Un logo subido antes de este cambio no tiene versión negra hasta que se vuelve a subir.
+
+**Favicon propio (2026-10-24, decisión del usuario).** El ícono de la pestaña dejó de ser el logo: un logo horizontal
+no se lee a 16–32 px y lo habitual es un archivo aparte (isotipo o inicial). Clave `favicon_path` en
+`system_settings`, `favicon_url` en `GET branding` y `POST|DELETE system-settings/favicon` (mismo permiso
+`system-settings.update`). Formatos habituales: PNG o ICO cuadrado de 16 a 1024 px, o SVG, hasta 512 KB; se guarda
+tal cual (no se pasa a negro: tiene que leerse en pestañas claras y oscuras). Un SVG con código ejecutable (scripts,
+`foreignObject`, `iframe`, `embed`, `object`, eventos `on…`, `javascript:`) se rechaza con 422, porque queda público en el
+disco y se ejecutaría al abrir su URL. Sin favicon, el frontend usa su ícono original. Tests:
+`tests/Feature/Settings/SystemFaviconTest` (5).
 
 ---
 

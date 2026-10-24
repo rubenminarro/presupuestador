@@ -18,6 +18,9 @@ class SystemSetting extends Model
     /** Versión negra del logo (fondos claros, PDF y emails), generada al subirlo. */
     public const LOGO_BLACK_PATH = 'logo_black_path';
 
+    /** Ícono de la pestaña del navegador, independiente del logo. */
+    public const FAVICON_PATH = 'favicon_path';
+
     protected $fillable = [
         'key',
         'value',

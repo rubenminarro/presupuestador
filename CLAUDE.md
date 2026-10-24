@@ -18,7 +18,7 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 * **Backend/API:** Laravel 12.70, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
   proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24) y auditoría
-  (FASE 25), más preferencias visuales por usuario y logo del sistema (6.21). 230 rutas API, 364 tests en verde.
+  (FASE 25), más preferencias visuales por usuario y logo del sistema (6.21). 232 rutas API, 369 tests en verde.
 * **Nombre:** el proyecto se llamaba **Presupuestador**; desde el 2026-10-21 es **SyncTaller** (repos
   `synctaller-backend` y `synctaller-frontend`, base de datos y conexión `synctaller`).
 * **Frontend:** **no está en este repositorio**, sino en `../synctaller-frontend` (React 19 + TypeScript + Vite +
@@ -549,6 +549,10 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
     cabecera no muestra el nombre del taller (el resto de sus datos y el RUC sí).
   * Emails: la cabecera HTML (`resources/views/vendor/mail/html/header.blade.php`) muestra `cid:logo@synctaller`;
     el mailable debe adjuntarlo con `BrandingService::embedLogo()` (hoy, `ClientNotificationMail`).
+* **Favicon** (clave `favicon_path`, independiente del logo): `GET branding` lo informa en `favicon_url`;
+  `POST|DELETE system-settings/favicon` con `system-settings.update`. PNG o ICO cuadrado (16 a 1024 px) o SVG, hasta
+  512 KB, guardado tal cual. Un SVG con `<script>`, `<foreignObject>`, `<iframe>`, `<embed>`, `<object>`, eventos `on…` o
+  `javascript:` se rechaza (`UploadSystemFaviconRequest`): el archivo queda público y se ejecutaría al abrir su URL.
 
 ---
 

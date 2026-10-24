@@ -69,7 +69,7 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 
 | Estado | Qué |
 |---|---|
-| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24), auditoría (FASE 25), preferencias y logo del sistema (2026-10-24) y los módulos base. 230 rutas API y 364 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
+| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24), auditoría (FASE 25), preferencias y logo del sistema (2026-10-24) y los módulos base. 232 rutas API y 369 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
 | Pendiente, sin diseño | Notificaciones por WhatsApp |
 
 ---
@@ -287,7 +287,7 @@ vendor/bin/phpunit
 composer test
 ```
 
-364 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
+369 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
 consulta DNS de los emails (`EMAIL_DNS_CHECK=false`).
 
 Usan una base SQLite en archivo, `database/testing.sqlite` (la crea `tests/bootstrap.php`; está en `.gitignore`):

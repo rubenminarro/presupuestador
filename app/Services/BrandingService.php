@@ -31,17 +31,63 @@ class BrandingService
      * logo_black_url es la versión para fondos claros; sin versión negra, el
      * mismo logo.
      *
-     * @return array{logo_url: string|null, logo_black_url: string|null}
+     * favicon_url es el ícono de la pestaña, independiente del logo.
+     *
+     * @return array{logo_url: string|null, logo_black_url: string|null, favicon_url: string|null}
      */
     public function publicData(): array
     {
         $logo = $this->path(SystemSetting::LOGO_PATH);
         $black = $logo ? ($this->path(SystemSetting::LOGO_BLACK_PATH) ?? $logo) : null;
+        $favicon = $this->path(SystemSetting::FAVICON_PATH);
 
         return [
             'logo_url' => $logo ? Storage::disk(self::DISK)->url($logo) : null,
             'logo_black_url' => $black ? Storage::disk(self::DISK)->url($black) : null,
+            'favicon_url' => $favicon ? Storage::disk(self::DISK)->url($favicon) : null,
         ];
+    }
+
+    /**
+     * Reemplaza el favicon. Se guarda tal cual (PNG, ICO o SVG ya validados);
+     * el nombre nuevo cambia la URL, así que la pestaña no muestra el anterior.
+     */
+    public function storeFavicon(UploadedFile $file): array
+    {
+        $previous = SystemSetting::get(SystemSetting::FAVICON_PATH);
+        $path = $this->put($file->getContent(), strtolower($file->getClientOriginalExtension()));
+
+        try {
+            DB::transaction(fn () => SystemSetting::updateOrCreate(['key' => SystemSetting::FAVICON_PATH], ['value' => $path]));
+        } catch (\Throwable $e) {
+            Storage::disk(self::DISK)->delete($path);
+
+            throw $e;
+        }
+
+        if ($previous) {
+            Storage::disk(self::DISK)->delete($previous);
+        }
+
+        return $this->publicData();
+    }
+
+    /**
+     * Quita el favicon: la pestaña vuelve al ícono original de la aplicación.
+     */
+    public function deleteFavicon(): array
+    {
+        $setting = SystemSetting::where('key', SystemSetting::FAVICON_PATH)->first();
+
+        if ($setting) {
+            $setting->delete();
+
+            if ($setting->value) {
+                Storage::disk(self::DISK)->delete($setting->value);
+            }
+        }
+
+        return $this->publicData();
     }
 
     /**
