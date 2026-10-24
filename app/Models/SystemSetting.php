@@ -15,6 +15,9 @@ class SystemSetting extends Model
 
     public const LOGO_PATH = 'logo_path';
 
+    /** Versión negra del logo (fondos claros, PDF y emails), generada al subirlo. */
+    public const LOGO_BLACK_PATH = 'logo_black_path';
+
     protected $fillable = [
         'key',
         'value',

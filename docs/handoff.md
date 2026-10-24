@@ -7,7 +7,7 @@
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
 FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes), FASE 25 (auditoría); 6 roles;
-361 tests en verde (2026-10-24)
+364 tests en verde (2026-10-24)
 **Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -1323,6 +1323,20 @@ carga un logo que aparece en el login, la barra de menú, el ícono de la pesta�
 
 Tests: `tests/Feature/Preferences/UserPreferenceTest` y `tests/Feature/Settings/SystemLogoTest` (14). Después de
 actualizar: `php artisan migrate` y `php artisan db:seed --class=RolesAndPermissionsSeeder`.
+
+**Logo negro y sin nombre (2026-10-24, decisiones del usuario).** El logo del taller es blanco sobre transparente y
+ya lleva el nombre: el frontend muestra solo el logo (sin el texto "SyncTaller"; sin logo, el nombre) y hace falta
+una versión que se lea sobre fondo claro.
+
+| Tema | Decisión |
+|---|---|
+| Versión negra | Se genera sola al subir un PNG con transparencia (`App\Support\LogoImage`, GD): cada píxel visible pasa a negro conservando su alfa. Clave nueva `logo_black_path` en `system_settings`. Un JPG o un PNG opaco se guarda tal cual y no tiene versión negra (la anterior se borra) |
+| Recorte | El mismo PNG se recorta a su contenido (márgenes transparentes fuera) y se limita a 1200 px de lado, antes de generar la negra. El logo real pasó de 677×369 a 476×137 (~0,2 s) |
+| Contrato | `GET branding` (y las respuestas de subir y quitar) agrega `logo_black_url`: la versión negra o, sin ella, la misma URL que `logo_url`; `null` sin logo |
+| Uso | PDF y emails usan la negra (fondo blanco). El frontend elige según el fondo: negra sobre fondo claro (login en modo claro, navegación "como la página" en claro), la subida sobre fondo oscuro |
+| Nombre en los PDF | Con logo, `pdf/layout.blade.php` no muestra el nombre del taller (`legal_name`/`name`): el logo lo reemplaza. Actividad, dirección, teléfono, email y RUC siguen. Sin logo, el nombre como antes |
+
+Un logo subido antes de este cambio no tiene versión negra hasta que se vuelve a subir.
 
 ---
 

@@ -63,13 +63,13 @@ Versiones verificadas en `composer.lock` y en el entorno local (2026-10-17; reve
 | Auditoría | Quién cambió qué y cuándo (antes/después, IP) en precios, costos, facturación, pagos, compras, usuarios, roles, permisos y datos maestros; login, login fallido y logout. Inmutable, solo para el administrador |
 | Exportación y comprobantes | Reportes en CSV (Excel) y PDF; PDF de presupuesto, factura (representación sin valor fiscal), recibo y comprobante de entrega |
 | Notificaciones | Emails al cliente (presupuesto enviado, vehículo listo, factura por vencer / vencida, mantenimiento próximo / vencido) con registro, reenvío y baja por cliente; bandeja interna por usuario (presupuesto aprobado/rechazado, OT completada, repuesto sin stock, cuentas por pagar vencidas) |
-| Preferencias y logo | Preferencias visuales de cada usuario para el frontend (tema, colores, tipografía, distribución y navegación); logo del sistema (solo administrador) en los PDF y los emails a clientes |
+| Preferencias y logo | Preferencias visuales de cada usuario para el frontend (tema, colores, tipografía, distribución y navegación); logo del sistema (solo administrador; con un PNG transparente se recorta y se genera una versión negra) en los PDF y los emails a clientes |
 
 ### Estado real (verificado el 2026-10-20)
 
 | Estado | Qué |
 |---|---|
-| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24), auditoría (FASE 25), preferencias y logo del sistema (2026-10-24) y los módulos base. 230 rutas API y 361 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
+| Implementado y probado | Todos los módulos de la tabla anterior: el roadmap original (FASES 10–20), compras (FASE 21), pagos a proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24), auditoría (FASE 25), preferencias y logo del sistema (2026-10-24) y los módulos base. 230 rutas API y 364 tests automatizados en verde; cada módulo tiene sus tests en `tests/Feature` |
 | Pendiente, sin diseño | Notificaciones por WhatsApp |
 
 ---
@@ -287,7 +287,7 @@ vendor/bin/phpunit
 composer test
 ```
 
-361 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
+364 tests en `tests/Feature`, uno o más archivos por módulo. No necesitan internet: `phpunit.xml` desactiva la
 consulta DNS de los emails (`EMAIL_DNS_CHECK=false`).
 
 Usan una base SQLite en archivo, `database/testing.sqlite` (la crea `tests/bootstrap.php`; está en `.gitignore`):
