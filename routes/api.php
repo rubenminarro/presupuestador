@@ -47,8 +47,13 @@ use App\Http\Controllers\Api\SupplierPaymentController;
 use App\Http\Controllers\Api\ClientNotificationController;
 use App\Http\Controllers\Api\UserNotificationController;
 use App\Http\Controllers\Api\AuditLogController;
+use App\Http\Controllers\Api\UserPreferenceController;
+use App\Http\Controllers\Api\SystemSettingController;
 
 Route::post('/login', [AuthController::class, 'login']);
+
+// Logo del sistema (público: el login lo muestra antes de autenticar).
+Route::get('/branding', [SystemSettingController::class, 'branding'])->name('branding.show');
 
 Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
@@ -343,5 +348,16 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
     Route::post('me/notifications/read-all', [UserNotificationController::class, 'markAllAsRead'])->name('me.notifications.read-all');
 
     Route::patch('me/notifications/{notification}/read', [UserNotificationController::class, 'markAsRead'])->name('me.notifications.read');
+
+    // Preferencias visuales del usuario autenticado (sin permisos: solo las suyas).
+    Route::get('me/preferences', [UserPreferenceController::class, 'show'])->name('me.preferences.show');
+
+    Route::patch('me/preferences', [UserPreferenceController::class, 'update'])->name('me.preferences.update');
+
+    Route::delete('me/preferences', [UserPreferenceController::class, 'destroy'])->name('me.preferences.destroy');
+
+    Route::post('system-settings/logo', [SystemSettingController::class, 'uploadLogo'])->name('system-settings.logo.update');
+
+    Route::delete('system-settings/logo', [SystemSettingController::class, 'deleteLogo'])->name('system-settings.logo.destroy');
 
 });

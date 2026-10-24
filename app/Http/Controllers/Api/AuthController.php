@@ -6,6 +6,7 @@ use App\Enums\AuditEvent;
 use App\Http\Controllers\Controller;
 use App\Models\Permission;
 use App\Services\AuditLogger;
+use App\Services\UserPreferenceService;
 use Illuminate\Http\Request;
 use App\Http\Requests\LoginRequest;
 use Illuminate\Support\Facades\Auth;
@@ -49,7 +50,7 @@ class AuthController extends Controller
         );
     }
 
-    public function me(Request $request)
+    public function me(Request $request, UserPreferenceService $userPreferenceService)
     {
         $user = $request->user();
 
@@ -71,6 +72,8 @@ class AuthController extends Controller
                     'employee_code' => $mechanic->employee_code,
                     'full_name'     => $mechanic->fullName(),
                 ] : null,
+                // Preferencias visuales completas: el frontend las aplica al hidratar la sesión.
+                'preferences' => $userPreferenceService->get($user),
             ]
         );
     }

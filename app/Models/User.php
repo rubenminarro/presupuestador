@@ -35,6 +35,11 @@ class User extends Authenticatable
         return $this->hasOne(Mechanic::class);
     }
 
+    public function preference(): HasOne
+    {
+        return $this->hasOne(UserPreference::class);
+    }
+
     public function createdWorkOrders(): HasMany
     {
         return $this->hasMany(WorkOrder::class, 'created_by');
