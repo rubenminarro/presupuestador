@@ -360,4 +360,8 @@ Route::middleware('auth:sanctum')->scopeBindings()->group(function () {
 
     Route::delete('system-settings/logo', [SystemSettingController::class, 'deleteLogo'])->name('system-settings.logo.destroy');
 
+    Route::post('system-settings/favicon', [SystemSettingController::class, 'uploadFavicon'])->name('system-settings.favicon.update');
+
+    Route::delete('system-settings/favicon', [SystemSettingController::class, 'deleteFavicon'])->name('system-settings.favicon.destroy');
+
 });

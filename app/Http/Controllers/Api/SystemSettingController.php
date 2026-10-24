@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UploadSystemFaviconRequest;
 use App\Http\Requests\UploadSystemLogoRequest;
 use App\Services\BrandingService;
 use App\Traits\ApiResponse;
@@ -25,7 +26,7 @@ class SystemSettingController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:system-settings.update', only: ['uploadLogo', 'deleteLogo']),
+            new Middleware('permission:system-settings.update', only: ['uploadLogo', 'deleteLogo', 'uploadFavicon', 'deleteFavicon']),
         ];
     }
 
@@ -52,6 +53,24 @@ class SystemSettingController extends Controller implements HasMiddleware
         return $this->successResponse(
             'Logo eliminado correctamente.',
             $this->brandingService->deleteLogo(),
+            200
+        );
+    }
+
+    public function uploadFavicon(UploadSystemFaviconRequest $request)
+    {
+        return $this->successResponse(
+            'Favicon actualizado correctamente.',
+            $this->brandingService->storeFavicon($request->file('favicon')),
+            200
+        );
+    }
+
+    public function deleteFavicon()
+    {
+        return $this->successResponse(
+            'Favicon eliminado correctamente.',
+            $this->brandingService->deleteFavicon(),
             200
         );
     }

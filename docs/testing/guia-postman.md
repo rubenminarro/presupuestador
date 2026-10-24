@@ -2886,6 +2886,20 @@ Valores: `theme` `auto|light|dark`; `theme_primary` `blue|azure|indigo|purple|pi
 | Quitar | `DELETE {{base_url}}/system-settings/logo` | — | 200 | `data.logo_url` `null` (repetirlo también da 200) |
 | Otro rol | `POST`/`DELETE {{base_url}}/system-settings/logo` con `{{token_caja}}` | — | 403 | `FORBIDDEN` |
 
+### Favicon
+
+| Caso | Método / Endpoint | Body | HTTP | Resultado / error_code |
+|---|---|---|---|---|
+| Leer (sin token) | `GET {{base_url}}/branding` | — | 200 | `data.favicon_url`: URL pública o `null` |
+| Subir o reemplazar | `POST {{base_url}}/system-settings/favicon` (token administrador) | form-data `favicon` (PNG o ICO cuadrado, o SVG) | 200 | `data.favicon_url` nuevo; el archivo anterior se borra; el logo no cambia |
+| Formato inválido | `POST {{base_url}}/system-settings/favicon` | `favicon` GIF o JPG | 422 | `VALIDATION_ERROR`: "El favicon debe ser una imagen PNG, ICO o SVG." |
+| No cuadrado | `POST {{base_url}}/system-settings/favicon` | `favicon` PNG de 64×32 | 422 | "El favicon debe ser cuadrado (la imagen mide 64×32 px)." |
+| Muy chico o grande | `POST {{base_url}}/system-settings/favicon` | `favicon` PNG de 8×8 | 422 | "El favicon debe medir entre 16 y 1024 px de lado." |
+| Más de 512 KB | `POST {{base_url}}/system-settings/favicon` | `favicon` de 600 KB | 422 | "El favicon no debe superar los 512 KB." |
+| SVG con código | `POST {{base_url}}/system-settings/favicon` | SVG con `<script>`, `onload=` o `javascript:` | 422 | "El SVG no puede contener scripts, eventos ni enlaces javascript." |
+| Quitar | `DELETE {{base_url}}/system-settings/favicon` | — | 200 | `data.favicon_url` `null` (repetirlo también da 200) |
+| Otro rol | `POST`/`DELETE {{base_url}}/system-settings/favicon` con `{{token_caja}}` | — | 403 | `FORBIDDEN` |
+
 Con un logo cargado, los PDF (`budgets/{id}/pdf`, `invoices/{id}/pdf`, `payments/{id}/receipt`,
 `vehicle-deliveries/{id}/pdf` y los reportes con `?format=pdf`) muestran la versión negra en lugar del nombre del taller (los demás datos y el RUC siguen), y los
 emails a clientes en la cabecera (con `MAIL_MAILER=log`, el HTML del log trae `cid:logo@synctaller` y la parte inline).
