@@ -2,10 +2,12 @@
 
 namespace App\Mail;
 
+use App\Services\BrandingService;
 use Illuminate\Mail\Attachment;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Symfony\Component\Mime\Email;
 
 /**
  * Email de un aviso al cliente. El contenido lo arma
@@ -25,6 +27,8 @@ class ClientNotificationMail extends Mailable
     {
         return new Envelope(
             subject: $this->content['subject'],
+            // Logo del sistema para la cabecera (inline, no como adjunto).
+            using: [fn (Email $message) => app(BrandingService::class)->embedLogo($message)],
         );
     }
 

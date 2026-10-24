@@ -2852,6 +2852,46 @@ Solo administrador: con `{{token_caja}}`, `{{token_mec}}` o cualquier otro rol d
 
 ---
 
+## Preferencias visuales y logo del sistema (2026-10-24)
+
+### Preferencias del usuario
+
+Cualquier token: cada usuario lee y cambia solo las suyas (sin permiso específico).
+
+| Caso | Método / Endpoint | Body | HTTP | Resultado / error_code |
+|---|---|---|---|---|
+| Leer | `GET {{base_url}}/me/preferences` | — | 200 | Las 11 claves; sin cambios, los predeterminados (`theme` `auto`, `theme_primary` `blue`, `navbar_position` `vertical`, `navbar_theme` `dark`, …) |
+| En la sesión | `GET {{base_url}}/me` | — | 200 | `data.preferences` con el mismo contenido |
+| Cambio parcial | `PATCH {{base_url}}/me/preferences` | `{ "theme": "dark", "theme_primary": "green", "theme_radius": 0.5 }` | 200 | El juego completo; las demás claves no cambian (`theme_radius` vuelve como `"0.5"`) |
+| Valor inválido | `PATCH {{base_url}}/me/preferences` | `{ "theme": "sepia" }` | 422 | `VALIDATION_ERROR`, `errors.theme`: "El modo de color debe ser auto, light, dark." |
+| Clave inexistente | `PATCH {{base_url}}/me/preferences` | `{ "currency": "USD" }` | 422 | `VALIDATION_ERROR`, `errors.currency` |
+| Body vacío | `PATCH {{base_url}}/me/preferences` | `{}` | 422 | `VALIDATION_ERROR`, `errors.preferences` |
+| Restaurar | `DELETE {{base_url}}/me/preferences` | — | 200 | Los predeterminados |
+| Sin token | `GET {{base_url}}/me/preferences` | — | 401 | `UNAUTHENTICATED` |
+
+Valores: `theme` `auto|light|dark`; `theme_primary` `blue|azure|indigo|purple|pink|red|orange|yellow|lime|green|teal|cyan|inverted`;
+`theme_base` `neutral|slate|gray|zinc|stone|mist`; `theme_font` `sans-serif|serif|monospace|comic`; `theme_radius`
+`0|0.5|1|1.5|2`; `layout` `default|fluid|boxed`; `navbar_position` `vertical|horizontal|combined`; `navbar_style`
+`default|floating`; `navbar_theme` `dark|default|primary`; `navbar` `default|sticky`; `sidebar` `default|folded|folded-hover`.
+
+### Logo del sistema
+
+| Caso | Método / Endpoint | Body | HTTP | Resultado / error_code |
+|---|---|---|---|---|
+| Leer (sin token) | `GET {{base_url}}/branding` | — | 200 | `data.logo_url`: URL pública o `null` |
+| Subir o reemplazar | `POST {{base_url}}/system-settings/logo` (token administrador) | form-data `logo` (archivo PNG o JPG) | 200 | `data.logo_url` nuevo; el archivo anterior se borra |
+| Formato inválido | `POST {{base_url}}/system-settings/logo` | `logo` GIF o WebP | 422 | `VALIDATION_ERROR`: "El logo debe ser una imagen PNG o JPG." |
+| Más de 2 MB | `POST {{base_url}}/system-settings/logo` | `logo` de 3 MB | 422 | `VALIDATION_ERROR`: "El logo no debe superar los 2 MB." |
+| Quitar | `DELETE {{base_url}}/system-settings/logo` | — | 200 | `data.logo_url` `null` (repetirlo también da 200) |
+| Otro rol | `POST`/`DELETE {{base_url}}/system-settings/logo` con `{{token_caja}}` | — | 403 | `FORBIDDEN` |
+
+Con un logo cargado, los PDF (`budgets/{id}/pdf`, `invoices/{id}/pdf`, `payments/{id}/receipt`,
+`vehicle-deliveries/{id}/pdf` y los reportes con `?format=pdf`) lo muestran arriba de los datos del taller, y los
+emails a clientes en la cabecera (con `MAIL_MAILER=log`, el HTML del log trae `cid:logo@synctaller` y la parte inline).
+El cambio queda en `GET audit-logs?auditable_type=system_setting`.
+
+---
+
 ## Errores HTTP genéricos
 
 | Caso | Método / Endpoint | Body | HTTP | error_code |

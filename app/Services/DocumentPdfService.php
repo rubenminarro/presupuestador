@@ -26,6 +26,11 @@ use Illuminate\Support\Facades\Storage;
  */
 class DocumentPdfService
 {
+    public function __construct(
+        private readonly BrandingService $brandingService
+    ) {
+    }
+
     /**
      * @return array{filename: string, content: string}
      */
@@ -152,6 +157,7 @@ class DocumentPdfService
     {
         $content = Pdf::loadView($view, [
             'company' => config('company'),
+            'logo' => $this->brandingService->logoDataUri(),
             'generatedAt' => now(),
             'watermark' => null,
             ...$data,

@@ -7,7 +7,7 @@
 **Estado:** Backend/API funcional — roadmap original completo (FASES 10 a 20: repuestos, inventario, servicios,
 cierre económico, facturación, pagos, entrega, historial, mantenimiento preventivo, reportes), FASE 21 (compras) y
 FASE 22 (pagos a proveedores), FASE 23 (notificaciones), FASE 24 (exportación y comprobantes), FASE 25 (auditoría); 6 roles;
-347 tests en verde (2026-10-23)
+361 tests en verde (2026-10-24)
 **Stack principal:** Laravel 12.70 + MySQL (8.4 en Laragon). Frontend previsto en React 19: **no está en este
 repositorio** (ver 1.2)
 **Entorno local:** Laragon / Windows
@@ -1303,6 +1303,26 @@ Contrato: `WorkOrderPartResource` agrega `client_decision` (`value`, `label`, `d
 
 Tests: `tests/Feature/WorkOrderParts/ExtraPartApprovalTest` (flujo, errores, permisos por rol, aviso y la migración
 sobre datos previos). Después de actualizar: `php artisan migrate` y `php artisan db:seed --class=RolesAndPermissionsSeeder`.
+
+---
+
+# 2.50 Preferencias visuales del usuario y logo del sistema (2026-10-24)
+
+Pedido del frontend: cada usuario personaliza la apariencia (los ajustes de tema de Tabler 1.7) y el administrador
+carga un logo que aparece en el login, la barra de menú, el ícono de la pestaña, los PDF y los emails a clientes.
+
+| Tema | Decisión |
+|---|---|
+| Preferencias: datos | Tabla `user_preferences` (migración 000052): una fila por usuario, `settings` JSON con solo los valores distintos del predeterminado. No es `Auditable`: es personalización de la interfaz y no tocar `users` evita que cada cambio de color quede en la auditoría |
+| Preferencias: catálogo | `App\Support\UserPreferences` (`OPTIONS` y `DEFAULTS`): `theme`, `theme_primary`, `theme_base`, `theme_font`, `theme_radius`, `layout`, `navbar_position`, `navbar_style`, `navbar_theme`, `navbar`, `sidebar`. Los predeterminados reproducen el aspecto original (barra lateral oscura y expandida, azul, tema automático). Un valor guardado que salga del catálogo vuelve al predeterminado al leerlo |
+| Preferencias: API | `GET\|PATCH\|DELETE me/preferences` sin permiso (cada usuario, las suyas). `PATCH` es parcial: al menos una clave, solo claves del catálogo (una desconocida da 422 en esa clave). `DELETE` restaura los predeterminados. `GET /me` agrega `data.preferences` completo. El `PATCH` bloquea la fila (`lockForUpdate`): dos cambios simultáneos de claves distintas (dos clics rápidos) se combinan en lugar de pisarse |
+| Logo: datos | Tabla `system_settings` (clave/valor, migración 000053), modelo `SystemSetting` con `Auditable` (el cambio de logo queda en la auditoría). Clave `logo_path`; el archivo va al disco `public`, carpeta `branding`, con nombre nuevo en cada subida (la URL cambia y no queda en caché). El anterior se borra |
+| Logo: API | `GET branding` público (el login lo necesita antes de autenticar): `logo_url` o `null`. `POST system-settings/logo` (multipart `logo`: PNG o JPG hasta 2 MB, los formatos que dompdf dibuja bien) y `DELETE system-settings/logo` (idempotente), con el permiso nuevo `system-settings.update`, solo del administrador |
+| Logo en PDF | `DocumentPdfService::render()` pasa `logo` (data URI, `BrandingService::logoDataUri()`) a todas las vistas; `pdf/layout.blade.php` lo dibuja arriba de los datos del taller (48 px de alto). Cubre presupuesto, factura, recibo, entrega y reportes |
+| Logo en emails | Cabecera HTML propia en `resources/views/vendor/mail/html/header.blade.php`: con logo muestra `cid:logo@synctaller`; `ClientNotificationMail` adjunta la imagen inline (`BrandingService::embedLogo()` en `Envelope(using: …)`). Un mailable markdown nuevo debe adjuntarla igual o la cabecera mostrará la imagen rota. La versión en texto plano no cambia |
+
+Tests: `tests/Feature/Preferences/UserPreferenceTest` y `tests/Feature/Settings/SystemLogoTest` (14). Después de
+actualizar: `php artisan migrate` y `php artisan db:seed --class=RolesAndPermissionsSeeder`.
 
 ---
 
@@ -3793,6 +3813,7 @@ para que el sistema pueda crecer posteriormente hacia compras, facturación y re
 [✓] Notificaciones por email y bandeja interna (FASE 23)
 [✓] Exportación de reportes (CSV/PDF) y comprobantes imprimibles (FASE 24)
 [✓] Auditoría avanzada de precios, facturación, seguridad y datos maestros (FASE 25)
+[✓] Preferencias visuales por usuario y logo del sistema (2.50)
 ```
 
 ## Próximo

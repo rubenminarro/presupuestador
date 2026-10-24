@@ -18,7 +18,7 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 * **Backend/API:** Laravel 12.70, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
   proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24) y auditoría
-  (FASE 25). 224 rutas API, 347 tests en verde.
+  (FASE 25), más preferencias visuales por usuario y logo del sistema (6.21). 230 rutas API, 361 tests en verde.
 * **Nombre:** el proyecto se llamaba **Presupuestador**; desde el 2026-10-21 es **SyncTaller** (repos
   `synctaller-backend` y `synctaller-frontend`, base de datos y conexión `synctaller`).
 * **Frontend:** **no está en este repositorio**, sino en `../synctaller-frontend` (React 19 + TypeScript + Vite +
@@ -123,9 +123,9 @@ Controller (HasMiddleware) → Form Request → Service → Model/Eloquent → A
 
 | Carpeta | Contenido |
 |---|---|
-| `app/Http/Controllers/Api` | 46 controllers |
+| `app/Http/Controllers/Api` | 48 controllers |
 | `app/Http/Requests` | Validación (mensajes en español) |
-| `app/Services` | Reglas de negocio (28 services, incluido `AuditLogger`) |
+| `app/Services` | Reglas de negocio (31 services, incluido `AuditLogger`) |
 | `app/Jobs`, `app/Mail`, `app/Notifications`, `app/Console/Commands` | Envío de avisos (FASE 23) |
 | `app/Models` | Modelos Eloquent (muchos con `SoftDeletes`) |
 | `app/Http/Resources` | Contrato JSON |
@@ -162,8 +162,9 @@ Sanctum con tokens Bearer: `POST /api/login` (público) devuelve `data.token`; t
 `auth:sanctum`. `POST /api/logout` revoca el token actual. Los tokens no expiran (`sanctum.expiration = null`).
 `GET /api/me` (sin permiso específico) devuelve `data.user` (`UserResource`, como el login) y `data.permissions` (nombres
 de los permisos, ordenados; el administrador recibe todos los del guard `api` por el `Gate::before`), más
-`data.mechanic` (`id`, `employee_code`, `full_name` de la ficha de mecánico vinculada, o `null`). Lo usa el
-frontend para hidratar la sesión y adaptar menús y botones.
+`data.mechanic` (`id`, `employee_code`, `full_name` de la ficha de mecánico vinculada, o `null`) y `data.preferences`
+(preferencias visuales completas, 6.21). Lo usa el frontend para hidratar la sesión y adaptar menús y botones.
+`GET /api/branding` (logo del sistema) es público, como el login.
 
 ---
 
@@ -171,7 +172,7 @@ frontend para hidratar la sesión y adaptar menús y botones.
 
 | Rol | Función | Accesos clave |
 |---|---|---|
-| `administrador` | Todo (`Gate::before`) | Exclusivo: usuarios/roles/permisos, auditoría (`audit-logs.*`), costos y margen (`work-orders.view-economics`), liquidar comisiones, anular entregas, timbrados, ABM de planes de mantenimiento, reporte de rentabilidad |
+| `administrador` | Todo (`Gate::before`) | Exclusivo: usuarios/roles/permisos, auditoría (`audit-logs.*`), logo del sistema (`system-settings.update`), costos y margen (`work-orders.view-economics`), liquidar comisiones, anular entregas, timbrados, ABM de planes de mantenimiento, reporte de rentabilidad |
 | `mechanic` | Ejecuta la OT | Diagnóstico, iniciar/pausar/completar OT e ítems, consumir/devolver repuestos, sus horas y comisiones, historial, estado de mantenimiento, dashboard (bloque taller) |
 | `recepcionista` | Atiende al cliente | Clientes, vehículos, recepciones, checklist, presupuestos completos, registrar entregas, alertas de mantenimiento, reporte de presupuestos, avisos a clientes (consultar y reenviar), ver repuestos de la OT y registrar la respuesta del cliente a los extras |
 | `jefe-taller` | Organiza el trabajo | OT completas, ítems, repuestos en OT (incluida la respuesta del cliente a los extras), asignación y horas de todos, diagnóstico, intervalos de mantenimiento por vehículo, reporte de productividad, consulta de compras, pagos a proveedores y cuentas por pagar |
@@ -179,7 +180,8 @@ frontend para hidratar la sesión y adaptar menús y botones.
 | `deposito` | Stock | Repuestos, proveedores, inventario, compras completas, repuestos en OT, reporte de inventario, consulta de pagos a proveedores y cuentas por pagar |
 
 El rol del mecánico se llama `mechanic` (no `mecanico`). Ningún usuario del seeder tiene los cuatro últimos roles.
-La bandeja interna (`me/notifications`) no usa permisos: cada usuario ve solo sus avisos.
+La bandeja interna (`me/notifications`) y las preferencias (`me/preferences`) no usan permisos: cada usuario ve solo
+lo suyo.
 
 ---
 
@@ -526,6 +528,22 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
 * Un rol con usuarios no se elimina (`ROLE_IN_USE`, 409): primero se les asigna otro.
 * Los permisos los define `RolesAndPermissionsSeeder`; el ABM `permissions` existe, pero un permiso nuevo no habilita
   nada por sí solo (el frontend solo los asigna a roles).
+
+### 6.21 Preferencias visuales y logo del sistema
+
+* **Preferencias del usuario** (`user_preferences`, `UserPreferenceService`): ajustes de tema del frontend (Tabler 1.7).
+  El catálogo de claves, valores y predeterminados está en `App\Support\UserPreferences`; agregar una opción es
+  agregarla ahí (y en el frontend).
+  * `GET|PATCH|DELETE me/preferences`, sin permiso: cada usuario, las suyas. `PATCH` parcial con al menos una clave;
+    una clave o un valor fuera del catálogo da `422 VALIDATION_ERROR`. `DELETE` restaura los predeterminados.
+  * Se guardan solo los valores distintos del predeterminado; la lectura (y `GET /me`) devuelve el juego completo.
+  * No se auditan: no son datos de negocio ni de seguridad.
+* **Logo del sistema** (`system_settings`, clave `logo_path`, modelo `SystemSetting` auditado; `BrandingService`):
+  * `GET branding` público; `POST|DELETE system-settings/logo` con `system-settings.update` (solo administrador).
+    PNG o JPG hasta 2 MB, en el disco `public` (`branding/`); cada subida cambia la URL y borra el archivo anterior.
+  * PDF: `DocumentPdfService::render()` pasa `logo` (data URI) a todas las vistas.
+  * Emails: la cabecera HTML (`resources/views/vendor/mail/html/header.blade.php`) muestra `cid:logo@synctaller`;
+    el mailable debe adjuntarlo con `BrandingService::embedLogo()` (hoy, `ClientNotificationMail`).
 
 ---
 

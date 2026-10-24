@@ -11,6 +11,7 @@
         table { width: 100%; border-collapse: collapse; }
         .header td { vertical-align: top; }
         .company-name { font-size: 14px; font-weight: bold; }
+        .logo { height: 48px; margin-bottom: 4px; }
         .muted { color: #666; }
         .box { border: 1px solid #999; padding: 6px 8px; }
         .grid th, .grid td { border: 1px solid #bbb; padding: 3px 5px; }
@@ -36,6 +37,9 @@
 <table class="header">
     <tr>
         <td style="width: 60%;">
+            @if ($logo)
+                <img src="{{ $logo }}" class="logo" alt="">
+            @endif
             <div class="company-name">{{ $company['legal_name'] ?: $company['name'] }}</div>
             @if ($company['legal_name'] && $company['legal_name'] !== $company['name'])
                 <div>{{ $company['name'] }}</div>

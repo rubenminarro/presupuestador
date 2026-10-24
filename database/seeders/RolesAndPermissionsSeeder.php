@@ -293,6 +293,9 @@ class RolesAndPermissionsSeeder extends Seeder
             /* audit permissions (solo administrador) */
             'audit-logs.index',
             'audit-logs.show',
+
+            /* system settings permissions (solo administrador): logo del sistema */
+            'system-settings.update',
         ];
 
         foreach ($permissions as $permission) {
