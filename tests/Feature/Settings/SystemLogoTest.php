@@ -29,11 +29,79 @@ class SystemLogoTest extends PartsTestCase
         ], ['Accept' => 'application/json']);
     }
 
+    /**
+     * PNG de 400×200 con fondo transparente y un rectángulo blanco de 200×60 en (100, 70): como un logo blanco con
+     * márgenes.
+     */
+    private function transparentLogo(): UploadedFile
+    {
+        $image = imagecreatetruecolor(400, 200);
+        imagealphablending($image, false);
+        imagesavealpha($image, true);
+        imagefill($image, 0, 0, imagecolorallocatealpha($image, 0, 0, 0, 127));
+        imagefilledrectangle($image, 100, 70, 299, 129, imagecolorallocate($image, 255, 255, 255));
+        ob_start();
+        imagepng($image);
+
+        return UploadedFile::fake()->createWithContent('logo.png', (string) ob_get_clean());
+    }
+
+    private function storedImage(string $url): \GdImage
+    {
+        $path = SystemSetting::query()->whereIn('key', [SystemSetting::LOGO_PATH, SystemSetting::LOGO_BLACK_PATH])
+            ->pluck('value')
+            ->first(fn (string $path) => str_ends_with($url, $path));
+
+        return imagecreatefromstring(Storage::disk('public')->get($path));
+    }
+
     public function test_branding_is_public_and_starts_without_logo(): void
     {
         $this->getJson('/api/branding')
             ->assertOk()
-            ->assertJsonPath('data.logo_url', null);
+            ->assertJsonPath('data.logo_url', null)
+            ->assertJsonPath('data.logo_black_url', null);
+    }
+
+    public function test_a_transparent_png_is_trimmed_and_gets_a_black_version(): void
+    {
+        $this->actingAsAdmin();
+
+        $data = $this->post('/api/system-settings/logo', ['logo' => $this->transparentLogo()], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertNotSame($data['logo_url'], $data['logo_black_url']);
+
+        // Sin márgenes: queda solo el rectángulo, blanco en el logo y negro en la versión negra.
+        $logo = $this->storedImage($data['logo_url']);
+        $black = $this->storedImage($data['logo_black_url']);
+
+        foreach ([$logo, $black] as $image) {
+            $this->assertSame([200, 60], [imagesx($image), imagesy($image)]);
+        }
+        $this->assertSame(0xFFFFFF, imagecolorat($logo, 100, 30) & 0xFFFFFF);
+        $this->assertSame(0x000000, imagecolorat($black, 100, 30) & 0xFFFFFF);
+        $this->assertSame(0, (imagecolorat($black, 100, 30) >> 24) & 0x7F);
+
+        // Al quitarlo se borran los dos archivos.
+        $this->deleteJson('/api/system-settings/logo')->assertOk()->assertJsonPath('data.logo_black_url', null);
+        $this->assertSame([], Storage::disk('public')->allFiles('branding'));
+    }
+
+    public function test_an_opaque_logo_keeps_its_size_and_documents_use_it(): void
+    {
+        $this->actingAsAdmin();
+
+        $this->post('/api/system-settings/logo', ['logo' => $this->transparentLogo()], ['Accept' => 'application/json'])->assertOk();
+
+        // Un JPG (sin transparencia) se usa tal cual y reemplaza también a la versión negra anterior.
+        $data = $this->uploadLogo('logo.jpg')->assertOk()->json('data');
+
+        $this->assertSame($data['logo_url'], $data['logo_black_url']);
+        $this->assertSame([300, 100], [imagesx($this->storedImage($data['logo_url'])), imagesy($this->storedImage($data['logo_url']))]);
+        $this->assertNull(SystemSetting::get(SystemSetting::LOGO_BLACK_PATH));
+        $this->assertCount(1, Storage::disk('public')->allFiles('branding'));
     }
 
     public function test_admin_uploads_and_replaces_the_logo(): void
@@ -121,6 +189,31 @@ class SystemLogoTest extends PartsTestCase
 
         $withLogo = $this->get('/api/reports/sales?format=pdf')->assertOk()->getContent();
         $this->assertStringContainsString('/Subtype /Image', $withLogo);
+    }
+
+    public function test_with_a_logo_pdfs_omit_the_company_name(): void
+    {
+        config(['company.name' => 'Taller Ejemplo', 'company.legal_name' => 'Taller Ejemplo S.A.', 'company.tax_id' => '80000001-1']);
+        $render = fn () => view('pdf.report', [
+            'company' => config('company'),
+            'logo' => app(BrandingService::class)->logoDataUri(),
+            'generatedAt' => now(),
+            'watermark' => null,
+            'title' => 'Reporte de ventas',
+            'period' => 'Octubre 2026',
+            'sections' => [],
+        ])->render();
+
+        $this->assertStringContainsString('Taller Ejemplo S.A.', $render());
+
+        $this->actingAsAdmin();
+        $this->uploadLogo()->assertOk();
+
+        // Con logo, el nombre no se repite; el RUC y los demás datos siguen.
+        $html = $render();
+        $this->assertStringNotContainsString('Taller Ejemplo', $html);
+        $this->assertStringContainsString('80000001-1', $html);
+        $this->assertStringContainsString('data:image/', $html);
     }
 
     public function test_client_emails_embed_the_logo(): void

@@ -1,5 +1,5 @@
 @props(['url'])
-{{-- Cabecera de los emails: el logo del sistema embebido (CID) o, sin logo, el nombre. El mailable adjunta la imagen con BrandingService::embedLogo(). --}}
+{{-- Cabecera de los emails: el logo del sistema embebido (CID, la versión negra: el fondo es claro) o, sin logo, el nombre. El mailable adjunta la imagen con BrandingService::embedLogo(). --}}
 <tr>
 <td class="header">
 <a href="{{ $url }}" style="display: inline-block;">

@@ -2878,15 +2878,16 @@ Valores: `theme` `auto|light|dark`; `theme_primary` `blue|azure|indigo|purple|pi
 
 | Caso | Método / Endpoint | Body | HTTP | Resultado / error_code |
 |---|---|---|---|---|
-| Leer (sin token) | `GET {{base_url}}/branding` | — | 200 | `data.logo_url`: URL pública o `null` |
-| Subir o reemplazar | `POST {{base_url}}/system-settings/logo` (token administrador) | form-data `logo` (archivo PNG o JPG) | 200 | `data.logo_url` nuevo; el archivo anterior se borra |
+| Leer (sin token) | `GET {{base_url}}/branding` | — | 200 | `data.logo_url` y `data.logo_black_url` (versión negra): URL pública o `null` |
+| Subir PNG transparente | `POST {{base_url}}/system-settings/logo` (token administrador) | form-data `logo` (PNG con fondo transparente) | 200 | `logo_url` recortado a su contenido y `logo_black_url` distinto (todo negro); los archivos anteriores se borran |
+| Subir JPG o PNG opaco | `POST {{base_url}}/system-settings/logo` | form-data `logo` (JPG) | 200 | Se guarda tal cual; `logo_black_url` igual a `logo_url` |
 | Formato inválido | `POST {{base_url}}/system-settings/logo` | `logo` GIF o WebP | 422 | `VALIDATION_ERROR`: "El logo debe ser una imagen PNG o JPG." |
 | Más de 2 MB | `POST {{base_url}}/system-settings/logo` | `logo` de 3 MB | 422 | `VALIDATION_ERROR`: "El logo no debe superar los 2 MB." |
 | Quitar | `DELETE {{base_url}}/system-settings/logo` | — | 200 | `data.logo_url` `null` (repetirlo también da 200) |
 | Otro rol | `POST`/`DELETE {{base_url}}/system-settings/logo` con `{{token_caja}}` | — | 403 | `FORBIDDEN` |
 
 Con un logo cargado, los PDF (`budgets/{id}/pdf`, `invoices/{id}/pdf`, `payments/{id}/receipt`,
-`vehicle-deliveries/{id}/pdf` y los reportes con `?format=pdf`) lo muestran arriba de los datos del taller, y los
+`vehicle-deliveries/{id}/pdf` y los reportes con `?format=pdf`) muestran la versión negra en lugar del nombre del taller (los demás datos y el RUC siguen), y los
 emails a clientes en la cabecera (con `MAIL_MAILER=log`, el HTML del log trae `cid:logo@synctaller` y la parte inline).
 El cambio queda en `GET audit-logs?auditable_type=system_setting`.
 

@@ -18,7 +18,7 @@ y avisar, en lugar de "corregir" por cuenta propia.
 
 * **Backend/API:** Laravel 12.70, roadmap original completo (FASES 10–20), compras (FASE 21), pagos a
   proveedores (FASE 22), notificaciones (FASE 23), exportación y comprobantes imprimibles (FASE 24) y auditoría
-  (FASE 25), más preferencias visuales por usuario y logo del sistema (6.21). 230 rutas API, 361 tests en verde.
+  (FASE 25), más preferencias visuales por usuario y logo del sistema (6.21). 230 rutas API, 364 tests en verde.
 * **Nombre:** el proyecto se llamaba **Presupuestador**; desde el 2026-10-21 es **SyncTaller** (repos
   `synctaller-backend` y `synctaller-frontend`, base de datos y conexión `synctaller`).
 * **Frontend:** **no está en este repositorio**, sino en `../synctaller-frontend` (React 19 + TypeScript + Vite +
@@ -538,10 +538,15 @@ Fuente: Services y tests. El detalle de diseño y su historia por fase está en 
     una clave o un valor fuera del catálogo da `422 VALIDATION_ERROR`. `DELETE` restaura los predeterminados.
   * Se guardan solo los valores distintos del predeterminado; la lectura (y `GET /me`) devuelve el juego completo.
   * No se auditan: no son datos de negocio ni de seguridad.
-* **Logo del sistema** (`system_settings`, clave `logo_path`, modelo `SystemSetting` auditado; `BrandingService`):
-  * `GET branding` público; `POST|DELETE system-settings/logo` con `system-settings.update` (solo administrador).
-    PNG o JPG hasta 2 MB, en el disco `public` (`branding/`); cada subida cambia la URL y borra el archivo anterior.
-  * PDF: `DocumentPdfService::render()` pasa `logo` (data URI) a todas las vistas.
+* **Logo del sistema** (`system_settings`, claves `logo_path` y `logo_black_path`, modelo `SystemSetting` auditado;
+  `BrandingService`):
+  * `GET branding` público (`logo_url`, `logo_black_url`); `POST|DELETE system-settings/logo` con
+    `system-settings.update` (solo administrador). PNG o JPG hasta 2 MB, en el disco `public` (`branding/`); cada subida
+    cambia la URL y borra los archivos anteriores.
+  * Un PNG con transparencia se recorta a su contenido y genera la versión negra (`App\Support\LogoImage`); un JPG o
+    un PNG opaco se guarda tal cual y `logo_black_url` es el mismo logo.
+  * PDF: `DocumentPdfService::render()` pasa `logo` (data URI de la versión negra) a todas las vistas. Con logo, la
+    cabecera no muestra el nombre del taller (el resto de sus datos y el RUC sí).
   * Emails: la cabecera HTML (`resources/views/vendor/mail/html/header.blade.php`) muestra `cid:logo@synctaller`;
     el mailable debe adjuntarlo con `BrandingService::embedLogo()` (hoy, `ClientNotificationMail`).
 

@@ -37,12 +37,14 @@
 <table class="header">
     <tr>
         <td style="width: 60%;">
+            {{-- Con logo no se repite el nombre (decisión del usuario); los demás datos del taller sí van. --}}
             @if ($logo)
                 <img src="{{ $logo }}" class="logo" alt="">
-            @endif
-            <div class="company-name">{{ $company['legal_name'] ?: $company['name'] }}</div>
-            @if ($company['legal_name'] && $company['legal_name'] !== $company['name'])
-                <div>{{ $company['name'] }}</div>
+            @else
+                <div class="company-name">{{ $company['legal_name'] ?: $company['name'] }}</div>
+                @if ($company['legal_name'] && $company['legal_name'] !== $company['name'])
+                    <div>{{ $company['name'] }}</div>
+                @endif
             @endif
             @if ($company['activity'])<div class="muted">{{ $company['activity'] }}</div>@endif
             @if ($company['address'])<div>{{ $company['address'] }}@if ($company['city']) – {{ $company['city'] }}@endif</div>@endif
